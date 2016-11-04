@@ -1,0 +1,5 @@
+zipkin:
+  storage:
+    type: stackdriver
+    stackdriver:
+      project-id: ${PROJECT_ID:}

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <artifactId>parent</artifactId>
+    <groupId>com.google.cloud.trace.adapters.zipkin</groupId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <packaging>jar</packaging>
+
+  <artifactId>server</artifactId>
+  <name>Stackdriver Zipkin Server</name>
+
+  <properties>
+    <start-class>com.google.cloud.trace.zipkin.StackdriverZipkinServer</start-class>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.zipkin.java</groupId>
+      <artifactId>zipkin-server</artifactId>
+      <version>1.11.0</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>autoconfigure-storage</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-tcnative-boringssl-static</artifactId>
+      <version>1.1.33.Fork23</version>
+      <classifier>${os.detected.classifier}</classifier>
+    </dependency>
+  </dependencies>
+<build>
+<extensions>
+  <extension>
+    <groupId>kr.motd.maven</groupId>
+    <artifactId>os-maven-plugin</artifactId>
+    <version>1.5.0.Final</version>
+  </extension>
+</extensions>
+  <resources>
+    <resource>
+      <directory>src/main/resources</directory>
+      <filtering>true</filtering>
+    </resource>
+  </resources>
+  <plugins>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
+      <executions>
+        <execution>
+          <goals>
+            <goal>repackage</goal>
+          </goals>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+
+</project>
