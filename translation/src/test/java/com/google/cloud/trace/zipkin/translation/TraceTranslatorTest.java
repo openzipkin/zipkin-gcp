@@ -76,8 +76,8 @@ public class TraceTranslatorTest {
         trace1.getTraceId(), trace1,
         trace2.getTraceId(), trace2
     );
-    String key1 = "00000000000000000000000000000001";
-    String key2 = "00000000000000000000000000000002";
+    String key1 = "00000000000000010000000000000001";
+    String key2 = "00000000000000020000000000000002";
     assertTrue(traceMap.containsKey(key1));
     assertTrue(traceMap.containsKey(key2));
     assertEquals(2, traceMap.get(key1).getSpansCount());
