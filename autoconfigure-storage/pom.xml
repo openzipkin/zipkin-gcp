@@ -18,7 +18,7 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <version>1.4.0.RELEASE</version>
+      <version>1.4.1.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>io.zipkin.java</groupId>
