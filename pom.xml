@@ -14,7 +14,7 @@
     <module>storage</module>
     <module>autoconfigure-storage</module>
     <module>translation</module>
-    <module>server</module>
+    <module>collector</module>
   </modules>
 
   <build>
