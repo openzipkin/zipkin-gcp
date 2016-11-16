@@ -27,6 +27,10 @@ GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json" PROJECT_ID="my_projec
 PROJECT_ID="my_project_id" java -jar collector.jar
 ```
 
+#### Using Docker
+```
+docker run -d -e PROJECT_ID="my_project_id" -p 9411:9411 b.gcr.io/stackdriver-trace-docker/zipkin-collector
+```
 ## Storage
 A write-only Zipkin storage component that writes to the Stackdriver Trace service. This can be used
 with zipkin-server.
