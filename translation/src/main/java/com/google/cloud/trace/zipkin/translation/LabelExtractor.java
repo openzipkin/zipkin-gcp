@@ -36,7 +36,7 @@ import zipkin.Span;
  * Zipkin binary annotations are converted to Stackdriver Span labels by using annotation.key as the key and the String value of annotation.value as the value.
  *
  * Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver name.
- * Any Zipkin annotations without a Stackdriver label equivalent are renamed to zipkin.io/<key_name>
+ * Any Zipkin annotations without a Stackdriver label equivalent are renamed to zipkin.io/[key_name]
  */
 public class LabelExtractor {
 
@@ -57,7 +57,7 @@ public class LabelExtractor {
   /**
    * Extracts the Stackdriver span labels that are equivalent ot the Zipkin Span annotations.
    * @param zipkinSpan The Zipkin Span
-   * @return A Map<String, String> of the Stackdriver span labels equivalent to the Zipkin annotations.
+   * @return A map of the Stackdriver span labels equivalent to the Zipkin annotations.
    */
   public Map<String, String> extract(Span zipkinSpan) {
     Map<String, String> labels = new HashMap<>();

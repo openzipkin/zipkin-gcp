@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <artifactId>parent</artifactId>
     <groupId>com.google.cloud.trace.adapters.zipkin</groupId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <packaging>jar</packaging>
 
-  <artifactId>server</artifactId>
-  <name>Stackdriver Zipkin Server</name>
+  <artifactId>collector</artifactId>
+  <name>Stackdriver Zipkin Collector</name>
 
   <properties>
-    <start-class>com.google.cloud.trace.zipkin.StackdriverZipkinServer</start-class>
+    <start-class>com.google.cloud.trace.zipkin.StackdriverZipkinCollector</start-class>
   </properties>
 
   <dependencies>
@@ -26,7 +24,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>autoconfigure-storage</artifactId>
-      <version>1.0-SNAPSHOT</version>
+      <version>0.1.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

@@ -20,15 +20,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /**
- * A drop-in replacement for ZipkinServer that writes to the Stackdriver Trace backend.
- * Only write operations are supported. The HTTP endpoints for the UI and read operations are not provided.
+ * A drop-in replacement for the Zipkin HTTP Collector that writes to the Stackdriver Trace backend.
+ * This does not support the entire set operations exposed by Zipkin server. Only write operations
+ * are supported. The HTTP endpoints for the UI and read operations are not provided.
  */
 @SpringBootApplication
-@EnableStackdriverZipkinServer
-public class StackdriverZipkinServer {
+@EnableStackdriverCollector
+public class StackdriverZipkinCollector {
   public static void main(String[] args) {
-    System.setProperty("stackdriver.trace.zipkin.agent", "zipkin-java-server");
-    new SpringApplicationBuilder(StackdriverZipkinServer.class)
+    System.setProperty("stackdriver.trace.zipkin.agent", "zipkin-java-collector");
+    new SpringApplicationBuilder(StackdriverZipkinCollector.class)
         .properties("spring.config.name=zipkin-server,stackdriver-zipkin-server").run(args);
   }
 }

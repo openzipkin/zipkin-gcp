@@ -29,6 +29,6 @@ import zipkin.server.ZipkinServerConfiguration;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Import({ZipkinServerConfiguration.class, ZipkinHttpCollector.class})
-public @interface EnableStackdriverZipkinServer {
+public @interface EnableStackdriverCollector {
 
 }

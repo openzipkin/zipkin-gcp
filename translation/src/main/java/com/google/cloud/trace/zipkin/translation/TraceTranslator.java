@@ -92,7 +92,7 @@ public class TraceTranslator {
   private String convertTraceId(long zipkinTraceId) {
     // Stackdriver trace ID's are 128 bits = 16 bytes * 8
     ByteBuffer idBuffer = ByteBuffer.allocate(16);
-    idBuffer.putLong(0);
+    idBuffer.putLong(zipkinTraceId);
     idBuffer.putLong(zipkinTraceId);
     StringBuilder idBuilder = new StringBuilder();
     for (byte b : idBuffer.array()) {
