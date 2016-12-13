@@ -12,25 +12,31 @@ disconnected spans within a trace.
 A drop-in replacement for the standard Zipkin HTTP collector that writes to the
 Stackdriver Trace service.
 
-### Credentials
-The collector uses [Google Application Default
-Credentials](https://developers.google.com/identity/protocols/application-default-credentials)
-for authentication to the Stackdriver Trace API.
+### Configuration
+|Environment Variable           | Value            |
+|-------------------------------|------------------|
+|GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials). |
+|PROJECT_ID                     | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource. |
+
 ### Example Usage
-#### Using an explicit file path
+#### Running on GCE
+By default, the Zipkin collector uses the [Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials)
+and writes traces to the projectId associated with the GCE resource. If this is desired, no
+additional configuration is required.
+```
+java -jar collector.jar
+```
+
+#### Using an explicit projectId and credentials file path
 ```
 GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json" PROJECT_ID="my_project_id" java -jar collector.jar
 ```
 
-#### Using a built-in GCP service account (such as on Google Compute Engine)
-```
-PROJECT_ID="my_project_id" java -jar collector.jar
-```
-
 #### Using Docker
 ```
-docker run -d -e PROJECT_ID="my_project_id" -p 9411:9411 b.gcr.io/stackdriver-trace-docker/zipkin-collector
+docker run -p 9411:9411 b.gcr.io/stackdriver-trace-docker/zipkin-collector
 ```
+
 ## Storage
 A write-only Zipkin storage component that writes to the Stackdriver Trace service. This can be used
 with zipkin-server.

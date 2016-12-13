@@ -20,11 +20,15 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.trace.grpc.v1.GrpcTraceSink;
 import com.google.cloud.trace.v1.sink.TraceSink;
 import com.google.cloud.trace.zipkin.StackdriverStorageComponent;
+import com.google.common.io.ByteStreams;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Collections;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -60,7 +64,31 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     return new GrpcTraceSink(storageProperties.getApiHost(), credentials);
   }
 
-  @Bean StorageComponent storage(Executor executor, TraceSink sink) {
-    return new StackdriverStorageComponent(storageProperties.getProjectId(), sink, executor);
+  @Bean(name="projectId")
+  String projectId() {
+    String configuredProject = storageProperties.getProjectId();
+    if (configuredProject != null && !configuredProject.isEmpty()) {
+      return configuredProject;
+    }
+    try {
+      return getDefaultProjectId();
+    } catch (IOException exception) {
+      throw new IllegalArgumentException("Missing required property: projectId");
+    }
+  }
+
+  String getDefaultProjectId() throws IOException {
+    URL url = new URL("http://metadata.google.internal/computeMetadata/v1/project/project-id");
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    connection.setRequestProperty("Metadata-Flavor", "Google");
+    connection.setRequestMethod("GET");
+    InputStream responseStream = connection.getInputStream();
+    String projectId = new String(ByteStreams.toByteArray(responseStream));
+    return projectId;
+  }
+
+  @Bean StorageComponent storage(Executor executor, TraceSink sink, @Qualifier("projectId")
+      String projectId) {
+    return new StackdriverStorageComponent(projectId, sink, executor);
   }
 }
