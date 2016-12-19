@@ -41,6 +41,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <zipkin.version>1.18.0</zipkin.version>
+  </properties>
+
   <build>
     <pluginManagement>
       <plugins>

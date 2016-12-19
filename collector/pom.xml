@@ -19,7 +19,7 @@
     <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin-server</artifactId>
-      <version>1.14.4</version>
+      <version>${zipkin.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
