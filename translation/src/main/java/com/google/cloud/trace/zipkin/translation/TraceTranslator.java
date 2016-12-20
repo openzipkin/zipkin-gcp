@@ -92,12 +92,8 @@ public class TraceTranslator {
   static String convertTraceId(Span zipkinSpan) {
     // Stackdriver trace ID's are 128 bits = 16 bytes * 8
     ByteBuffer idBuffer = ByteBuffer.allocate(16); // or 32 characters
-    // Some users call the Stackdriver API and order results by traceId to get a "random sample" of
-    // traces. Duplicating the 64-bit ID instead of padding the ID with zeros will remove some
-    // sampling bias for any projects that contain both Zipkin and Stackdriver traces. Regardless of
-    // if we pad-left 0s or duplicate traceId, this resulting ID won't match Zipkin anyway as it
-    // conditionally encodes 16 characters if high bits are unset (as opposed to padding to 32).
-    idBuffer.putLong(zipkinSpan.traceIdHigh == 0L ? zipkinSpan.traceId : zipkinSpan.traceIdHigh);
+    // Note that when 64-bit trace IDs are used, the left-most 16 characters will be zero
+    idBuffer.putLong(zipkinSpan.traceIdHigh);
     idBuffer.putLong(zipkinSpan.traceId);
     StringBuilder idBuilder = new StringBuilder();
     for (byte b : idBuffer.array()) {

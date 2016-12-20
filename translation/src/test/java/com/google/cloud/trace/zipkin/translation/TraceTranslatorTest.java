@@ -51,19 +51,14 @@ public class TraceTranslatorTest {
         .containsExactly("00000000000000020000000000000001");
   }
 
-  /**
-   * Duplicating the lower 64 bits to construct a 128-bit trace ID removes bias when users sort on
-   * trace ID to choose a random traces. If instead we left-padded zeros, 64-bit traces would always
-   * appear first.
-   */
   @Test
-  public void testTranslateTrace_64BitTraceIdCopiedTwiceToMake128bits() {
+  public void testTranslateTrace_64BitTraceIdLeftPadsZeros() {
     Span span = Span.builder().id(1).traceId(1).name("/a").build();
     TraceTranslator translator = new TraceTranslator("test-project");
 
     assertThat(translator.translateSpans(Arrays.asList(span)))
         .extracting("traceId")
-        .containsExactly("00000000000000010000000000000001");
+        .containsExactly("00000000000000000000000000000001");
   }
 
   @Test
@@ -101,8 +96,8 @@ public class TraceTranslatorTest {
         trace1.getTraceId(), trace1,
         trace2.getTraceId(), trace2
     );
-    String key1 = "00000000000000010000000000000001";
-    String key2 = "00000000000000020000000000000002";
+    String key1 = "00000000000000000000000000000001";
+    String key2 = "00000000000000000000000000000002";
     assertTrue(traceMap.containsKey(key1));
     assertTrue(traceMap.containsKey(key2));
     assertEquals(2, traceMap.get(key1).getSpansCount());
