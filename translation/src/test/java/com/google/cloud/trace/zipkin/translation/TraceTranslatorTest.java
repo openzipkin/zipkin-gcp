@@ -16,14 +16,6 @@
 
 package com.google.cloud.trace.zipkin.translation;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static zipkin.Constants.CLIENT_RECV;
-import static zipkin.Constants.CLIENT_SEND;
-import static zipkin.Constants.SERVER_RECV;
-import static zipkin.Constants.SERVER_SEND;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
@@ -39,7 +31,35 @@ import org.junit.Test;
 import zipkin.Annotation;
 import zipkin.Span;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static zipkin.Constants.CLIENT_RECV;
+import static zipkin.Constants.CLIENT_SEND;
+import static zipkin.Constants.SERVER_RECV;
+import static zipkin.Constants.SERVER_SEND;
+
 public class TraceTranslatorTest {
+
+  @Test
+  public void testTranslateTrace_128bitInputTraceId() {
+    Span span = Span.builder().id(1).traceIdHigh(2).traceId(1).name("/a").build();
+    TraceTranslator translator = new TraceTranslator("test-project");
+
+    assertThat(translator.translateSpans(Arrays.asList(span)))
+        .extracting("traceId")
+        .containsExactly("00000000000000020000000000000001");
+  }
+
+  @Test
+  public void testTranslateTrace_64BitTraceIdLeftPadsZeros() {
+    Span span = Span.builder().id(1).traceId(1).name("/a").build();
+    TraceTranslator translator = new TraceTranslator("test-project");
+
+    assertThat(translator.translateSpans(Arrays.asList(span)))
+        .extracting("traceId")
+        .containsExactly("00000000000000000000000000000001");
+  }
 
   @Test
   public void testTranslateTrace() {
@@ -76,8 +96,8 @@ public class TraceTranslatorTest {
         trace1.getTraceId(), trace1,
         trace2.getTraceId(), trace2
     );
-    String key1 = "00000000000000010000000000000001";
-    String key2 = "00000000000000020000000000000002";
+    String key1 = "00000000000000000000000000000001";
+    String key2 = "00000000000000000000000000000002";
     assertTrue(traceMap.containsKey(key1));
     assertTrue(traceMap.containsKey(key2));
     assertEquals(2, traceMap.get(key1).getSpansCount());

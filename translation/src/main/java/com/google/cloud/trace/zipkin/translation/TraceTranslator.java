@@ -55,7 +55,7 @@ public class TraceTranslator {
 
     Collection<Trace> translatedTraces = new ArrayList<>();
     for (Span zipkinSpan : groupedSpans) {
-      String traceId = convertTraceId(zipkinSpan.traceId);
+      String traceId = convertTraceId(zipkinSpan);
       if (currentTrace == null || !traceId.equals(currentTrace.getTraceId())) {
         finishTrace(currentTrace, translatedTraces);
 
@@ -89,11 +89,12 @@ public class TraceTranslator {
     }
   }
 
-  private String convertTraceId(long zipkinTraceId) {
+  static String convertTraceId(Span zipkinSpan) {
     // Stackdriver trace ID's are 128 bits = 16 bytes * 8
-    ByteBuffer idBuffer = ByteBuffer.allocate(16);
-    idBuffer.putLong(zipkinTraceId);
-    idBuffer.putLong(zipkinTraceId);
+    ByteBuffer idBuffer = ByteBuffer.allocate(16); // or 32 characters
+    // Note that when 64-bit trace IDs are used, the left-most 16 characters will be zero
+    idBuffer.putLong(zipkinSpan.traceIdHigh);
+    idBuffer.putLong(zipkinSpan.traceId);
     StringBuilder idBuilder = new StringBuilder();
     for (byte b : idBuffer.array()) {
       idBuilder.append(String.format("%02x", b));
