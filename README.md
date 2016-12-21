@@ -26,15 +26,23 @@ additional configuration is required.
 ```
 java -jar collector.jar
 ```
+or just
+```
+./collector.jar
+```
+
+If docker is used from a GCE host, authentication will happen automatically and Zipkin collector can be started with:
+```
+docker run -p 9411:9411 b.gcr.io/stackdriver-trace-docker/zipkin-collector
+```
+
 
 #### Using an explicit projectId and credentials file path
 ```
 GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json" PROJECT_ID="my_project_id" java -jar collector.jar
 ```
-
-#### Using Docker
 ```
-docker run -p 9411:9411 b.gcr.io/stackdriver-trace-docker/zipkin-collector
+docker run -v /path/to_credentials:/opt/gcloud -e GOOGLE_APPLICATION_CREDENTIALS="/opt/gcloud/credentials.json" -e PROJECT_ID="my_project_id" -p 9411:9411 b.gcr.io/stackdriver-trace-docker/zipkin-collector
 ```
 
 ## Storage
