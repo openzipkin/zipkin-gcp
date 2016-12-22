@@ -1,5 +1,5 @@
+spring.profiles.include: shared
 zipkin:
   storage:
-    type: stackdriver
     stackdriver:
       project-id: ${PROJECT_ID:}
