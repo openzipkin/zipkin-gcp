@@ -21,12 +21,8 @@ import com.google.cloud.trace.grpc.v1.GrpcTraceSink;
 import com.google.cloud.trace.v1.sink.TraceSink;
 import com.google.cloud.trace.zipkin.StackdriverStorageComponent;
 import com.google.common.io.ByteStreams;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Collections;
-import java.util.concurrent.Executor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -37,6 +33,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import zipkin.storage.StorageComponent;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Collections;
+import java.util.concurrent.Executor;
+
 /**
  * Auto-configuration to set the Stackdriver StorageComponent as the Zipkin storage backend.
  */
@@ -45,14 +48,21 @@ import zipkin.storage.StorageComponent;
 @ConditionalOnProperty(name = "zipkin.storage.type", havingValue = "stackdriver")
 @ConditionalOnMissingBean(StorageComponent.class)
 public class ZipkinStackdriverStorageAutoConfiguration {
+  private static final Logger log = LoggerFactory.getLogger(ZipkinStackdriverStorageAutoConfiguration.class);
+
   @Autowired
   ZipkinStackdriverStorageProperties storageProperties;
 
-  @Bean
+  @Bean(name = "stackdriverExecutor")
   @ConditionalOnMissingBean(Executor.class) Executor executor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setThreadNamePrefix("ZipkinStackdriverStorage-");
+    executor.setCorePoolSize(storageProperties.getExecutor().getCorePoolSize());
+    executor.setMaxPoolSize(storageProperties.getExecutor().getMaxPoolSize());
+    executor.setQueueCapacity(storageProperties.getExecutor().getQueueCapacity());
     executor.initialize();
+
+    log.info("Configured Executor for ZipkinStackDriver Storage with: {}", storageProperties.getExecutor());
     return executor;
   }
 
@@ -82,12 +92,14 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
     connection.setRequestProperty("Metadata-Flavor", "Google");
     connection.setRequestMethod("GET");
-    InputStream responseStream = connection.getInputStream();
-    String projectId = new String(ByteStreams.toByteArray(responseStream));
-    return projectId;
+    try (InputStream responseStream = connection.getInputStream())
+    {
+      String projectId = new String(ByteStreams.toByteArray(responseStream));
+      return projectId;
+    }
   }
 
-  @Bean StorageComponent storage(Executor executor, TraceSink sink, @Qualifier("projectId")
+  @Bean StorageComponent storage(@Qualifier("stackdriverExecutor") Executor executor, TraceSink sink, @Qualifier("projectId")
       String projectId) {
     return new StackdriverStorageComponent(projectId, sink, executor);
   }

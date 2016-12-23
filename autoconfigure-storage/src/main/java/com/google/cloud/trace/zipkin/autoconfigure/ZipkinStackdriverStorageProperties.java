@@ -22,6 +22,17 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ZipkinStackdriverStorageProperties {
   private String projectId;
   private String apiHost = "cloudtrace.googleapis.com";
+  private Executor executor = new Executor();
+
+  public Executor getExecutor()
+  {
+    return executor;
+  }
+
+  public void setExecutor(Executor executor)
+  {
+    this.executor = executor;
+  }
 
   public String getProjectId() {
     return projectId;
@@ -37,5 +48,48 @@ public class ZipkinStackdriverStorageProperties {
 
   public void setApiHost(String apiHost) {
     this.apiHost = apiHost;
+  }
+
+  public static class Executor
+  {
+    private int corePoolSize = 1;
+    private int maxPoolSize = 5;
+    private int queueCapacity = 2000;
+
+    public int getCorePoolSize()
+    {
+      return corePoolSize;
+    }
+
+    public int getMaxPoolSize()
+    {
+      return maxPoolSize;
+    }
+
+    public int getQueueCapacity()
+    {
+      return queueCapacity;
+    }
+
+    public void setCorePoolSize(int corePoolSize)
+    {
+      this.corePoolSize = corePoolSize;
+    }
+
+    public void setMaxPoolSize(int maxPoolSize)
+    {
+      this.maxPoolSize = maxPoolSize;
+    }
+
+    public void setQueueCapacity(int queueCapacity)
+    {
+      this.queueCapacity = queueCapacity;
+    }
+
+    public String toString()
+    {
+      return "Executor(corePoolSize=" + this.getCorePoolSize()
+          + ", maxPoolSize=" + this.getMaxPoolSize() + ", queueCapacity=" + this.getQueueCapacity() + ")";
+    }
   }
 }
