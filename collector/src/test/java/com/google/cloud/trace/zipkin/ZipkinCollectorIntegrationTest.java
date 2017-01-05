@@ -2,7 +2,14 @@ package com.google.cloud.trace.zipkin;
 
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.trace.grpc.v1.GrpcTraceSink;
+import com.google.cloud.trace.v1.sink.TraceSink;
+import com.google.cloud.trace.zipkin.autoconfigure.ZipkinStackdriverStorageProperties;
 import com.google.common.collect.Lists;
+import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.auth.MoreCallCredentials;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Test;
@@ -24,6 +31,7 @@ import zipkin.Codec;
 import zipkin.Span;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -102,6 +110,23 @@ public class ZipkinCollectorIntegrationTest
     public Credentials mockGoogleCredentials() throws IOException
     {
       return mock(GoogleCredentials.class);
+    }
+
+    @Bean(name = "traceSink")
+    @Primary
+    TraceSink traceSink(Credentials credentials, ZipkinStackdriverStorageProperties storageProperties)
+        throws IOException, NoSuchFieldException, IllegalAccessException
+    {
+      final GrpcTraceSink traceSink = new GrpcTraceSink(storageProperties.getApiHost(), credentials);
+      final ManagedChannel managedChannel = ManagedChannelBuilder.forTarget(storageProperties.getApiHost()).usePlaintext(true).build();
+      TraceServiceGrpc.TraceServiceBlockingStub traceService = TraceServiceGrpc.newBlockingStub(managedChannel)
+          .withCallCredentials(MoreCallCredentials.from(credentials));
+
+      final Field traceServiceField = GrpcTraceSink.class.getDeclaredField("traceService");
+      traceServiceField.setAccessible(true);
+      traceServiceField.set(traceSink, traceService);
+
+      return traceSink;
     }
 
     @Bean

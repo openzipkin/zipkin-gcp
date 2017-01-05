@@ -44,12 +44,6 @@
       <type>test-jar</type>
       <version>${zipkin.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.google.auto.service</groupId>
-      <artifactId>auto-service</artifactId>
-      <version>1.0-rc2</version>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 <build>
 <extensions>
