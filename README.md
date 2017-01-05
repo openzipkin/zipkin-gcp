@@ -1,4 +1,7 @@
 # Stackdriver Trace adapters for Zipkin.
+
+[![Build Status](https://travis-ci.org/GoogleCloudPlatform/stackdriver-zipkin.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/stackdriver-zipkin)
+
 This project provides adapters so that Zipkin tracing libraries can be used with
 the Stackdriver Trace service.
 

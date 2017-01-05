@@ -27,9 +27,14 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 @SpringBootApplication
 @EnableStackdriverCollector
 public class StackdriverZipkinCollector {
+  /**
+   * Default .yml/.yaml file names to scan
+   */
+  protected static final String ZIPKIN_CONFIG_NAMES = "spring.config.name=zipkin-server,stackdriver-zipkin-server";
+
   public static void main(String[] args) {
     System.setProperty("stackdriver.trace.zipkin.agent", "zipkin-java-collector");
     new SpringApplicationBuilder(StackdriverZipkinCollector.class)
-        .properties("spring.config.name=zipkin-server,stackdriver-zipkin-server").run(args);
+        .properties(ZIPKIN_CONFIG_NAMES).run(args);
   }
 }
