@@ -43,6 +43,7 @@
 
   <properties>
     <zipkin.version>1.18.0</zipkin.version>
+    <cloud.trace.sdk.version>0.3.0</cloud.trace.sdk.version>
   </properties>
 
   <dependencyManagement>

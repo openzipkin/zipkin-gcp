@@ -18,7 +18,7 @@ package com.google.cloud.trace.zipkin;
 
 import static zipkin.storage.StorageAdapters.blockingToAsync;
 
-import com.google.cloud.trace.v1.sink.TraceSink;
+import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.translation.TraceTranslator;
 import java.io.IOException;
 import java.util.concurrent.Executor;
@@ -37,9 +37,9 @@ public class StackdriverStorageComponent implements StorageComponent {
   private final TraceTranslator traceTranslator;
   private final AsyncSpanConsumer spanConsumer;
 
-  public StackdriverStorageComponent(String projectId, TraceSink sink, Executor executor) {
+  public StackdriverStorageComponent(String projectId, TraceConsumer consumer, Executor executor) {
     this.traceTranslator = new TraceTranslator(projectId);
-    this.spanConsumer = blockingToAsync(new StackdriverSpanConsumer(traceTranslator, sink), executor);
+    this.spanConsumer = blockingToAsync(new StackdriverSpanConsumer(traceTranslator, consumer), executor);
   }
 
   @Override

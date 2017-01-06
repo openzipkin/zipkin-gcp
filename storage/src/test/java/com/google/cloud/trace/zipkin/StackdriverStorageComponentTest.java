@@ -1,13 +1,12 @@
 package com.google.cloud.trace.zipkin;
 
-import com.google.cloud.trace.v1.sink.TraceSink;
-import com.google.devtools.cloudtrace.v1.Trace;
+import com.google.cloud.trace.v1.consumer.TraceConsumer;
+import com.google.devtools.cloudtrace.v1.Traces;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import zipkin.Span;
@@ -57,16 +56,16 @@ public class StackdriverStorageComponentTest
     executor.setAwaitTerminationSeconds(awaitTerminationInSeconds);
     executor.initialize();
 
-    TraceSink sink = createSlowTraceSink(grpcDelayInMillis);
-    StackdriverStorageComponent component = new StackdriverStorageComponent("test", sink, executor);
-    final AsyncSpanConsumer consumer = component.asyncSpanConsumer();
+    TraceConsumer stackdriverConsumer = createSlowTraceConsumer(grpcDelayInMillis);
+    StackdriverStorageComponent component = new StackdriverStorageComponent("test", stackdriverConsumer, executor);
+    final AsyncSpanConsumer zipkinConsumer = component.asyncSpanConsumer();
 
     long rejectCount = 0;
     for (long i = 0; i < maxCapacity; i++)
     {
       try
       {
-        consumer.accept(createTestSpans(i), Callback.NOOP);
+        zipkinConsumer.accept(createTestSpans(i), Callback.NOOP);
       }
       catch (TaskRejectedException rejected)
       {
@@ -85,12 +84,12 @@ public class StackdriverStorageComponentTest
     assertThat("Number of completed tasks should be at least of task queue size", completedCount, greaterThanOrEqualTo(queueCapacity));
   }
 
-  private TraceSink createSlowTraceSink(final long grpcDelayInMillis)
+  private TraceConsumer createSlowTraceConsumer(final long grpcDelayInMillis)
   {
-    return new TraceSink()
+    return new TraceConsumer()
     {
       @Override
-      public void receive(Trace trace)
+      public void receive(Traces trace)
       {
         try
         {
