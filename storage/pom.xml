@@ -31,12 +31,12 @@
     </dependency>
     <dependency>
       <groupId>com.google.cloud.trace</groupId>
-      <artifactId>v1</artifactId>
+      <artifactId>sink</artifactId>
       <version>${cloud.trace.sdk.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.cloud.trace</groupId>
-      <artifactId>grpc-sink</artifactId>
+      <groupId>com.google.cloud.trace.v1</groupId>
+      <artifactId>grpc-consumer</artifactId>
       <version>${cloud.trace.sdk.version}</version>
     </dependency>
     <dependency>

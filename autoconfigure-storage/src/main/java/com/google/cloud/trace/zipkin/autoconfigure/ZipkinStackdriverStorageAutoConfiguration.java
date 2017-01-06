@@ -18,8 +18,8 @@ package com.google.cloud.trace.zipkin.autoconfigure;
 
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.cloud.trace.grpc.v1.GrpcTraceSink;
-import com.google.cloud.trace.v1.sink.TraceSink;
+import com.google.cloud.trace.grpc.v1.GrpcTraceConsumer;
+import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.StackdriverStorageComponent;
 import com.google.common.io.ByteStreams;
 import org.slf4j.Logger;
@@ -68,9 +68,9 @@ public class ZipkinStackdriverStorageAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(TraceSink.class)
-  TraceSink traceSink(Credentials credentials) throws IOException {
-    return new GrpcTraceSink(storageProperties.getApiHost(), credentials);
+  @ConditionalOnMissingBean(TraceConsumer.class)
+  TraceConsumer traceConsumer(Credentials credentials) throws IOException {
+    return GrpcTraceConsumer.create(storageProperties.getApiHost(), credentials);
   }
 
   @Bean
@@ -106,8 +106,8 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     }
   }
 
-  @Bean StorageComponent storage(@Qualifier("stackdriverExecutor") Executor executor, TraceSink sink, @Qualifier("projectId")
+  @Bean StorageComponent storage(@Qualifier("stackdriverExecutor") Executor executor, TraceConsumer consumer, @Qualifier("projectId")
       String projectId) {
-    return new StackdriverStorageComponent(projectId, sink, executor);
+    return new StackdriverStorageComponent(projectId, consumer, executor);
   }
 }

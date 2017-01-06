@@ -16,9 +16,10 @@
 
 package com.google.cloud.trace.zipkin;
 
-import com.google.cloud.trace.v1.sink.TraceSink;
+import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.translation.TraceTranslator;
 import com.google.devtools.cloudtrace.v1.Trace;
+import com.google.devtools.cloudtrace.v1.Traces;
 import java.util.Collection;
 import java.util.List;
 import zipkin.Span;
@@ -26,23 +27,21 @@ import zipkin.storage.StorageAdapters.SpanConsumer;
 
 /**
  * Consumes Zipkin spans, translates them to Stackdriver spans using a provided TraceTranslator, and
- * writes them a provided TraceSink.
+ * writes them to a provided Stackdriver {@link TraceConsumer}.
  */
 public class StackdriverSpanConsumer implements SpanConsumer {
 
   private final TraceTranslator translator;
-  private final TraceSink sink;
+  private final TraceConsumer consumer;
 
-  public StackdriverSpanConsumer(TraceTranslator translator, TraceSink sink) {
+  public StackdriverSpanConsumer(TraceTranslator translator, TraceConsumer consumer) {
     this.translator = translator;
-    this.sink = sink;
+    this.consumer = consumer;
   }
 
   @Override
   public void accept(List<Span> spans) {
     Collection<Trace> traces = translator.translateSpans(spans);
-    for (Trace t : traces) {
-      sink.receive(t);
-    }
+    consumer.receive(Traces.newBuilder().addAllTraces(traces).build());
   }
 }
