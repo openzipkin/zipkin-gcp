@@ -5,11 +5,17 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.trace.grpc.v1.GrpcTraceConsumer;
 import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.autoconfigure.ZipkinStackdriverStorageProperties;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 import io.grpc.auth.MoreCallCredentials;
+import io.grpc.netty.NettyChannelBuilder;
+import io.netty.handler.ssl.OpenSsl;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslProvider;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Test;
@@ -38,6 +44,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.cloud.trace.zipkin.StackdriverMockServer.CLIENT_SSL_CONTEXT;
 import static com.google.cloud.trace.zipkin.StackdriverZipkinCollector.ZIPKIN_CONFIG_NAMES;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
@@ -46,8 +53,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
 import static zipkin.TestObjects.LOTS_OF_SPANS;
+import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceBlockingStub;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {StackdriverZipkinCollector.class, ZipkinCollectorIntegrationTest.TestConfiguration.class},
@@ -64,12 +73,43 @@ public class ZipkinCollectorIntegrationTest
   private StackdriverMockServer mockServer;
 
   @Autowired
+  private ZipkinStackdriverStorageProperties storageProperties;
+
+  @Autowired
   private TestRestTemplate restTemplate;
 
   @After
   public void cleanup()
   {
     this.mockServer.reset();
+  }
+
+  @Test
+  public void openSSLAvailable() throws InterruptedException
+  {
+    assertThat("OpenSsl unavailable:" + OpenSsl.unavailabilityCause(), OpenSsl.isAvailable(), equalTo(true));
+    assertThat("OpenSsl suppose to be default", SslContext.defaultServerProvider(), equalTo(SslProvider.OPENSSL));
+    assertThat("OpenSsl suppose to be default", SslContext.defaultClientProvider(), equalTo(SslProvider.OPENSSL));
+  }
+
+  @Test
+  public void mockGrpcServerServesOverSSL()
+  {
+    final NettyChannelBuilder channelBuilder = NettyChannelBuilder.forTarget(storageProperties.getApiHost());
+
+    final TraceServiceBlockingStub plainTraceService = TraceServiceGrpc.newBlockingStub(channelBuilder.build());
+    final TraceServiceBlockingStub sslTraceService = TraceServiceGrpc.newBlockingStub(channelBuilder.sslContext(CLIENT_SSL_CONTEXT).build());
+
+    try
+    {
+      plainTraceService.patchTraces(PatchTracesRequest.getDefaultInstance());
+    }
+    catch (StatusRuntimeException e)
+    {
+      assertThat(e.getCause(), instanceOf(javax.net.ssl.SSLHandshakeException.class));
+    }
+
+    sslTraceService.patchTraces(PatchTracesRequest.getDefaultInstance());
   }
 
   @Test
@@ -116,7 +156,10 @@ public class ZipkinCollectorIntegrationTest
     TraceConsumer traceConsumer(Credentials credentials, ZipkinStackdriverStorageProperties storageProperties)
         throws IOException, NoSuchFieldException, IllegalAccessException
     {
-      final ManagedChannel managedChannel = ManagedChannelBuilder.forTarget(storageProperties.getApiHost()).usePlaintext(true).build();
+      final ManagedChannel managedChannel = NettyChannelBuilder
+                .forTarget(storageProperties.getApiHost())
+                .sslContext(CLIENT_SSL_CONTEXT)
+                .build();
       TraceServiceGrpc.TraceServiceBlockingStub traceService = TraceServiceGrpc.newBlockingStub(managedChannel)
           .withCallCredentials(MoreCallCredentials.from(credentials));
       final GrpcTraceConsumer traceConsumer = new GrpcTraceConsumer(traceService);

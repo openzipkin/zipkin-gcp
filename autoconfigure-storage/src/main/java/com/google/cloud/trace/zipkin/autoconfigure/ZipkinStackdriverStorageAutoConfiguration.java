@@ -21,7 +21,9 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.trace.grpc.v1.GrpcTraceConsumer;
 import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.StackdriverStorageComponent;
+import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
+import io.netty.handler.ssl.OpenSsl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +72,7 @@ public class ZipkinStackdriverStorageAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean(TraceConsumer.class)
   TraceConsumer traceConsumer(Credentials credentials) throws IOException {
+    Preconditions.checkState(OpenSsl.isAvailable(), "OpenSsl required");
     return GrpcTraceConsumer.create(storageProperties.getApiHost(), credentials);
   }
 
