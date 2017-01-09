@@ -9,7 +9,7 @@
     Adapters for using Zipkin instrumentation with Stackdriver Trace.
   </description>
   <url>http://cloud.google.com/trace</url>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.2.0</version>
   <packaging>pom</packaging>
 
   <licenses>
@@ -38,7 +38,7 @@
     <url>https://github.com/GoogleCloudPlatform/stackdriver-zipkin</url>
     <connection>scm:git:https://github.com/GoogleCloudPlatform/stackdriver-zipkin</connection>
     <developerConnection>scm:git:https://github.com/GoogleCloudPlatform/stackdriver-zipkin</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.2.0</tag>
   </scm>
 
   <properties>

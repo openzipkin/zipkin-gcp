@@ -5,11 +5,11 @@
   <parent>
     <groupId>com.google.cloud.trace.adapters.zipkin</groupId>
     <artifactId>parent</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.2.0</version>
   </parent>
 
   <artifactId>storage</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.2.0</version>
   <name>Stackdriver Zipkin Storage</name>
   <packaging>jar</packaging>
 
@@ -22,7 +22,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>translation</artifactId>
-      <version>0.1.1-SNAPSHOT</version>
+      <version>0.2.0</version>
     </dependency>
     <dependency>
       <groupId>io.zipkin.java</groupId>
