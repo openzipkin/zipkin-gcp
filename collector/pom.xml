@@ -15,6 +15,10 @@
     <start-class>com.google.cloud.trace.zipkin.StackdriverZipkinCollector</start-class>
   </properties>
 
+  <!--
+  Don't use embedded Tomcat as it conflicts with "netty-tcnative-boringssl-static"
+  See https://github.com/netty/netty-tcnative/issues/151
+  -->
   <dependencies>
     <dependency>
       <groupId>io.zipkin.java</groupId>
