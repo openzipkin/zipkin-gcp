@@ -54,7 +54,7 @@ public class ZipkinStackdriverStorageProperties {
   {
     private int corePoolSize = 1;
     private int maxPoolSize = 5;
-    private int queueCapacity = 2000;
+    private int queueCapacity = 200000;
 
     public int getCorePoolSize()
     {
