@@ -27,7 +27,7 @@ items:
         spec:
           containers:
             - name: zipkin-stackdriver
-              image: b.gcr.io/stackdriver-trace-docker/zipkin-collector
+              image: gcr.io/stackdriver-trace-docker/zipkin-collector
               imagePullPolicy: Always
               env:
                 - name: PROJECT_ID
