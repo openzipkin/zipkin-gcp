@@ -108,7 +108,7 @@
           <version>2.5.3</version>
           <configuration>
             <autoVersionSubmodules>true</autoVersionSubmodules>
-            <pushChanges>false</pushChanges>
+            <tagNameFormat>v@{project.version}</tagNameFormat>
           </configuration>
         </plugin>
       </plugins>
