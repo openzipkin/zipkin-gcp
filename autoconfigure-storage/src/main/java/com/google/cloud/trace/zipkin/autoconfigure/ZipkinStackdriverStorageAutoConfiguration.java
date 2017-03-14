@@ -74,24 +74,6 @@ public class ZipkinStackdriverStorageAutoConfiguration {
   }
 
   @Bean
-  PublicMetrics metrics(final ThreadPoolTaskExecutor executor) {
-    return new PublicMetrics()
-    {
-
-      @Override
-      public Collection<Metric<?>> metrics()
-      {
-        final ArrayList<Metric<?>> result = new ArrayList<>();
-
-        result.add(new Metric<>("gauge.zipkin_storage.stackdriver.active_threads", executor.getActiveCount()));
-        result.add(new Metric<>("gauge.zipkin_storage.stackdriver.queue_size", executor.getThreadPoolExecutor().getQueue().size()));
-
-        return result;
-      }
-    };
-  }
-
-  @Bean
   @ConditionalOnMissingBean(TraceConsumer.class)
   TraceConsumer traceConsumer(Credentials credentials) throws IOException {
     Preconditions.checkState(OpenSsl.isAvailable(), "OpenSsl required");
