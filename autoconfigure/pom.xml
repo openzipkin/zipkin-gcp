@@ -9,10 +9,21 @@
 
   <packaging>jar</packaging>
   <version>0.2.1-SNAPSHOT</version>
-  <artifactId>autoconfigure-storage</artifactId>
+  <artifactId>autoconfigure</artifactId>
   <name>Autoconfigure Stackdriver Zipkin Storage</name>
 
   <dependencies>
+    <dependency>
+        <groupId>io.zipkin.java</groupId>
+        <artifactId>zipkin-server</artifactId>
+        <version>${zipkin.version}</version>
+        <exclusions>
+            <exclusion>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-tomcat</artifactId>
+            </exclusion>
+        </exclusions>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
@@ -29,23 +40,14 @@
     <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin</artifactId>
-      <version>${zipkin.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>storage</artifactId>
-      <version>0.2.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>0.4.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava-jdk5</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
   </dependencies>
 
