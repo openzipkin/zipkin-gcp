@@ -5,7 +5,6 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.trace.grpc.v1.GrpcTraceConsumer;
 import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.autoconfigure.ZipkinStackdriverStorageProperties;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
@@ -18,6 +17,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +32,10 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.TestPropertySourceUtils;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.SocketUtils;
+import org.springframework.web.context.ConfigurableWebApplicationContext;
 import zipkin.Codec;
 import zipkin.Span;
 
@@ -52,11 +55,18 @@ import static java.util.Collections.unmodifiableList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.lessThan;
 import static org.mockito.Mockito.mock;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static zipkin.TestObjects.LOTS_OF_SPANS;
 import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceBlockingStub;
+
+import static org.hamcrest.core.CombinableMatcher.both;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {StackdriverZipkinCollector.class, ZipkinCollectorIntegrationTest.TestConfiguration.class},
@@ -78,10 +88,24 @@ public class ZipkinCollectorIntegrationTest
   @Autowired
   private TestRestTemplate restTemplate;
 
+  @Autowired
+  private StackdriverStorageComponent storageComponent;
+
+  @Autowired
+  ConfigurableWebApplicationContext context;
+  MockMvc mockMvc;
+
+  @Before
+  public void init() {
+    mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+  }
+
   @After
+  @Before
   public void cleanup()
   {
     this.mockServer.reset();
+    this.storageComponent.resetMetrics();
   }
 
   @Test
@@ -113,11 +137,11 @@ public class ZipkinCollectorIntegrationTest
   }
 
   @Test
-  public void traceConsumerGetsCalled() throws InterruptedException
+  public void traceConsumerGetsCalled() throws Exception
   {
     final Set<Long> spanIds = toIds(TEST_SPANS);
     assertThat("Expected to test at least one span", spanIds, hasSize(greaterThan(0)));
-    assertThat("Unexpected trace in Stackdriver", mockServer.spanIds(), Matchers.<Long>empty());
+    assertThat("Unexpected traces in Stackdriver", mockServer.spanIds(), Matchers.<Long>empty());
     final CountDownLatch spanCountdown = new CountDownLatch(spanIds.size());
     mockServer.setSpanCountdown(spanCountdown);
 
@@ -129,6 +153,34 @@ public class ZipkinCollectorIntegrationTest
 
     assertThat(spanCountdown.getCount(), equalTo(0l));
     assertThat("Not all spans made it to Stackdriver", spanIds, equalTo(mockServer.spanIds()));
+
+    assertMetrics(spanIds);
+  }
+
+  void assertMetrics(Set<Long> spanIds) throws Exception
+  {
+    mockMvc
+        .perform(get("/metrics"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.['counter.zipkin_collector.messages.http']").value(greaterThan(0)))
+        .andExpect(jsonPath("$.['counter.zipkin_collector.bytes.http']").value(greaterThan(0)))
+        .andExpect(jsonPath("$.['gauge.zipkin_collector.message_bytes.http']")
+                       .value(greaterThan(0d))) // most recent size
+        .andExpect(jsonPath("$.['counter.zipkin_collector.spans.http']").value(greaterThan(0)))
+        .andExpect(jsonPath("$.['gauge.zipkin_collector.message_spans.http']")
+                       .value(greaterThan(0d))) // most recent count
+        .andExpect(jsonPath("$.['counter.zipkin_storage.stackdriver.sent']")
+                       .value(spanIds.size()))
+        .andExpect(jsonPath("$.['gauge.zipkin_storage.stackdriver.active_threads']")
+                       .value(greaterThanOrEqualTo(0)))
+        .andExpect(jsonPath("$.['gauge.zipkin_storage.stackdriver.pool_size']")
+                       .value(greaterThanOrEqualTo(1)))
+        .andExpect(jsonPath("$.['gauge.zipkin_storage.stackdriver.core_pool_size']")
+                       .value(greaterThanOrEqualTo(1)))
+        .andExpect(jsonPath("$.['gauge.zipkin_storage.stackdriver.max_pool_size']")
+                       .value(both(greaterThan(1)).and(lessThan(20))))
+        .andExpect(jsonPath("$.['gauge.zipkin_storage.stackdriver.queue_size']")
+                       .value(greaterThanOrEqualTo(0)));
   }
 
   private Set<Long> toIds(List<Span> spans)

@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.actuate.endpoint.PublicMetrics;
+import org.springframework.boot.actuate.metrics.Metric;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -40,6 +42,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.Executor;
 
@@ -57,7 +61,7 @@ public class ZipkinStackdriverStorageAutoConfiguration {
   ZipkinStackdriverStorageProperties storageProperties;
 
   @Bean(name = "stackdriverExecutor")
-  @ConditionalOnMissingBean(Executor.class) Executor executor() {
+  @ConditionalOnMissingBean(ThreadPoolTaskExecutor.class) ThreadPoolTaskExecutor executor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setThreadNamePrefix("ZipkinStackdriverStorage-");
     executor.setCorePoolSize(storageProperties.getExecutor().getCorePoolSize());
@@ -109,7 +113,7 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     }
   }
 
-  @Bean StorageComponent storage(@Qualifier("stackdriverExecutor") Executor executor, TraceConsumer consumer, @Qualifier("projectId")
+  @Bean StorageComponent storage(@Qualifier("stackdriverExecutor") ThreadPoolTaskExecutor executor, TraceConsumer consumer, @Qualifier("projectId")
       String projectId) {
     return new StackdriverStorageComponent(projectId, consumer, executor);
   }
