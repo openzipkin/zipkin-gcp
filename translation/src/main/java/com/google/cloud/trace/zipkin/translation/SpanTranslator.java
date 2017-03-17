@@ -24,7 +24,6 @@ import static zipkin.Constants.SERVER_SEND;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.devtools.cloudtrace.v1.TraceSpan.SpanKind;
 import com.google.protobuf.Timestamp;
-import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 import zipkin.Annotation;
