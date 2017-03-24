@@ -16,14 +16,11 @@
 
 package com.google.cloud.trace.zipkin;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import org.springframework.context.annotation.Import;
 import zipkin.server.ZipkinHttpCollector;
 import zipkin.server.ZipkinServerConfiguration;
+
+import java.lang.annotation.*;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

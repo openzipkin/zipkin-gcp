@@ -6,6 +6,7 @@
     <groupId>com.google.cloud.trace.adapters.zipkin</groupId>
     <artifactId>parent</artifactId>
     <version>0.2.1-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
   </parent>
 
   <artifactId>storage</artifactId>
@@ -22,47 +23,38 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>translation</artifactId>
-      <version>0.2.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin</artifactId>
-      <version>${zipkin.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.trace</groupId>
       <artifactId>sink</artifactId>
-      <version>${cloud.trace.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.cloud.trace.v1</groupId>
       <artifactId>grpc-consumer</artifactId>
-      <version>${cloud.trace.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty</artifactId>
-      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-core</artifactId>
-      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-auth</artifactId>
-      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-stub</artifactId>
-      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-all</artifactId>
-      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -72,7 +64,6 @@
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
-      <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
