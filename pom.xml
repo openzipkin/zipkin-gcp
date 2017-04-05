@@ -42,7 +42,7 @@
   </scm>
 
   <properties>
-    <zipkin.version>1.21.0</zipkin.version>
+    <zipkin.version>1.22.0</zipkin.version>
     <cloud.trace.sdk.version>0.3.2</cloud.trace.sdk.version>
     <grpc.version>1.0.2</grpc.version>
   </properties>
