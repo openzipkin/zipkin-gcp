@@ -17,6 +17,7 @@
 package com.google.cloud.trace.zipkin.translation;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.Gson;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -43,6 +44,11 @@ public class LabelExtractor {
   private static final String kAgentLabelKey = "/agent";
   private static final String kComponentLabelKey = "/component";
 
+  private static class EndpointAddress {
+    String ipv4 = "";
+    String ipv6 = "";
+  }
+  
   public LabelExtractor(Map<String, String> renamedLabels) {
     this(ImmutableMap.copyOf(renamedLabels), "zipkin.io/");
   }
@@ -53,7 +59,7 @@ public class LabelExtractor {
   }
 
   /**
-   * Extracts the Stackdriver span labels that are equivalent ot the Zipkin Span annotations.
+   * Extracts the Stackdriver span labels that are equivalent to the Zipkin Span annotations.
    * @param zipkinSpan The Zipkin Span
    * @return A map of the Stackdriver span labels equivalent to the Zipkin annotations.
    */
@@ -71,6 +77,16 @@ public class LabelExtractor {
       result.put(getLabelName(tag.getKey()), tag.getValue());
     }
 
+    // Only use server receive spans to extract endpoint data as spans
+    // will be rewritten into multiple single-host Stackdriver spans. A client send
+    // trace might not show the final destination.
+    if (zipkinSpan.localEndpoint() != null && zipkinSpan.kind().equals(Span2.Kind.SERVER)) {
+      EndpointAddress endpointAddress = new Gson().fromJson(zipkinSpan.localEndpoint().toString(),
+                                                            EndpointAddress.class);
+      result.put(getLabelName("endpoint.ipv4"), endpointAddress.ipv4);
+      result.put(getLabelName("endpoint.ipv6"), endpointAddress.ipv6);
+    }
+
     for (Annotation annotation : zipkinSpan.annotations()) {
       result.put(getLabelName(annotation.value), formatTimestamp(annotation.timestamp));
     }
@@ -86,7 +102,7 @@ public class LabelExtractor {
 
     return result;
   }
-
+  
   private String getLabelName(String zipkinName) {
     if (renamedLabels.containsKey(zipkinName)) {
       return renamedLabels.get(zipkinName);

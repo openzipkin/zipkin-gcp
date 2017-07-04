@@ -22,6 +22,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.net.InetAddresses;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collections;
@@ -103,6 +105,47 @@ public class LabelExtractorTest {
     rootLabels = extractor.extract(rootSpan);
     assertEquals("zipkin-test", rootLabels.get("/agent"));
     System.clearProperty("stackdriver.trace.zipkin.agent");
+  }
+
+  @Test
+  public void testEndpointIsSet() {
+    InetAddress lo = InetAddresses.forString("::1");
+    Endpoint serverEndpoint = Endpoint.builder()
+        .serviceName("service1")
+        .ipv4(10 << 24 | 0 << 16 | 0 << 8 | 1)
+        .ipv6(lo.getAddress())
+        .port(80)
+        .build();
+    Endpoint clientEndpoint = Endpoint.builder()
+        .serviceName("service2")
+        .ipv4(10 << 24 | 0 << 16 | 0 << 8 | 1)
+        .ipv6(lo.getAddress())
+        .port(80)
+        .build();
+    Span serverSpan = Span.builder()
+        .traceId(4)
+        .name("test-span")
+        .id(5)
+        .addAnnotation(Annotation.create(1, "sr", serverEndpoint))
+        .addAnnotation(Annotation.create(2, "ss", serverEndpoint))
+        .build();
+    Span clientSpan = Span.builder()
+        .traceId(4)
+        .name("test-span")
+        .id(6)
+        .parentId(5L)
+        .addAnnotation(Annotation.create(1, "cs", clientEndpoint))
+        .addAnnotation(Annotation.create(2, "cr", clientEndpoint))
+        .build();
+
+    String prefix = "test.prefix/";
+    LabelExtractor extractor = new LabelExtractor(Collections.<String, String>emptyMap(), prefix);
+    Map<String, String> serverLabels = extractor.extract(serverSpan);
+    assertEquals("10.0.0.1", serverLabels.get(prefix + "endpoint.ipv4"));
+    assertEquals("::1", serverLabels.get(prefix + "endpoint.ipv6"));
+    Map<String, String> clientLabels = extractor.extract(clientSpan);
+    assertNull(clientLabels.get(prefix + "endpoint.ipv4"));
+    assertNull(clientLabels.get(prefix + "endpoint.ipv6"));
   }
 
   @Test
