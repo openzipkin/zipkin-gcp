@@ -17,6 +17,7 @@
 package com.google.cloud.trace.zipkin.translation;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.net.InetAddresses;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import zipkin.Annotation;
 import zipkin.BinaryAnnotation;
+import zipkin.Endpoint;
 import zipkin.Span;
 
 /**
@@ -55,7 +57,7 @@ public class LabelExtractor {
   }
 
   /**
-   * Extracts the Stackdriver span labels that are equivalent ot the Zipkin Span annotations.
+   * Extracts the Stackdriver span labels that are equivalent to the Zipkin Span annotations.
    * @param zipkinSpan The Zipkin Span
    * @return A map of the Stackdriver span labels equivalent to the Zipkin annotations.
    */
@@ -71,6 +73,13 @@ public class LabelExtractor {
         // Consistently grab the serviceName from a specific annotation.
         if (annotation.endpoint != null && annotation.endpoint.serviceName != null) {
           labels.put(kComponentLabelKey, annotation.endpoint.serviceName);
+        }
+        // Only use server receive trace to extract endpoint data as Zipkin spans
+        // will be rewritten into multiple single-host Stackdriver spans. A client send
+        // trace might not show the final destination.
+        if (annotation.endpoint != null && "sr".equals(annotation.value)) {
+          // TODO: add support for extracting IPv6 endpoints.
+          extractEndpoint(labels, annotation.endpoint);
         }
       }
     }
@@ -115,5 +124,31 @@ public class LabelExtractor {
     long milliseconds = microseconds / 1000;
     Date date = new Date(milliseconds);
     return new SimpleDateFormat("yyyy-MM-dd (HH:mm:ss.SSS)").format(date);
+  }
+
+  private void extractEndpoint(Map<String, String> labels, Endpoint endpoint) {
+    if (endpoint.ipv4 != 0) {
+      StringBuilder sb = new StringBuilder()
+          .append(endpoint.ipv4 >> 24 & 0xff).append(".")
+          .append(endpoint.ipv4 >> 16 & 0xff).append(".")
+          .append(endpoint.ipv4 >> 8 & 0xff).append(".")
+          .append(endpoint.ipv4 & 0xff);
+
+      if (isValidIp(sb.toString())) {
+        if (endpoint.port != null && endpoint.port != 0) {
+          sb.append(":").append(endpoint.port & 0xffff);
+        }
+        labels.put(getLabelName("endpoint.ipv4"), sb.toString());
+      }
+    }
+  }
+
+  private boolean isValidIp(String ipString) {
+    try {
+      InetAddresses.forString(ipString);
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
+    return true;
   }
 }

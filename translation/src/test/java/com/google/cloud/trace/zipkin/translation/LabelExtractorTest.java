@@ -106,6 +106,41 @@ public class LabelExtractorTest {
   }
 
   @Test
+  public void testEndpointIsSet() {
+    final String prefix = "test.prefix/";
+    Endpoint serverEndpoint = Endpoint.builder()
+        .serviceName("service1")
+        .ipv4(10 << 24 | 0 << 16 | 0 << 8 | 1)
+        .port(80)
+        .build();
+    Endpoint clientEndpoint = Endpoint.builder()
+        .serviceName("service2")
+        .ipv4(10 << 24 | 0 << 16 | 0 << 8 | 1)
+        .port(80)
+        .build();
+    LabelExtractor extractor = new LabelExtractor(Collections.<String, String>emptyMap(), prefix);
+    Span serverSpan = Span.builder()
+        .traceId(4)
+        .name("test-span")
+        .id(5)
+        .addAnnotation(Annotation.create(1, "sr", serverEndpoint))
+        .addAnnotation(Annotation.create(2, "ss", serverEndpoint))
+        .build();
+    Span clientSpan = Span.builder()
+        .traceId(4)
+        .name("test-span")
+        .id(6)
+        .parentId(5L)
+        .addAnnotation(Annotation.create(1, "cs", clientEndpoint))
+        .addAnnotation(Annotation.create(2, "cr", clientEndpoint))
+        .build();
+    Map<String, String> serverLabels = extractor.extract(serverSpan);
+    assertEquals("10.0.0.1:80", serverLabels.get(prefix + "endpoint.ipv4"));
+    Map<String, String> clientLabels = extractor.extract(clientSpan);
+    assertNull(clientLabels.get(prefix + "endpoint.ipv4"));
+  }
+
+  @Test
   public void testComponentLabelIsSet() {
     LabelExtractor extractor = new LabelExtractor(Collections.<String, String>emptyMap(), "test.prefix");
     Span clientSpan = Span.builder()
