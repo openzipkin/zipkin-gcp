@@ -22,7 +22,7 @@ Stackdriver Trace service.
 |-------------------------------|------------------|
 |GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials). |
 |PROJECT_ID                     | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource. |
-|COLLECTOR_SAMPLE_RATE          | Optional. Percentage of traces to retain, defaults to always sample. However, if there is a problem sending Traces to the Stackdriver Trace service, Traces may be dropped.
+|COLLECTOR_SAMPLE_RATE          | Optional. Value must be between 0 and 1. Percentage of traces to retain, defaulting to 1 (sample everything). However, if there is a problem sending Traces to the Stackdriver Trace service, Traces may be dropped.
 
 ### Example Usage
 The collector may be downloaded from [Maven Central](https://search.maven.org/remote_content?g=com.google.cloud.trace.adapters.zipkin&a=collector&v=LATEST)
