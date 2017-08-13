@@ -17,16 +17,14 @@
 package com.google.cloud.trace.zipkin.translation;
 
 import com.google.common.collect.ImmutableMap;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import zipkin.Annotation;
-import zipkin.BinaryAnnotation;
 import zipkin.Span;
+import zipkin.internal.Span2;
+import zipkin.internal.Span2Converter;
 
 /**
  * LabelExtractor extracts the set of Stackdriver Span labels equivalent to the annotations in a given Zipkin Span.
@@ -60,27 +58,33 @@ public class LabelExtractor {
    * @return A map of the Stackdriver span labels equivalent to the Zipkin annotations.
    */
   public Map<String, String> extract(Span zipkinSpan) {
-    Map<String, String> labels = new HashMap<>();
-    for (BinaryAnnotation annotation : zipkinSpan.binaryAnnotations) {
-      labels.put(getLabelName(annotation.key), readBinaryAnnotation(annotation));
+    Map<String, String> result = new LinkedHashMap<>();
+    for (Span2 span2 : Span2Converter.fromSpan(zipkinSpan)) {
+      result.putAll(extract(span2));
+    }
+    return result;
+  }
+
+  Map<String, String> extract(Span2 zipkinSpan) { // not exposed until Span2 is a formal type
+    Map<String, String> result = new LinkedHashMap<>();
+    for (Map.Entry<String, String> tag : zipkinSpan.tags().entrySet()) {
+      result.put(getLabelName(tag.getKey()), tag.getValue());
     }
 
-    for (Annotation annotation : zipkinSpan.annotations) {
-      labels.put(getLabelName(annotation.value), formatTimestamp(annotation.timestamp));
-      if ("cs".equals(annotation.value) || "sr".equals(annotation.value)) {
-        // Consistently grab the serviceName from a specific annotation.
-        if (annotation.endpoint != null && annotation.endpoint.serviceName != null) {
-          labels.put(kComponentLabelKey, annotation.endpoint.serviceName);
-        }
-      }
+    for (Annotation annotation : zipkinSpan.annotations()) {
+      result.put(getLabelName(annotation.value), formatTimestamp(annotation.timestamp));
     }
 
-    if (zipkinSpan.parentId == null) {
-        String agentName = System.getProperty("stackdriver.trace.zipkin.agent", "zipkin-java");
-        labels.put(kAgentLabelKey, agentName);
+    if (zipkinSpan.localEndpoint() != null && !zipkinSpan.localEndpoint().serviceName.isEmpty()) {
+      result.put(kComponentLabelKey, zipkinSpan.localEndpoint().serviceName);
     }
 
-    return labels;
+    if (zipkinSpan.parentId() == null) {
+      String agentName = System.getProperty("stackdriver.trace.zipkin.agent", "zipkin-java");
+      result.put(kAgentLabelKey, agentName);
+    }
+
+    return result;
   }
 
   private String getLabelName(String zipkinName) {
@@ -88,26 +92,6 @@ public class LabelExtractor {
       return renamedLabels.get(zipkinName);
     } else {
       return prefix + zipkinName;
-    }
-  }
-
-  private String readBinaryAnnotation(BinaryAnnotation annotation) {
-    // The value of a BinaryAnnotation is encoded in big endian order.
-    ByteBuffer buffer = ByteBuffer.wrap(annotation.value).order(ByteOrder.BIG_ENDIAN);
-    switch (annotation.type) {
-      case BOOL:
-        return annotation.value[0] == 1 ? "true" : "false";
-      case I16:
-        return Short.toString(buffer.getShort());
-      case I32:
-        return Integer.toString(buffer.getInt());
-      case I64:
-        return Long.toString(buffer.getLong());
-      case DOUBLE:
-        return Double.toString(buffer.getDouble());
-      case STRING:
-      default:
-        return new String(annotation.value, Charset.forName("UTF-8"));
     }
   }
 

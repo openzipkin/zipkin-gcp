@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 import zipkin.Annotation;
+import zipkin.Endpoint;
 import zipkin.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,6 +41,8 @@ import static zipkin.Constants.SERVER_RECV;
 import static zipkin.Constants.SERVER_SEND;
 
 public class TraceTranslatorTest {
+  Endpoint clientEp = Endpoint.builder().serviceName("client").build();
+  Endpoint serverEp = Endpoint.builder().serviceName("server").build();
 
   @Test
   public void testTranslateTrace_128bitInputTraceId() {
@@ -112,19 +115,19 @@ public class TraceTranslatorTest {
     Span span1 = Span.builder().traceId(1).id(1).name("/a")
         .timestamp(1474488796000000L) // This is set because the server owns the span
         .duration(5000000L)
-        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, serverEp))
         .build();
     Span span2 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?client")
         .timestamp(1474488797000000L) // This is set because the client owns the span.
         .duration(1500000L)
-        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, clientEp))
         .build();
     Span span3 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?server")
         // timestamp is not set because the server does not own this span.
-        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, serverEp))
         .build();
     Span span4 = Span.builder().traceId(1).parentId(2L).id(3).name("custom-span")
         .timestamp(1474488797600000L)
@@ -163,16 +166,16 @@ public class TraceTranslatorTest {
   @Test
   public void testMultihostServerRootSpan_noTimestamp() {
     Span span1 = Span.builder().traceId(1).id(1).name("/a")
-        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, serverEp))
         .build();
     Span span2 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?client")
-        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, clientEp))
         .build();
     Span span3 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?server")
-        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, serverEp))
         .build();
     Span span4 = Span.builder().traceId(1).parentId(2L).id(3).name("custom-span")
         .build();
@@ -208,24 +211,24 @@ public class TraceTranslatorTest {
     Span span1 = Span.builder().traceId(1).id(1).name("/a?client")
         .timestamp(1474488796000000L) // This is set because the client owns the span
         .duration(5000000L)
-        .addAnnotation(Annotation.create(1474488796000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488801000000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488796000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488801000000L, CLIENT_RECV, clientEp))
         .build();
     Span span2 = Span.builder().traceId(1).id(1).name("/a?server")
         // timestamp is not set because the server does not own this span.
-        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, serverEp))
         .build();
     Span span3 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?client")
         .timestamp(1474488797000000L) // This is set because the client owns the span.
         .duration(1500000L)
-        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, clientEp))
         .build();
     Span span4 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?server")
         // timestamp is not set because the server does not own this span.
-        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, serverEp))
         .build();
     Span span5 = Span.builder().traceId(1).parentId(2L).id(3).name("custom-span")
         .timestamp(1474488797600000L)
@@ -269,20 +272,20 @@ public class TraceTranslatorTest {
   @Test
   public void testMultihostClientRootSpan_noTimestamp() {
     Span span1 = Span.builder().traceId(1).id(1).name("/a?client")
-        .addAnnotation(Annotation.create(1474488796000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488801000000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488796000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488801000000L, CLIENT_RECV, clientEp))
         .build();
     Span span2 = Span.builder().traceId(1).id(1).name("/a?server")
-        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, serverEp))
         .build();
     Span span3 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?client")
-        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, clientEp))
         .build();
     Span span4 = Span.builder().traceId(1).parentId(1L).id(2).name("/b?server")
-        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, serverEp))
         .build();
     Span span5 = Span.builder().traceId(1).parentId(2L).id(3).name("custom-span")
         .build();
@@ -327,27 +330,27 @@ public class TraceTranslatorTest {
     Span span1 = Span.builder().traceId(1).id(1).name("/a?client")
         .timestamp(1474488796000000L) // This is set because the client owns the span
         .duration(5000000L)
-        .addAnnotation(Annotation.create(1474488796000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488801000000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488796000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488801000000L, CLIENT_RECV, clientEp))
         .build();
     Span span2 = Span.builder().traceId(1).parentId(1L).id(2).name("/a?server")
         .timestamp(1474488796000000L)
         .duration(5000000L)
-        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488796000000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488801000000L, SERVER_SEND, serverEp))
         .build();
     Span span3 = Span.builder().traceId(1).parentId(2L).id(3).name("/b?client")
         .timestamp(1474488797000000L) // This is set because the client owns the span.
         .duration(1500000L)
-        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, null))
-        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, null))
+        .addAnnotation(Annotation.create(1474488797000000L, CLIENT_SEND, clientEp))
+        .addAnnotation(Annotation.create(1474488798500000L, CLIENT_RECV, clientEp))
         .build();
     Span span4 = Span.builder().traceId(1).parentId(3L).id(4).name("/b?server")
         // timestamp is not set because the server does not own this span.
         .timestamp(1474488797500000L)
         .duration(800000L)
-        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, null))
-        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, null))
+        .addAnnotation(Annotation.create(1474488797500000L, SERVER_RECV, serverEp))
+        .addAnnotation(Annotation.create(1474488798300000L, SERVER_SEND, serverEp))
         .build();
     Span span5 = Span.builder().traceId(1).parentId(4L).id(5).name("custom-span")
         .timestamp(1474488797600000L)

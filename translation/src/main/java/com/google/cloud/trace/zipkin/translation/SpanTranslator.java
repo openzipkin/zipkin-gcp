@@ -16,18 +16,15 @@
 
 package com.google.cloud.trace.zipkin.translation;
 
-import static zipkin.Constants.CLIENT_RECV;
-import static zipkin.Constants.CLIENT_SEND;
-import static zipkin.Constants.SERVER_RECV;
-import static zipkin.Constants.SERVER_SEND;
-
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.devtools.cloudtrace.v1.TraceSpan.SpanKind;
 import com.google.protobuf.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
-import zipkin.Annotation;
+import javax.annotation.Nullable;
 import zipkin.Span;
+import zipkin.internal.Span2;
+import zipkin.internal.Span2Converter;
 
 /**
  * SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span.
@@ -61,69 +58,55 @@ class SpanTranslator {
    * @return A Stackdriver Trace Span.
    */
   public TraceSpan translate(Span zipkinSpan) {
-    Map<String, Annotation> annotations = getAnnotations(zipkinSpan);
-    TraceSpan.Builder spanBuilder = TraceSpan.newBuilder();
-
-    spanBuilder.setName(zipkinSpan.name);
-    SpanKind kind = getSpanKind(annotations);
-    spanBuilder.setKind(kind);
-    rewriteIds(zipkinSpan, spanBuilder, kind);
-    writeBestTimestamp(zipkinSpan, spanBuilder, annotations);
-    spanBuilder.putAllLabels(labelExtractor.extract(zipkinSpan));
-    return spanBuilder.build();
+    TraceSpan.Builder builder = TraceSpan.newBuilder();
+    for (Span2 span : Span2Converter.fromSpan(zipkinSpan)) {
+      translate(builder, span);
+    }
+    return builder.build();
   }
 
-  private void writeBestTimestamp(Span zipkinSpan, TraceSpan.Builder spanBuilder, Map<String, Annotation> annotations) {
-    if (zipkinSpan.timestamp != null) {
-      // Span.timestamp is the authoritative value if it's present.
-      spanBuilder.setStartTime(createTimestamp(zipkinSpan.timestamp));
-      spanBuilder.setEndTime(createTimestamp(zipkinSpan.timestamp + zipkinSpan.duration));
-    } else if (annotations.containsKey(CLIENT_SEND) && annotations.containsKey(CLIENT_RECV)) {
-      // Client timestamps are more authoritative than server timestamps.
-      spanBuilder.setStartTime(
-          createTimestamp(annotations.get(CLIENT_SEND).timestamp)
-      );
-      spanBuilder.setEndTime(
-          createTimestamp(annotations.get(CLIENT_RECV).timestamp)
-      );
-    } else if (annotations.containsKey(SERVER_RECV) && annotations.containsKey(SERVER_SEND)) {
-      spanBuilder.setStartTime(
-          createTimestamp(annotations.get(SERVER_RECV).timestamp)
-      );
-      spanBuilder.setEndTime(
-          createTimestamp(annotations.get(SERVER_SEND).timestamp)
-      );
+  TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span2 zipkinSpan) {
+    spanBuilder.setName(zipkinSpan.name());
+    SpanKind kind = getSpanKind(zipkinSpan.kind());
+    spanBuilder.setKind(kind);
+    rewriteIds(zipkinSpan, spanBuilder, kind);
+    if (zipkinSpan.timestamp() != null) {
+      spanBuilder.setStartTime(createTimestamp(zipkinSpan.timestamp()));
+      if (zipkinSpan.duration() != null) {
+        Timestamp endTime = createTimestamp(zipkinSpan.timestamp() + zipkinSpan.duration());
+        spanBuilder.setEndTime(endTime);
+      }
     }
+    spanBuilder.putAllLabels(labelExtractor.extract(zipkinSpan));
+    return spanBuilder;
   }
 
   /**
    * Rewrite Span IDs to split multi-host Zipkin spans into multiple single-host Stackdriver spans.
    */
-  private void rewriteIds(Span zipkinSpan, TraceSpan.Builder builder, SpanKind kind) {
+  private void rewriteIds(Span2 zipkinSpan, TraceSpan.Builder builder, SpanKind kind) {
     // Change the spanId of RPC_CLIENT spans.
     if (kind == SpanKind.RPC_CLIENT) {
-      builder.setSpanId(rewriteId(zipkinSpan.id));
+      builder.setSpanId(rewriteId(zipkinSpan.id()));
     } else {
-      builder.setSpanId(zipkinSpan.id);
+      builder.setSpanId(zipkinSpan.id());
     }
 
     // Change the parentSpanId of RPC_SERVER spans to use the rewritten spanId of the RPC_CLIENT spans.
     if (kind == SpanKind.RPC_SERVER) {
-      if (zipkinSpan.timestamp != null ) {
-        // The timestamp field should only be written by instrumentation whenever it "owns" a span.
-        // Because this field is here, we know that the server "owns" this span which implies this
-        // is a single-host span.
-        // This means the parent RPC_CLIENT span was a separate span with id=zipkinSpan.parentId. When
-        // that span fragment was converted, it would have had id=rewriteId(zipkinSpan.parentId)
-        builder.setParentSpanId(rewriteId(zipkinSpan.parentId));
-      } else {
+      if (Boolean.TRUE.equals(zipkinSpan.shared())) {
         // This is a multi-host span.
         // This means the parent client-side span has the same id as this span. When that fragment of
         // the span was converted, it would have had id rewriteId(zipkinSpan.id)
-        builder.setParentSpanId(rewriteId(zipkinSpan.id));
+        builder.setParentSpanId(rewriteId(zipkinSpan.id()));
+      } else {
+        // This span isn't shared: the server "owns" this span and it is a single-host span.
+        // This means the parent RPC_CLIENT span was a separate span with id=zipkinSpan.parentId. When
+        // that span fragment was converted, it would have had id=rewriteId(zipkinSpan.parentId)
+        builder.setParentSpanId(rewriteId(zipkinSpan.parentId()));
       }
     } else {
-      long parentId = zipkinSpan.parentId == null ? 0 : zipkinSpan.parentId;
+      long parentId = zipkinSpan.parentId() == null ? 0 : zipkinSpan.parentId();
       builder.setParentSpanId(parentId);
     }
   }
@@ -137,22 +120,15 @@ class SpanTranslator {
     return id ^ pad;
   }
 
-  private SpanKind getSpanKind(Map<String, Annotation> annotations) {
-    if (annotations.containsKey(CLIENT_SEND) || annotations.containsKey(CLIENT_RECV)) {
+  private SpanKind getSpanKind(@Nullable Span2.Kind zipkinKind) {
+    if (zipkinKind == null) return SpanKind.SPAN_KIND_UNSPECIFIED;
+    if (zipkinKind == Span2.Kind.CLIENT) {
       return SpanKind.RPC_CLIENT;
     }
-    if (annotations.containsKey(SERVER_SEND) || annotations.containsKey(SERVER_RECV)) {
+    if (zipkinKind == Span2.Kind.SERVER) {
       return SpanKind.RPC_SERVER;
     }
-    return SpanKind.SPAN_KIND_UNSPECIFIED;
-  }
-
-  private Map<String, Annotation> getAnnotations(Span zipkinSpan) {
-    Map<String, Annotation> annotations = new HashMap<>();
-    for (Annotation annotation : zipkinSpan.annotations) {
-      annotations.put(annotation.value, annotation);
-    }
-    return annotations;
+    return SpanKind.UNRECOGNIZED;
   }
 
   private Timestamp createTimestamp(long microseconds) {

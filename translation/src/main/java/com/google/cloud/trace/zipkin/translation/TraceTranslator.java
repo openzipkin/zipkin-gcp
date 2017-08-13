@@ -18,13 +18,14 @@ package com.google.cloud.trace.zipkin.translation;
 
 import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import zipkin.Span;
+import zipkin.internal.Span2;
+import zipkin.internal.Span2Converter;
 
 /**
  * TraceTranslator converts a collection of Zipkin Spans into a Collection of Stackdriver Trace Spans.
@@ -48,14 +49,17 @@ public class TraceTranslator {
    * @return A Collection of Stackdriver Trace Spans.
    */
   public Collection<Trace> translateSpans(Collection<Span> zipkinSpans) {
-    List<Span> groupedSpans = new ArrayList<>(zipkinSpans);
-    groupSpansByTraceId(groupedSpans);
-
+    List<Span> sortedByTraceAndSpanId = sortByTraceAndSpanId(zipkinSpans);
     Trace.Builder currentTrace = null;
 
     Collection<Trace> translatedTraces = new ArrayList<>();
-    for (Span zipkinSpan : groupedSpans) {
-      String traceId = convertTraceId(zipkinSpan);
+    for (int i = 0, length = sortedByTraceAndSpanId.size(); i < length; i++) {
+      Span currentSpan = sortedByTraceAndSpanId.get(i);
+
+      // Zipkin trace ID is conditionally 16 or 32 characters, but Stackdriver needs 32
+      String traceId = currentSpan.traceIdString();
+      if (traceId.length() == 16) traceId = "0000000000000000" + traceId;
+
       if (currentTrace == null || !traceId.equals(currentTrace.getTraceId())) {
         finishTrace(currentTrace, translatedTraces);
 
@@ -63,23 +67,39 @@ public class TraceTranslator {
         currentTrace.setProjectId(this.projectId);
         currentTrace.setTraceId(traceId);
       }
-      appendSpan(currentTrace, zipkinSpan);
+
+      // Clients and servers may report against the same span ID. Collect all fragments together.
+      List<Span2> sameSpan = new ArrayList<>(Span2Converter.fromSpan(currentSpan));
+      while (i + 1 < length) {
+        Span peekedSpan = sortedByTraceAndSpanId.get(i + 1);
+        if (currentSpan.traceId != peekedSpan.traceId || currentSpan.id != peekedSpan.id) break;
+        sameSpan.addAll(Span2Converter.fromSpan(peekedSpan));
+        i++;
+      }
+
+      for (Span2 span2 : sameSpan) {
+        appendSpan(currentTrace, span2);
+      }
     }
     finishTrace(currentTrace, translatedTraces);
     return translatedTraces;
   }
 
-  private void groupSpansByTraceId(List<Span> spans) {
-    Collections.sort(spans, new Comparator<Span>() {
+  private List<Span> sortByTraceAndSpanId(Collection<Span> input) {
+    List<Span> result = new ArrayList<>(input);
+    Collections.sort(result, new Comparator<Span>() {
       @Override
       public int compare(Span o1, Span o2) {
-        return Long.compare(o1.traceId, o2.traceId);
+        int result = Long.compare(o1.traceId, o2.traceId);
+        if (result != 0) return result;
+        return Long.compare(o1.id, o2.id);
       }
     });
+    return result;
   }
 
-  private void appendSpan(Trace.Builder builder, Span zipkinSpan) {
-    TraceSpan span = translator.translate(zipkinSpan);
+  private void appendSpan(Trace.Builder builder, Span2 zipkinSpan) {
+    TraceSpan span = translator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
     builder.addSpans(span);
   }
 
@@ -87,18 +107,5 @@ public class TraceTranslator {
     if (traceBuilder != null) {
       convertedTraces.add(traceBuilder.build());
     }
-  }
-
-  static String convertTraceId(Span zipkinSpan) {
-    // Stackdriver trace ID's are 128 bits = 16 bytes * 8
-    ByteBuffer idBuffer = ByteBuffer.allocate(16); // or 32 characters
-    // Note that when 64-bit trace IDs are used, the left-most 16 characters will be zero
-    idBuffer.putLong(zipkinSpan.traceIdHigh);
-    idBuffer.putLong(zipkinSpan.traceId);
-    StringBuilder idBuilder = new StringBuilder();
-    for (byte b : idBuffer.array()) {
-      idBuilder.append(String.format("%02x", b));
-    }
-    return idBuilder.toString();
   }
 }

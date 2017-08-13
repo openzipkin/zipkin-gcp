@@ -42,7 +42,7 @@
   </scm>
 
   <properties>
-    <zipkin.version>1.22.0</zipkin.version>
+    <zipkin.version>1.30.2</zipkin.version>
     <cloud.trace.sdk.version>0.3.2</cloud.trace.sdk.version>
     <grpc.version>1.0.2</grpc.version>
   </properties>
@@ -53,7 +53,7 @@
         <!-- Import dependency management from Spring Boot -->
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>1.4.2.RELEASE</version>
+        <version>1.5.6.RELEASE</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
