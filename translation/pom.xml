@@ -35,5 +35,49 @@
     </dependency>
 
   </dependencies>
-
+  <build>
+    <plugins>
+      <!-- Repackage internal zipkin classes until Span2 is a public type -->
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <minimizeJar>true</minimizeJar>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <relocations>
+                <relocation>
+                  <pattern>zipkin.internal</pattern>
+                  <shadedPattern>com.google.cloud.trace.zipkin.translation.internal.zipkin</shadedPattern>
+                </relocation>
+              </relocations>
+              <artifactSet>
+                <includes>
+                  <include>io.zipkin.java:zipkin</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <!-- Shade references to span2 until zipkin2 is out -->
+                  <artifact>io.zipkin.java:zipkin</artifact>
+                  <includes>
+                    <include>zipkin/internal/*Span2*.class</include>
+                    <include>zipkin/internal/Util.class</include>
+                  </includes>
+                  <excludes>
+                    <exclude>*</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>
