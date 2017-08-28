@@ -53,11 +53,11 @@ import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -130,7 +130,7 @@ public class ZipkinCollectorIntegrationTest
     }
     catch (StatusRuntimeException e)
     {
-      assertThat(e.getCause(), instanceOf(javax.net.ssl.SSLHandshakeException.class));
+      assertThat(e.getMessage(), endsWith("Channel closed while performing protocol negotiation"));
     }
 
     sslTraceService.patchTraces(PatchTracesRequest.getDefaultInstance());

@@ -15,21 +15,11 @@
     <start-class>com.google.cloud.trace.zipkin.StackdriverZipkinCollector</start-class>
   </properties>
 
-  <!--
-  Don't use embedded Tomcat as it conflicts with "netty-tcnative-boringssl-static"
-  See https://github.com/netty/netty-tcnative/issues/151
-  -->
   <dependencies>
     <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin-server</artifactId>
       <version>${zipkin.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-tomcat</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -43,7 +33,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <version>1.1.33.Fork23</version>
+      <version>${netty-boringssl.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

@@ -30,13 +30,13 @@
       <version>${zipkin.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.cloud.trace</groupId>
+      <groupId>com.google.cloud.trace.v1</groupId>
       <artifactId>sink</artifactId>
       <version>${cloud.trace.sdk.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.cloud.trace.v1</groupId>
-      <artifactId>grpc-consumer</artifactId>
+      <groupId>com.google.cloud.trace</groupId>
+      <artifactId>trace-grpc-api-service</artifactId>
       <version>${cloud.trace.sdk.version}</version>
     </dependency>
     <dependency>
