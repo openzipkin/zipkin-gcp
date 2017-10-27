@@ -19,9 +19,9 @@
       <version>${zipkin.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-devtools-cloudtrace-v1</artifactId>
-      <version>0.1.0</version>
+      <groupId>com.google.cloud.trace</groupId>
+      <artifactId>trace-grpc-api-service</artifactId>
+      <version>${cloud.trace.sdk.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
