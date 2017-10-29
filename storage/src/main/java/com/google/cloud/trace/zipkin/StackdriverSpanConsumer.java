@@ -18,12 +18,15 @@ package com.google.cloud.trace.zipkin;
 
 import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.translation.TraceTranslator;
-import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.Traces;
-import java.util.Collection;
+import java.io.IOException;
 import java.util.List;
-import zipkin.Span;
-import zipkin.storage.StorageAdapters.SpanConsumer;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.springframework.core.task.AsyncListenableTaskExecutor;
+import zipkin2.Call;
+import zipkin2.Callback;
+import zipkin2.Span;
+import zipkin2.storage.SpanConsumer;
 
 /**
  * Consumes Zipkin spans, translates them to Stackdriver spans using a provided TraceTranslator, and
@@ -33,15 +36,83 @@ public class StackdriverSpanConsumer implements SpanConsumer {
 
   private final TraceTranslator translator;
   private final TraceConsumer consumer;
+  private final AsyncListenableTaskExecutor executor;
 
-  public StackdriverSpanConsumer(TraceTranslator translator, TraceConsumer consumer) {
+  public StackdriverSpanConsumer(
+      TraceTranslator translator, TraceConsumer consumer, AsyncListenableTaskExecutor executor) {
     this.translator = translator;
     this.consumer = consumer;
+    this.executor = executor;
   }
 
   @Override
-  public void accept(List<Span> spans) {
-    Collection<Trace> traces = translator.translateSpans(spans);
-    consumer.receive(Traces.newBuilder().addAllTraces(traces).build());
+  public Call<Void> accept(List<Span> spans) {
+    final Traces traces =
+        Traces.newBuilder().addAllTraces(translator.translateSpans(spans)).build();
+    return new TracesCall(traces);
+  }
+
+  private class TracesCall extends Call<Void> {
+
+    private final Traces traces;
+    private final AtomicBoolean executed;
+
+    private volatile boolean canceled;
+
+    private TracesCall(Traces traces) {
+      this.traces = traces;
+      executed = new AtomicBoolean();
+    }
+
+    @Override
+    public Void execute() throws IOException {
+      markExecuted();
+      if (canceled) {
+        throw new IOException("Canceled");
+      }
+      consumer.receive(traces);
+      return null;
+    }
+
+    @Override
+    public void enqueue(Callback<Void> callback) {
+      markExecuted();
+      if (canceled) {
+        callback.onError(new IOException("Canceled"));
+        return;
+      }
+      try {
+        executor
+            .submitListenable(
+                () -> {
+                  consumer.receive(traces);
+                  return (Void) null;
+                })
+            .addCallback(callback::onSuccess, callback::onError);
+      } catch (Throwable t) {
+        callback.onError(t);
+      }
+    }
+
+    @Override
+    public void cancel() {
+      canceled = true;
+    }
+
+    @Override
+    public boolean isCanceled() {
+      return canceled;
+    }
+
+    @Override
+    public Call<Void> clone() {
+      return new TracesCall(traces);
+    }
+
+    private void markExecuted() {
+      if (!executed.compareAndSet(false, true)) {
+        throw new IllegalStateException("Already Executed");
+      }
+    }
   }
 }

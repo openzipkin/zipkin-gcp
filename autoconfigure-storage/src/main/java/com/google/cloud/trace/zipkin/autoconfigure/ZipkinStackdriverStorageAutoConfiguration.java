@@ -24,44 +24,38 @@ import com.google.cloud.trace.zipkin.StackdriverStorageComponent;
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 import io.netty.handler.ssl.OpenSsl;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.actuate.endpoint.PublicMetrics;
-import org.springframework.boot.actuate.metrics.Metric;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import zipkin.storage.StorageComponent;
+import zipkin.internal.V2StorageComponent;
+import zipkin2.storage.StorageComponent;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.Executor;
-
-/**
- * Auto-configuration to set the Stackdriver StorageComponent as the Zipkin storage backend.
- */
+/** Auto-configuration to set the Stackdriver StorageComponent as the Zipkin storage backend. */
 @Configuration
 @EnableConfigurationProperties(ZipkinStackdriverStorageProperties.class)
 @ConditionalOnProperty(name = "zipkin.storage.type", havingValue = "stackdriver")
 @ConditionalOnMissingBean(StorageComponent.class)
 public class ZipkinStackdriverStorageAutoConfiguration {
-  private static final Logger log = LoggerFactory.getLogger(ZipkinStackdriverStorageAutoConfiguration.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(ZipkinStackdriverStorageAutoConfiguration.class);
 
-  @Autowired
-  ZipkinStackdriverStorageProperties storageProperties;
+  @Autowired ZipkinStackdriverStorageProperties storageProperties;
 
   @Bean(name = "stackdriverExecutor")
-  @ConditionalOnMissingBean(ThreadPoolTaskExecutor.class) ThreadPoolTaskExecutor executor() {
+  @ConditionalOnMissingBean(ThreadPoolTaskExecutor.class)
+  ThreadPoolTaskExecutor executor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setThreadNamePrefix("ZipkinStackdriverStorage-");
     executor.setCorePoolSize(storageProperties.getExecutor().getCorePoolSize());
@@ -69,7 +63,9 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     executor.setQueueCapacity(storageProperties.getExecutor().getQueueCapacity());
     executor.initialize();
 
-    log.info("Configured Executor for ZipkinStackDriver Storage with: {}", storageProperties.getExecutor());
+    log.info(
+        "Configured Executor for ZipkinStackDriver Storage with: {}",
+        storageProperties.getExecutor());
     return executor;
   }
 
@@ -82,13 +78,12 @@ public class ZipkinStackdriverStorageAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(Credentials.class)
-  Credentials googleCredentials() throws IOException
-  {
+  Credentials googleCredentials() throws IOException {
     return GoogleCredentials.getApplicationDefault()
         .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
   }
 
-  @Bean(name="projectId")
+  @Bean(name = "projectId")
   String projectId() {
     String configuredProject = storageProperties.getProjectId();
     if (configuredProject != null && !configuredProject.isEmpty()) {
@@ -106,15 +101,22 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
     connection.setRequestProperty("Metadata-Flavor", "Google");
     connection.setRequestMethod("GET");
-    try (InputStream responseStream = connection.getInputStream())
-    {
+    try (InputStream responseStream = connection.getInputStream()) {
       String projectId = new String(ByteStreams.toByteArray(responseStream));
       return projectId;
     }
   }
 
-  @Bean StorageComponent storage(@Qualifier("stackdriverExecutor") ThreadPoolTaskExecutor executor, TraceConsumer consumer, @Qualifier("projectId")
-      String projectId) {
+  @Bean
+  StorageComponent storage(
+      @Qualifier("stackdriverExecutor") ThreadPoolTaskExecutor executor,
+      TraceConsumer consumer,
+      @Qualifier("projectId") String projectId) {
     return new StackdriverStorageComponent(projectId, consumer, executor);
+  }
+
+  @Bean
+  zipkin.storage.StorageComponent storageV1(StorageComponent storage) {
+    return V2StorageComponent.create(storage);
   }
 }

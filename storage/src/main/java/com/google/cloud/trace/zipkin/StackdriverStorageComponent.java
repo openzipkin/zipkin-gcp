@@ -16,45 +16,44 @@
 
 package com.google.cloud.trace.zipkin;
 
-import static zipkin.storage.StorageAdapters.blockingToAsync;
-
 import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.translation.TraceTranslator;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.springframework.boot.actuate.endpoint.PublicMetrics;
 import org.springframework.boot.actuate.metrics.Metric;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import zipkin.storage.AsyncSpanConsumer;
-import zipkin.storage.AsyncSpanStore;
-import zipkin.storage.SpanStore;
-import zipkin.storage.StorageComponent;
+import zipkin2.CheckResult;
+import zipkin2.storage.SpanConsumer;
+import zipkin2.storage.SpanStore;
+import zipkin2.storage.StorageComponent;
 
 /**
- * StackdriverStorageComponent is a StorageComponent that consumes spans using the StackdriverSpanConsumer.
+ * StackdriverStorageComponent is a StorageComponent that consumes spans using the
+ * StackdriverSpanConsumer.
  *
- * No SpanStore methods are implemented because read operations are not supported.
+ * <p>No SpanStore methods are implemented because read operations are not supported.
  */
-public class StackdriverStorageComponent implements StorageComponent, PublicMetrics
-{
+public class StackdriverStorageComponent extends StorageComponent implements PublicMetrics {
 
   private final TraceTranslator traceTranslator;
-  private final AsyncSpanConsumer spanConsumer;
+  private final SpanConsumer spanConsumer;
   private final ThreadPoolTaskExecutor executor;
   private final LongAdder tracesSent;
 
-  public StackdriverStorageComponent(String projectId, TraceConsumer consumer, ThreadPoolTaskExecutor executor) {
+  public StackdriverStorageComponent(
+      String projectId, TraceConsumer consumer, ThreadPoolTaskExecutor executor) {
     this.traceTranslator = new TraceTranslator(projectId);
     this.tracesSent = new LongAdder();
-    final TraceConsumer instrumentedConsumer = traces ->
-    {
-      consumer.receive(traces);
-      this.tracesSent.add(traces != null ? traces.getTracesCount() : 0);
-    };
-    this.spanConsumer = blockingToAsync(new StackdriverSpanConsumer(traceTranslator, instrumentedConsumer), executor);
+    final TraceConsumer instrumentedConsumer =
+        traces -> {
+          consumer.receive(traces);
+          this.tracesSent.add(traces != null ? traces.getTracesCount() : 0);
+        };
+    this.spanConsumer =
+        new StackdriverSpanConsumer(traceTranslator, instrumentedConsumer, executor);
     this.executor = executor;
   }
 
@@ -64,12 +63,7 @@ public class StackdriverStorageComponent implements StorageComponent, PublicMetr
   }
 
   @Override
-  public AsyncSpanStore asyncSpanStore() {
-    throw new UnsupportedOperationException("Read operations are not supported");
-  }
-
-  @Override
-  public AsyncSpanConsumer asyncSpanConsumer() {
+  public SpanConsumer spanConsumer() {
     return spanConsumer;
   }
 
@@ -79,27 +73,30 @@ public class StackdriverStorageComponent implements StorageComponent, PublicMetr
   }
 
   @Override
-  public void close() throws IOException {
-
-  }
+  public void close() throws IOException {}
 
   @Override
-  public Collection<Metric<?>> metrics()
-  {
+  public Collection<Metric<?>> metrics() {
     final ArrayList<Metric<?>> result = new ArrayList<>();
 
-    result.add(new Metric<>("gauge.zipkin_storage.stackdriver.active_threads", executor.getActiveCount()));
+    result.add(
+        new Metric<>("gauge.zipkin_storage.stackdriver.active_threads", executor.getActiveCount()));
     result.add(new Metric<>("gauge.zipkin_storage.stackdriver.pool_size", executor.getPoolSize()));
-    result.add(new Metric<>("gauge.zipkin_storage.stackdriver.core_pool_size", executor.getCorePoolSize()));
-    result.add(new Metric<>("gauge.zipkin_storage.stackdriver.max_pool_size", executor.getMaxPoolSize()));
-    result.add(new Metric<>("gauge.zipkin_storage.stackdriver.queue_size", executor.getThreadPoolExecutor().getQueue().size()));
+    result.add(
+        new Metric<>(
+            "gauge.zipkin_storage.stackdriver.core_pool_size", executor.getCorePoolSize()));
+    result.add(
+        new Metric<>("gauge.zipkin_storage.stackdriver.max_pool_size", executor.getMaxPoolSize()));
+    result.add(
+        new Metric<>(
+            "gauge.zipkin_storage.stackdriver.queue_size",
+            executor.getThreadPoolExecutor().getQueue().size()));
     result.add(new Metric<>("counter.zipkin_storage.stackdriver.sent", tracesSent));
 
     return result;
   }
 
-  public void resetMetrics()
-  {
+  public void resetMetrics() {
     tracesSent.reset();
   }
 }

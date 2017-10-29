@@ -16,20 +16,19 @@
 
 package com.google.cloud.trace.zipkin.translation;
 
+import com.google.common.primitives.UnsignedLongs;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.devtools.cloudtrace.v1.TraceSpan.SpanKind;
 import com.google.protobuf.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
-import zipkin.Span;
-import zipkin.internal.Span2;
-import zipkin.internal.Span2Converter;
+import zipkin2.Span;
 
 /**
  * SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span.
  *
- * It will rewrite span IDs so that multi-host Zipkin spans are converted to single-host
+ * <p>It will rewrite span IDs so that multi-host Zipkin spans are converted to single-host
  * Stackdriver spans. Zipkin Spans with both server-side and client-side information will be split
  * into two Stackdriver Trace Spans where the client-side span is a parent of the server-side span.
  * Other parent-child relationships will be preserved.
@@ -38,9 +37,7 @@ class SpanTranslator {
 
   private final LabelExtractor labelExtractor;
 
-  /**
-   * Create a SpanTranslator.
-   */
+  /** Create a SpanTranslator. */
   public SpanTranslator() {
     Map<String, String> renamedLabels = new HashMap<>();
     renamedLabels.put("http.host", "/http/host");
@@ -54,18 +51,17 @@ class SpanTranslator {
 
   /**
    * Converts a Zipkin Span into a Stackdriver Trace Span.
+   *
    * @param zipkinSpan The Zipkin Span.
    * @return A Stackdriver Trace Span.
    */
   public TraceSpan translate(Span zipkinSpan) {
     TraceSpan.Builder builder = TraceSpan.newBuilder();
-    for (Span2 span : Span2Converter.fromSpan(zipkinSpan)) {
-      translate(builder, span);
-    }
+    translate(builder, zipkinSpan);
     return builder.build();
   }
 
-  TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span2 zipkinSpan) {
+  TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span zipkinSpan) {
     spanBuilder.setName(zipkinSpan.name());
     SpanKind kind = getSpanKind(zipkinSpan.kind());
     spanBuilder.setKind(kind);
@@ -84,31 +80,41 @@ class SpanTranslator {
   /**
    * Rewrite Span IDs to split multi-host Zipkin spans into multiple single-host Stackdriver spans.
    */
-  private void rewriteIds(Span2 zipkinSpan, TraceSpan.Builder builder, SpanKind kind) {
-    // Change the spanId of RPC_CLIENT spans.
+  private void rewriteIds(Span zipkinSpan, TraceSpan.Builder builder, SpanKind kind) {
+    long id = parseUnsignedLong(zipkinSpan.id());
+    long parentId = parseUnsignedLong(zipkinSpan.parentId());
     if (kind == SpanKind.RPC_CLIENT) {
-      builder.setSpanId(rewriteId(zipkinSpan.id()));
+      builder.setSpanId(rewriteId(id));
     } else {
-      builder.setSpanId(zipkinSpan.id());
+      builder.setSpanId(id);
     }
 
-    // Change the parentSpanId of RPC_SERVER spans to use the rewritten spanId of the RPC_CLIENT spans.
+    // Change the parentSpanId of RPC_SERVER spans to use the rewritten spanId of the RPC_CLIENT
+    // spans.
     if (kind == SpanKind.RPC_SERVER) {
       if (Boolean.TRUE.equals(zipkinSpan.shared())) {
         // This is a multi-host span.
-        // This means the parent client-side span has the same id as this span. When that fragment of
+        // This means the parent client-side span has the same id as this span. When that fragment
+        // of
         // the span was converted, it would have had id rewriteId(zipkinSpan.id)
-        builder.setParentSpanId(rewriteId(zipkinSpan.id()));
+        builder.setParentSpanId(rewriteId(id));
       } else {
         // This span isn't shared: the server "owns" this span and it is a single-host span.
-        // This means the parent RPC_CLIENT span was a separate span with id=zipkinSpan.parentId. When
+        // This means the parent RPC_CLIENT span was a separate span with id=zipkinSpan.parentId.
+        // When
         // that span fragment was converted, it would have had id=rewriteId(zipkinSpan.parentId)
-        builder.setParentSpanId(rewriteId(zipkinSpan.parentId()));
+        builder.setParentSpanId(rewriteId(parentId));
       }
     } else {
-      long parentId = zipkinSpan.parentId() == null ? 0 : zipkinSpan.parentId();
       builder.setParentSpanId(parentId);
     }
+  }
+
+  private long parseUnsignedLong(String id) {
+    if (id == null) {
+      return 0;
+    }
+    return UnsignedLongs.parseUnsignedLong(id, 16);
   }
 
   private long rewriteId(Long id) {
@@ -120,12 +126,12 @@ class SpanTranslator {
     return id ^ pad;
   }
 
-  private SpanKind getSpanKind(@Nullable Span2.Kind zipkinKind) {
+  private SpanKind getSpanKind(@Nullable Span.Kind zipkinKind) {
     if (zipkinKind == null) return SpanKind.SPAN_KIND_UNSPECIFIED;
-    if (zipkinKind == Span2.Kind.CLIENT) {
+    if (zipkinKind == Span.Kind.CLIENT) {
       return SpanKind.RPC_CLIENT;
     }
-    if (zipkinKind == Span2.Kind.SERVER) {
+    if (zipkinKind == Span.Kind.SERVER) {
       return SpanKind.RPC_SERVER;
     }
     return SpanKind.UNRECOGNIZED;
@@ -133,7 +139,7 @@ class SpanTranslator {
 
   private Timestamp createTimestamp(long microseconds) {
     long seconds = (microseconds / 1000000);
-    int remainderMicros = (int)(microseconds % 1000000);
+    int remainderMicros = (int) (microseconds % 1000000);
     int remainderNanos = remainderMicros * 1000;
 
     return Timestamp.newBuilder().setSeconds(seconds).setNanos(remainderNanos).build();

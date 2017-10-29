@@ -1,5 +1,7 @@
 package com.google.cloud.trace.zipkin;
 
+import static java.util.Collections.unmodifiableSet;
+
 import com.google.common.collect.Sets;
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.Trace;
@@ -11,43 +13,31 @@ import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
 import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.net.ssl.SSLException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.unmodifiableSet;
-
-/**
- * Starts up a local Stackdriver Trace server, listening for GRPC requests on {@link #grpcURI}.
- *
- */
-public class StackdriverMockServer extends TraceServiceGrpc.TraceServiceImplBase
-{
+/** Starts up a local Stackdriver Trace server, listening for GRPC requests on {@link #grpcURI}. */
+public class StackdriverMockServer extends TraceServiceGrpc.TraceServiceImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(StackdriverMockServer.class);
 
-  static final SslContext CLIENT_SSL_CONTEXT ;
-  static final SslContext SERVER_SSL_CONTEXT ;
+  static final SslContext CLIENT_SSL_CONTEXT;
+  static final SslContext SERVER_SSL_CONTEXT;
 
-  static
-  {
-    try
-    {
+  static {
+    try {
       final SelfSignedCertificate cert = new SelfSignedCertificate("localhost");
       CLIENT_SSL_CONTEXT = GrpcSslContexts.forClient().trustManager(cert.cert()).build();
       SERVER_SSL_CONTEXT = GrpcSslContexts.forServer(cert.certificate(), cert.privateKey()).build();
-    }
-    catch (CertificateException|SSLException e)
-    {
+    } catch (CertificateException | SSLException e) {
       throw new Error(e);
     }
   }
@@ -59,44 +49,37 @@ public class StackdriverMockServer extends TraceServiceGrpc.TraceServiceImplBase
   private final Set<Long> spanIds = Sets.newConcurrentHashSet();
   private CountDownLatch spanCountdown;
 
-  public StackdriverMockServer(int port)
-  {
+  public StackdriverMockServer(int port) {
     this.port = port;
-    this.server = NettyServerBuilder.forPort(port).sslContext(SERVER_SSL_CONTEXT).addService(this).build();
+    this.server =
+        NettyServerBuilder.forPort(port).sslContext(SERVER_SSL_CONTEXT).addService(this).build();
   }
 
   @PostConstruct
-  public void start() throws IOException
-  {
+  public void start() throws IOException {
     this.server.start();
 
     LOG.info("Started MOCK grpc server on 'localhost:{}'", port);
   }
 
   @PreDestroy
-  public void stop() throws IOException
-  {
+  public void stop() throws IOException {
     this.server.shutdownNow();
   }
 
-  public void reset()
-  {
+  public void reset() {
     this.spanCountdown = null;
     this.traceIds.clear();
     this.spanIds.clear();
   }
 
   @Override
-  public void patchTraces(PatchTracesRequest request, StreamObserver<Empty> responseObserver)
-  {
+  public void patchTraces(PatchTracesRequest request, StreamObserver<Empty> responseObserver) {
     final List<Trace> tracesList = request.getTraces().getTracesList();
-    for (Trace trace : tracesList)
-    {
-      for (TraceSpan span : trace.getSpansList())
-      {
+    for (Trace trace : tracesList) {
+      for (TraceSpan span : trace.getSpansList()) {
         this.spanIds.add(span.getSpanId());
-        if (this.spanCountdown != null)
-        {
+        if (this.spanCountdown != null) {
           this.spanCountdown.countDown();
         }
       }
@@ -105,23 +88,19 @@ public class StackdriverMockServer extends TraceServiceGrpc.TraceServiceImplBase
     responseObserver.onCompleted();
   }
 
-  public void setSpanCountdown(CountDownLatch spanCountdown)
-  {
+  public void setSpanCountdown(CountDownLatch spanCountdown) {
     this.spanCountdown = spanCountdown;
   }
 
-  public String grpcURI()
-  {
+  public String grpcURI() {
     return String.format("%s:%s", "localhost", this.port);
   }
 
-  public Set<Long> spanIds()
-  {
+  public Set<Long> spanIds() {
     return unmodifiableSet(spanIds);
   }
 
-  public Set<String> traceIds()
-  {
+  public Set<String> traceIds() {
     return unmodifiableSet(traceIds);
   }
 }
