@@ -20,19 +20,20 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import org.junit.Test;
-import zipkin.Span;
+import zipkin2.Span;
 
 public class SpanTranslatorTest {
   @Test
   public void testTranslateSpan() {
-    Span zipkinSpan = Span.builder()
-        .id(2)
-        .name("/foo")
-        .traceId(3)
-        .parentId(5L)
-        .timestamp(3000001L) // 3.000001 seconds after the unix epoch.
-        .duration(8000001L) // 8.000001 seconds;
-        .build();
+    Span zipkinSpan =
+        Span.newBuilder()
+            .id("2")
+            .name("/foo")
+            .traceId("3")
+            .parentId("5")
+            .timestamp(3000001L) // 3.000001 seconds after the unix epoch.
+            .duration(8000001L) // 8.000001 seconds;
+            .build();
     SpanTranslator translator = new SpanTranslator();
 
     TraceSpan traceSpan = translator.translate(zipkinSpan);
@@ -46,6 +47,5 @@ public class SpanTranslatorTest {
 
     assertEquals(3 + 8, traceSpan.getEndTime().getSeconds());
     assertEquals(2000, traceSpan.getEndTime().getNanos());
-
   }
 }

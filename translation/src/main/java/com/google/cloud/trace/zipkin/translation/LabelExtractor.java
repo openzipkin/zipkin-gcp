@@ -17,24 +17,24 @@
 package com.google.cloud.trace.zipkin.translation;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.Gson;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import zipkin.Annotation;
-import zipkin.Span;
-import zipkin.internal.Span2;
-import zipkin.internal.Span2Converter;
+import zipkin2.Annotation;
+import zipkin2.Span;
 
 /**
- * LabelExtractor extracts the set of Stackdriver Span labels equivalent to the annotations in a given Zipkin Span.
+ * LabelExtractor extracts the set of Stackdriver Span labels equivalent to the annotations in a
+ * given Zipkin Span.
  *
- * Zipkin annotations are converted to Stackdriver Span labels by using annotation.value as the key and annotation.timestamp as the value.
+ * <p>Zipkin annotations are converted to Stackdriver Span labels by using annotation.value as the
+ * key and annotation.timestamp as the value.
  *
- * Zipkin binary annotations are converted to Stackdriver Span labels by using annotation.key as the key and the String value of annotation.value as the value.
+ * <p>Zipkin tags are converted to Stackdriver Span labels by using annotation.key as the key and
+ * the String value of annotation.value as the value.
  *
- * Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver name.
+ * <p>Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver name.
  * Any Zipkin annotations without a Stackdriver label equivalent are renamed to zipkin.io/[key_name]
  */
 public class LabelExtractor {
@@ -48,7 +48,7 @@ public class LabelExtractor {
     String ipv4 = "";
     String ipv6 = "";
   }
-  
+
   public LabelExtractor(Map<String, String> renamedLabels) {
     this(ImmutableMap.copyOf(renamedLabels), "zipkin.io/");
   }
@@ -60,18 +60,11 @@ public class LabelExtractor {
 
   /**
    * Extracts the Stackdriver span labels that are equivalent to the Zipkin Span annotations.
+   *
    * @param zipkinSpan The Zipkin Span
    * @return A map of the Stackdriver span labels equivalent to the Zipkin annotations.
    */
-  public Map<String, String> extract(Span zipkinSpan) {
-    Map<String, String> result = new LinkedHashMap<>();
-    for (Span2 span2 : Span2Converter.fromSpan(zipkinSpan)) {
-      result.putAll(extract(span2));
-    }
-    return result;
-  }
-
-  Map<String, String> extract(Span2 zipkinSpan) { // not exposed until Span2 is a formal type
+  Map<String, String> extract(Span zipkinSpan) {
     Map<String, String> result = new LinkedHashMap<>();
     for (Map.Entry<String, String> tag : zipkinSpan.tags().entrySet()) {
       result.put(getLabelName(tag.getKey()), tag.getValue());
@@ -80,19 +73,21 @@ public class LabelExtractor {
     // Only use server receive spans to extract endpoint data as spans
     // will be rewritten into multiple single-host Stackdriver spans. A client send
     // trace might not show the final destination.
-    if (zipkinSpan.localEndpoint() != null && zipkinSpan.kind().equals(Span2.Kind.SERVER)) {
-      EndpointAddress endpointAddress = new Gson().fromJson(zipkinSpan.localEndpoint().toString(),
-                                                            EndpointAddress.class);
-      result.put(getLabelName("endpoint.ipv4"), endpointAddress.ipv4);
-      result.put(getLabelName("endpoint.ipv6"), endpointAddress.ipv6);
+    if (zipkinSpan.localEndpoint() != null && zipkinSpan.kind() == Span.Kind.SERVER) {
+      if (zipkinSpan.localEndpoint().ipv4() != null) {
+        result.put(getLabelName("endpoint.ipv4"), zipkinSpan.localEndpoint().ipv4());
+      }
+      if (zipkinSpan.localEndpoint().ipv6() != null) {
+        result.put(getLabelName("endpoint.ipv6"), zipkinSpan.localEndpoint().ipv6());
+      }
     }
 
     for (Annotation annotation : zipkinSpan.annotations()) {
-      result.put(getLabelName(annotation.value), formatTimestamp(annotation.timestamp));
+      result.put(getLabelName(annotation.value()), formatTimestamp(annotation.timestamp()));
     }
 
-    if (zipkinSpan.localEndpoint() != null && !zipkinSpan.localEndpoint().serviceName.isEmpty()) {
-      result.put(kComponentLabelKey, zipkinSpan.localEndpoint().serviceName);
+    if (zipkinSpan.localEndpoint() != null && !zipkinSpan.localEndpoint().serviceName().isEmpty()) {
+      result.put(kComponentLabelKey, zipkinSpan.localEndpoint().serviceName());
     }
 
     if (zipkinSpan.parentId() == null) {
@@ -102,7 +97,7 @@ public class LabelExtractor {
 
     return result;
   }
-  
+
   private String getLabelName(String zipkinName) {
     if (renamedLabels.containsKey(zipkinName)) {
       return renamedLabels.get(zipkinName);
