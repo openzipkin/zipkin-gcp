@@ -1,63 +1,64 @@
-# Stackdriver Trace Zipkin Collector
+[![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
+[![Build Status](https://circleci.com/gh/openzipkin/zipkin-gcp.svg?style=svg)](https://circleci.com/gh/openzipkin/zipkin-gcp)
+[![Download](https://api.bintray.com/packages/openzipkin/maven/zipkin-gcp/images/download.svg)](https://bintray.com/openzipkin/maven/zipkin-gcp/_latestVersion)
 
-[![Build Status](https://travis-ci.org/GoogleCloudPlatform/stackdriver-zipkin.svg?branch=master)](https://travis-ci.org/GoogleCloudPlatform/stackdriver-zipkin) 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.google.cloud.trace.adapters.zipkin/collector/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.google.cloud.trace.adapters.zipkin/collector)
+# zipkin-gcp
+Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 6 or later.
 
-This project provides adapters so that Zipkin tracing libraries can be used with
-Google's free [Stackdriver Trace](https://cloud.google.com/trace/) distributed tracing service. A how-to guide and documentation are available [here](https://cloud.google.com/trace/docs/zipkin). If you are not already using Zipkin, you may be interested in the [offical Stackdriver Trace SDKs](https://cloud.google.com/trace/api/) instead.
+# Usage
+These components integrate traced applications and servers through Google Cloud services
+via interfaces defined in [Zipkin](https://github.com/openzipkin/zipkin)
+and [zipkin-reporter-java](https://github.com/openzipkin/zipkin-reporter-java).
 
-Note: Due to differences between the Zipkin data model and the Stackdriver Trace data model,
-only Zipkin traces that are recorded from Zipkin libraries that
-[properly record timestamps](https://github.com/openzipkin/openzipkin.github.io/issues/49)
-will be converted correctly. Converting Zipkin traces from other libraries may result in
-disconnected spans within a trace.
+## Senders
+The component in an traced application that sends timing data (spans)
+out of process is called a Sender. Senders are called on interval by an
+[async reporter](https://github.com/openzipkin/zipkin-reporter-java#asyncreporter).
 
-## Collector
-A drop-in replacement for the standard Zipkin HTTP collector that writes to the
-Stackdriver Trace service.
+NOTE: Applications can be written in any language, while we currently
+only have senders in Java, senders in other languages are welcome.
 
-### Configuration
+Sender | Description
+--- | ---
 
-|Environment Variable           | Value            |
-|-------------------------------|------------------|
-|GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials). |
-|PROJECT_ID                     | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource. |
-|COLLECTOR_SAMPLE_RATE          | Optional. Value must be between 0 and 1. Percentage of traces to retain, defaulting to 1 (sample everything). However, if there is a problem sending Traces to the Stackdriver Trace service, Traces may be dropped.
+## Collectors
+The component in a zipkin server that receives trace data is called a
+collector. This decodes spans reported by applications and persists them
+to a configured storage component.
 
-### Example Usage
-The collector may be downloaded from [Maven Central](https://search.maven.org/remote_content?g=com.google.cloud.trace.adapters.zipkin&a=collector&v=LATEST)
-or run using the Docker image:
-`gcr.io/stackdriver-trace-docker/zipkin-collector`.
-
-#### Running on GCE
-By default, the Zipkin collector uses the [Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials)
-and writes traces to the projectId associated with the GCE resource. If this is desired, no
-additional configuration is required.
-```
-java -jar collector.jar
-```
-or just
-```
-./collector.jar
-```
-
-If docker is used from a GCE host, authentication will happen automatically and Zipkin collector can be started with:
-```
-docker run -p 9411:9411 gcr.io/stackdriver-trace-docker/zipkin-collector
-```
-
-
-#### Using an explicit projectId and credentials file path
-```
-GOOGLE_APPLICATION_CREDENTIALS="/path/to/credentials.json" PROJECT_ID="my_project_id" java -jar collector.jar
-```
-```
-docker run -v /path/to_credentials:/opt/gcloud -e GOOGLE_APPLICATION_CREDENTIALS="/opt/gcloud/credentials.json" -e PROJECT_ID="my_project_id" -p 9411:9411 gcr.io/stackdriver-trace-docker/zipkin-collector
-```
+Collector | Description
+--- | ---
 
 ## Storage
-A write-only Zipkin storage component that writes to the Stackdriver Trace service. This can be used
-with zipkin-server.
+The component in a zipkin server that persists and queries collected
+data is called `StorageComponent`. This primarily supports the Zipkin
+Api and all collector components.
 
-## Translation
-Contains code for translating from the Zipkin data model to the Stackdriver Trace data model.
+Storage | Description
+--- | ---
+[Stackdriver Trace](./storage/stackdriver) | Free cloud service provider
+
+## Server integration
+In order to integrate with zipkin-server, you need to use properties
+launcher to load your collector (or sender) alongside the zipkin-server
+process.
+
+To integrate a module with a Zipkin server, you need to:
+* add a module jar to the `loader.path`
+* enable the profile associated with that module
+* launch Zipkin with `PropertiesLauncher`
+
+Each module will also have different minimum variables that need to be set.
+
+Ex.
+```
+$ java -Dloader.path=stackdriver.jar -Dspring.profiles.active=stackdriver -cp zipkin.jar org.springframework.boot.loader.PropertiesLauncher
+```
+
+## Example integrating Stackdriver Storage
+
+If you cannot use our [Docker image](https://github.com/openzipkin/docker-zipkin-gcp), you can still integrate
+yourself by downloading a couple jars.
+
+[Here's an example](autoconfigure/storage-stackdriver#quick-start) of
+integrating Stackdriver storage.

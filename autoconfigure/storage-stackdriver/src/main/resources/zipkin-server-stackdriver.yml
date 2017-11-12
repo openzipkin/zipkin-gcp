@@ -1,0 +1,5 @@
+# When enabled, this allows shorter env properties (ex -Dspring.profiles.active=stackdriver)
+zipkin:
+  storage:
+    stackdriver:
+      project-id: ${PROJECT_ID:}
