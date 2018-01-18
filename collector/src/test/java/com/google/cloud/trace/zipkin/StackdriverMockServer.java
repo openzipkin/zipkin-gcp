@@ -9,38 +9,20 @@ import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.protobuf.Empty;
 import io.grpc.Server;
-import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.IOException;
-import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.net.ssl.SSLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Starts up a local Stackdriver Trace server, listening for GRPC requests on {@link #grpcURI}. */
 public class StackdriverMockServer extends TraceServiceGrpc.TraceServiceImplBase {
   private static final Logger LOG = LoggerFactory.getLogger(StackdriverMockServer.class);
-
-  static final SslContext CLIENT_SSL_CONTEXT;
-  static final SslContext SERVER_SSL_CONTEXT;
-
-  static {
-    try {
-      final SelfSignedCertificate cert = new SelfSignedCertificate("localhost");
-      CLIENT_SSL_CONTEXT = GrpcSslContexts.forClient().trustManager(cert.cert()).build();
-      SERVER_SSL_CONTEXT = GrpcSslContexts.forServer(cert.certificate(), cert.privateKey()).build();
-    } catch (CertificateException | SSLException e) {
-      throw new Error(e);
-    }
-  }
 
   private final int port;
   private final Server server;
@@ -51,8 +33,7 @@ public class StackdriverMockServer extends TraceServiceGrpc.TraceServiceImplBase
 
   public StackdriverMockServer(int port) {
     this.port = port;
-    this.server =
-        NettyServerBuilder.forPort(port).sslContext(SERVER_SSL_CONTEXT).addService(this).build();
+    this.server = NettyServerBuilder.forPort(port).addService(this).build();
   }
 
   @PostConstruct
