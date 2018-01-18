@@ -41,6 +41,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-trace-v1</artifactId>
+      <version>${grpc-google-cloud-trace-v1.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.zipkin.java</groupId>
       <artifactId>zipkin</artifactId>
       <scope>test</scope>
