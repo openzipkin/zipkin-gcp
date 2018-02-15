@@ -18,6 +18,7 @@ package com.google.cloud.trace.zipkin;
 
 import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.translation.TraceTranslator;
+import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.Traces;
 import java.io.IOException;
 import java.util.List;
@@ -47,9 +48,12 @@ public class StackdriverSpanConsumer implements SpanConsumer {
 
   @Override
   public Call<Void> accept(List<Span> spans) {
-    final Traces traces =
-        Traces.newBuilder().addAllTraces(translator.translateSpans(spans)).build();
-    return new TracesCall(traces);
+    Traces.Builder traceBuilder = Traces.newBuilder();
+    for (Trace trace : translator.translateSpans(spans))
+    {
+      traceBuilder = traceBuilder.addTraces(trace);
+    }
+    return new TracesCall(traceBuilder.build());
   }
 
   private class TracesCall extends Call<Void> {

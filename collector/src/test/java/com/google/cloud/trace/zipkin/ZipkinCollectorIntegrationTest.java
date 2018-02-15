@@ -1,8 +1,15 @@
 package com.google.cloud.trace.zipkin;
 
+import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
+import com.google.api.gax.grpc.GrpcTransportChannel;
+import com.google.api.gax.rpc.FixedTransportChannelProvider;
+import com.google.api.gax.rpc.TransportChannelProvider;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.trace.grpc.v1.GrpcTraceConsumer;
+import com.google.cloud.trace.v1.TraceServiceClient;
+import com.google.cloud.trace.v1.TraceServiceSettings;
 import com.google.cloud.trace.v1.consumer.TraceConsumer;
 import com.google.cloud.trace.zipkin.autoconfigure.ZipkinStackdriverStorageProperties;
 import com.google.common.collect.Lists;
@@ -10,7 +17,6 @@ import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.StatusRuntimeException;
-import io.grpc.auth.MoreCallCredentials;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
@@ -49,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.cloud.trace.zipkin.StackdriverMockServer.CLIENT_SSL_CONTEXT;
 import static com.google.cloud.trace.zipkin.StackdriverZipkinCollector.ZIPKIN_CONFIG_NAMES;
+import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceBlockingStub;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
@@ -59,14 +66,12 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.core.CombinableMatcher.both;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static zipkin.TestObjects.LOTS_OF_SPANS;
-import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceBlockingStub;
-
-import static org.hamcrest.core.CombinableMatcher.both;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -215,15 +220,24 @@ public class ZipkinCollectorIntegrationTest {
     @Primary
     TraceConsumer traceConsumer(
         Credentials credentials, ZipkinStackdriverStorageProperties storageProperties)
-        throws IOException, NoSuchFieldException, IllegalAccessException {
+        throws IOException {
       final ManagedChannel managedChannel =
           NettyChannelBuilder.forTarget(storageProperties.getApiHost())
               .sslContext(CLIENT_SSL_CONTEXT)
               .build();
-      TraceServiceGrpc.TraceServiceBlockingStub traceService =
-          TraceServiceGrpc.newBlockingStub(managedChannel)
-              .withCallCredentials(MoreCallCredentials.from(credentials));
-      final GrpcTraceConsumer traceConsumer = new GrpcTraceConsumer(traceService);
+
+      TransportChannelProvider channelProvider =
+          FixedTransportChannelProvider.create(GrpcTransportChannel.create(managedChannel));
+
+      //TODO(denyska): figure out how to request credentials in StackdriverMockServer
+      //once done replace credentialsProvider below with FixedCredentialsProvider.create(credentials)
+      CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
+
+      final TraceServiceSettings traceSettings = TraceServiceSettings.newBuilder().setTransportChannelProvider(channelProvider)
+          .setCredentialsProvider(credentialsProvider)
+          .build();
+
+      final GrpcTraceConsumer traceConsumer = new GrpcTraceConsumer(TraceServiceClient.create(traceSettings));
 
       return traceConsumer;
     }
