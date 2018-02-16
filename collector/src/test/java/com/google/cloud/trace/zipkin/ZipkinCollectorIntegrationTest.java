@@ -35,6 +35,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.TestPropertySourceUtils;
@@ -158,8 +161,13 @@ public class ZipkinCollectorIntegrationTest {
     final CountDownLatch spanCountdown = new CountDownLatch(spanIds.size());
     mockServer.setSpanCountdown(spanCountdown);
 
+    // set content-type as if unset, spring's rest template sets it to application/octet-stream
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
     for (List<Span> partition : Lists.partition(TEST_SPANS, 3)) {
-      this.restTemplate.postForLocation("/api/v1/spans", Codec.JSON.writeSpans(partition));
+      HttpEntity<byte[]> entity = new HttpEntity<>(Codec.JSON.writeSpans(partition), headers);
+      this.restTemplate.postForLocation("/api/v1/spans", entity);
     }
     spanCountdown.await(1, TimeUnit.SECONDS);
 
