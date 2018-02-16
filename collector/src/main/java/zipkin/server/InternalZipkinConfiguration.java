@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2018 Google Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.google.cloud.trace.zipkin;
+package zipkin.server;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import zipkin.server.InternalZipkinConfiguration;
 
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Import(InternalZipkinConfiguration.class)
-public @interface EnableStackdriverCollector {}
+/** Types in zipkin-server except EnableZipkinServer are internal. This allows us to cherry-pick. */
+@Configuration
+@Import({ZipkinServerConfiguration.class, ZipkinHttpCollector.class})
+public class InternalZipkinConfiguration {
+}
