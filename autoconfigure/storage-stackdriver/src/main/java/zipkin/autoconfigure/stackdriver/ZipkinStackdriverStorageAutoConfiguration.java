@@ -35,12 +35,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import zipkin.internal.V2StorageComponent;
 import zipkin.storage.StorageComponent;
-import zipkin2.Span;
 import zipkin2.stackdriver.StackdriverStorage;
 
 import static com.google.common.base.Preconditions.checkState;
 import static io.grpc.CallOptions.DEFAULT;
-import static java.util.Arrays.asList;
 
 @Configuration
 @EnableConfigurationProperties(ZipkinStackdriverStorageProperties.class)
@@ -104,17 +102,5 @@ public class ZipkinStackdriverStorageAutoConfiguration {
   @Bean
   StackdriverStorage v2Storage(V2StorageComponent component) {
     return (StackdriverStorage) component.delegate();
-  }
-  public static void main (String ... args) throws IOException {
-    ZipkinStackdriverStorageAutoConfiguration config = new ZipkinStackdriverStorageAutoConfiguration();
-    StackdriverStorage result = StackdriverStorage.newBuilder(config.managedChannel(new ZipkinStackdriverStorageProperties()))
-        .projectId("zipkin-demo")
-        .callOptions(DEFAULT.withCallCredentials(MoreCallCredentials.from(config.googleCredentials()))).build();
-
-    result.spanConsumer().accept(asList(Span.newBuilder()
-        .traceId("1").id("1")
-        .name("foo")
-        .timestamp(System.currentTimeMillis() * 1000)
-        .build())).execute();
   }
 }

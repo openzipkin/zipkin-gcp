@@ -30,7 +30,7 @@ For example:
 ```bash
 $ curl -sSL https://zipkin.io/quickstart.sh | bash -s
 $ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.java:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
-$ STORAGE_TYPE=stackdriver PROJECT_ID=zipkin-demo \
+$ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
     java \
     -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
     -Dspring.profiles.active=stackdriver \
@@ -51,13 +51,13 @@ configuration file.  The module includes default configuration that can be used 
 [reference](https://github.com/openzipkin/zipkin-gcp/tree/master/autoconfigure/storage-stackdriver/src/main/resources/zipkin-server-stackdriver.yml)
 for users that prefer a file based approach.
 
-##### Environment Variables
+#### Environment Variables
 
 |Environment Variable           | Value            |
 |-------------------------------|------------------|
-|GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/iden
-tity/protocols/application-default-credentials). |
-|PROJECT_ID                     | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource. |
+|GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials). Not managed by spring boot. |
+|STACKDRIVER_PROJECT_ID         | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource. |
+|STACKDRIVER_API_HOST           | host:port combination of the gRPC endpoint. Default: cloudtrace.googleapis.com:443 |
 
 ### Running
 

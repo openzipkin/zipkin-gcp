@@ -21,7 +21,7 @@ public class ZipkinStackdriverStorageProperties implements Serializable { // for
   private static final long serialVersionUID = 0L;
 
   private String projectId;
-  private String apiHost = "cloudtrace.googleapis.com";
+  private String apiHost = "cloudtrace.googleapis.com:443";
 
   public String getProjectId() {
     return projectId;

@@ -2,4 +2,5 @@
 zipkin:
   storage:
     stackdriver:
-      project-id: ${PROJECT_ID:}
+      api-host: ${STACKDRIVER_API_HOST:cloudtrace.googleapis.com:443}
+      project-id: ${STACKDRIVER_PROJECT_ID:}
