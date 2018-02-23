@@ -16,12 +16,13 @@
 
 package com.google.cloud.trace.zipkin.autoconfigure;
 
+import com.google.cloud.trace.v1.stub.TraceServiceStubSettings;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("zipkin.storage.stackdriver")
 public class ZipkinStackdriverStorageProperties {
   private String projectId;
-  private String apiHost = "cloudtrace.googleapis.com";
+  private String apiHost = TraceServiceStubSettings.getDefaultEndpoint();
   private Executor executor = new Executor();
 
   public Executor getExecutor()
