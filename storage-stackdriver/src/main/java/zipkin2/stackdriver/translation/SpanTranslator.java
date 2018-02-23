@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 The OpenZipkin Authors
+ * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -58,7 +58,7 @@ final class SpanTranslator {
   }
 
   static TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span zipkinSpan) {
-    spanBuilder.setName(zipkinSpan.name());
+    spanBuilder.setName(zipkinSpan.name() != null ? zipkinSpan.name() : "");
     SpanKind kind = getSpanKind(zipkinSpan.kind());
     spanBuilder.setKind(kind);
     rewriteIds(zipkinSpan, spanBuilder, kind);
@@ -116,10 +116,7 @@ final class SpanTranslator {
     return UnsignedLongs.parseUnsignedLong(id, 16);
   }
 
-  private static long rewriteId(Long id) {
-    if (id == null) {
-      return 0;
-    }
+  private static long rewriteId(long id) {
     // To deterministically rewrite the ID, xor it with a random 64-bit constant.
     final long pad = 0x3f6a2ec3c810c2abL;
     return id ^ pad;

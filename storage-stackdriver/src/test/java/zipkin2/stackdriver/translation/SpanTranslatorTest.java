@@ -1,5 +1,5 @@
 /**
- * Copyright 2016-2017 The OpenZipkin Authors
+ * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,8 +20,9 @@ import zipkin2.Span;
 import static org.junit.Assert.assertEquals;
 
 public class SpanTranslatorTest {
-  @Test
-  public void testTranslateSpan() {
+  SpanTranslator translator = new SpanTranslator();
+
+  @Test public void translate() {
     Span zipkinSpan =
         Span.newBuilder()
             .id("2")
@@ -31,8 +32,6 @@ public class SpanTranslatorTest {
             .timestamp(3000001L) // 3.000001 seconds after the unix epoch.
             .duration(8000001L) // 8.000001 seconds;
             .build();
-    SpanTranslator translator = new SpanTranslator();
-
     TraceSpan traceSpan = translator.translate(zipkinSpan);
 
     assertEquals(2, traceSpan.getSpanId());
@@ -44,5 +43,13 @@ public class SpanTranslatorTest {
 
     assertEquals(3 + 8, traceSpan.getEndTime().getSeconds());
     assertEquals(2000, traceSpan.getEndTime().getNanos());
+  }
+
+  @Test public void translate_missingName() {
+    Span zipkinSpan = Span.newBuilder().traceId("3").id("2").build();
+
+    TraceSpan traceSpan = translator.translate(zipkinSpan);
+
+    assertEquals("", traceSpan.getName());
   }
 }
