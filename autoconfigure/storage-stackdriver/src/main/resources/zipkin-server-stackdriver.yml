@@ -1,0 +1,6 @@
+# When enabled, this allows shorter env properties (ex -Dspring.profiles.active=stackdriver)
+zipkin:
+  storage:
+    stackdriver:
+      api-host: ${STACKDRIVER_API_HOST:cloudtrace.googleapis.com:443}
+      project-id: ${STACKDRIVER_PROJECT_ID:}
