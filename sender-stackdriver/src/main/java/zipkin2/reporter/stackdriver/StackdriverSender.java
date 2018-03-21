@@ -122,7 +122,7 @@ public final class StackdriverSender extends Sender {
   /** close is typically called from a different thread */
   volatile boolean closeCalled;
 
-  @Override public zipkin2.Call<Void> sendSpans(List<byte[]> encodedSpans) {
+  @Override public Call<Void> sendSpans(List<byte[]> encodedSpans) {
     if (closeCalled) throw new IllegalStateException("closed");
     if (encodedSpans.isEmpty()) return Call.create(null);
     PatchTracesRequest request = encodePatchTracesRequest(projectId, encodedSpans);
