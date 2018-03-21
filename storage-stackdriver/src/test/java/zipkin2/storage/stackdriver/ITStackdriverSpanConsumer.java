@@ -18,6 +18,7 @@ import com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceImplBase;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
+import java.util.Collections;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,26 +26,38 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import zipkin2.Span;
+import zipkin2.storage.SpanConsumer;
 
-import static io.grpc.CallOptions.DEFAULT;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-public class StackdriverSpanConsumerTest {
+/** This only tests a couple cases rather than duplicating logic in the sender */
+public class ITStackdriverSpanConsumer {
   @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
   TestTraceService traceService = spy(new TestTraceService());
-  StackdriverSpanConsumer spanConsumer;
+  String projectId = "test-project";
+  SpanConsumer spanConsumer;
 
-  @Before public void setUp() throws Throwable {
+  @Before public void setUp() {
     server.getServiceRegistry().addService(traceService);
-    spanConsumer = new StackdriverSpanConsumer(server.getChannel(), "zipkin", DEFAULT);
+    spanConsumer = StackdriverStorage.newBuilder(server.getChannel())
+        .projectId(projectId)
+        .build()
+        .spanConsumer();
   }
 
-  @Test public void accept() throws Throwable {
+  @Test public void accept_empty() throws Exception {
+    spanConsumer.accept(Collections.emptyList()).execute();
+
+    verify(traceService, never()).patchTraces(any(), any());
+  }
+
+  @Test public void accept() throws Exception {
     onClientCall(observer -> {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
@@ -60,12 +73,9 @@ public class StackdriverSpanConsumerTest {
 
     PatchTracesRequest request = requestCaptor.getValue();
     assertThat(request.getProjectId())
-        .isEqualTo(spanConsumer.projectId);
+        .isEqualTo(projectId);
     assertThat(request.getTraces().getTracesList())
         .hasSize(1);
-  }
-
-  static class TestTraceService extends TraceServiceImplBase {
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
@@ -74,5 +84,8 @@ public class StackdriverSpanConsumerTest {
       onClientCall.accept(observer);
       return null;
     }).when(traceService).patchTraces(any(PatchTracesRequest.class), any(StreamObserver.class));
+  }
+
+  static class TestTraceService extends TraceServiceImplBase {
   }
 }
