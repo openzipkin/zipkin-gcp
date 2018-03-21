@@ -13,7 +13,6 @@
  */
 package zipkin2.storage.stackdriver;
 
-import com.google.auto.value.AutoValue;
 import io.grpc.CallOptions;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -22,27 +21,42 @@ import zipkin2.storage.SpanConsumer;
 import zipkin2.storage.SpanStore;
 import zipkin2.storage.StorageComponent;
 
+import static io.grpc.CallOptions.DEFAULT;
+
 /**
  * StackdriverStorage is a StorageComponent that consumes spans using the Stackdriver
  * TraceSpanConsumer.
  *
  * <p>No SpanStore methods are implemented because read operations are not yet supported.
  */
-@AutoValue
-public abstract class StackdriverStorage extends StorageComponent {
+public final class StackdriverStorage extends StorageComponent {
+
   public static Builder newBuilder() {
-    return new AutoValue_StackdriverStorage.Builder()
-        .apiHost("cloudtrace.googleapis.com");
+    return newBuilder("cloudtrace.googleapis.com");
+  }
+
+  public static Builder newBuilder(String apiHost) {
+    if (apiHost == null) throw new NullPointerException("apiHost == null");
+    Builder result = newBuilder(ManagedChannelBuilder.forTarget(apiHost).build());
+    result.shutdownChannelOnClose = true;
+    return result;
   }
 
   public static Builder newBuilder(ManagedChannel channel) { // visible for testing
-    return new AutoValue_StackdriverStorage.Builder()
-        .shutdownChannelOnClose(false)
-        .channel(channel);
+    return new Builder(channel);
   }
 
-  @AutoValue.Builder
-  public static abstract class Builder extends StorageComponent.Builder {
+  public static final class Builder extends StorageComponent.Builder {
+    final ManagedChannel channel;
+    String projectId;
+    CallOptions callOptions = DEFAULT;
+    boolean shutdownChannelOnClose;
+
+    Builder(ManagedChannel channel) {
+      if (channel == null) throw new NullPointerException("channel == null");
+      this.channel = channel;
+    }
+
     /** {@inheritDoc} */
     @Override public final Builder strictTraceId(boolean strictTraceId) {
       if (!strictTraceId) {
@@ -59,51 +73,59 @@ public abstract class StackdriverStorage extends StorageComponent {
       return this;
     }
 
-    public final Builder apiHost(String apiHost) {
-      shutdownChannelOnClose(true);
-      return channel(ManagedChannelBuilder.forTarget(apiHost).build());
+    public Builder projectId(String projectId) {
+      if (projectId == null) throw new NullPointerException("projectId == null");
+      this.projectId = projectId;
+      return this;
     }
 
-    public abstract Builder projectId(String projectId);
+    public Builder callOptions(CallOptions callOptions) {
+      if (callOptions == null) throw new NullPointerException("callOptions == null");
+      this.callOptions = callOptions;
+      return this;
+    }
 
-    public abstract Builder callOptions(CallOptions callOptions);
-
-    abstract Builder channel(ManagedChannel channel);
-
-    abstract Builder shutdownChannelOnClose(boolean shutdownChannelOnClose);
-
-    @Override public abstract StackdriverStorage build();
-
-    Builder() {
+    public StackdriverStorage build() {
+      if (projectId == null) throw new NullPointerException("projectId == null");
+      return new StackdriverStorage(this);
     }
   }
 
-  abstract String projectId();
+  final ManagedChannel channel;
+  final CallOptions callOptions;
+  final String projectId;
+  final boolean shutdownChannelOnClose;
 
-  abstract ManagedChannel channel();
-
-  abstract CallOptions callOptions();
-
-  abstract boolean shutdownChannelOnClose();
+  StackdriverStorage(Builder builder) {
+    channel = builder.channel;
+    callOptions = builder.callOptions;
+    projectId = builder.projectId;
+    shutdownChannelOnClose = builder.shutdownChannelOnClose;
+  }
 
   @Override public SpanStore spanStore() {
     throw new UnsupportedOperationException("Read operations are not supported");
   }
 
   @Override public SpanConsumer spanConsumer() {
-    return new StackdriverSpanConsumer(channel(), projectId(), callOptions());
+    return new StackdriverSpanConsumer(channel, callOptions, projectId);
   }
 
-  @Override
-  public CheckResult check() {
+  @Override public CheckResult check() {
     return CheckResult.OK;
   }
 
-  @Override public void close() {
-    if (!shutdownChannelOnClose()) return;
-    channel().shutdownNow();
+  @Override public final String toString() {
+    return "StackdriverSender{" + projectId + "}";
   }
 
-  StackdriverStorage() {
+  /** close is typically called from a different thread */
+  volatile boolean closeCalled;
+
+  @Override public void close() {
+    if (!shutdownChannelOnClose) return;
+    if (closeCalled) return;
+    closeCalled = true;
+    channel.shutdownNow();
   }
 }

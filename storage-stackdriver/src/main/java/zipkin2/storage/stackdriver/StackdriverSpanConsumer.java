@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.List;
 import zipkin2.Call;
 import zipkin2.Span;
-import zipkin2.storage.stackdriver.call.UnaryClientCall;
 import zipkin2.storage.SpanConsumer;
+import zipkin2.storage.stackdriver.call.UnaryClientCall;
 import zipkin2.translation.stackdriver.TraceTranslator;
 
 import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.METHOD_PATCH_TRACES;
@@ -36,13 +36,13 @@ import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.METHOD_PATCH_TR
 final class StackdriverSpanConsumer implements SpanConsumer {
 
   final Channel channel;
-  final String projectId;
   final CallOptions callOptions;
+  final String projectId;
 
-  StackdriverSpanConsumer(Channel channel, String projectId, CallOptions callOptions) {
+  StackdriverSpanConsumer(Channel channel, CallOptions callOptions, String projectId) {
     this.channel = channel;
-    this.projectId = projectId;
     this.callOptions = callOptions;
+    this.projectId = projectId;
   }
 
   @Override
