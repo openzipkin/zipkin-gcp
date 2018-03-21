@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin.autoconfigure.stackdriver;
+package zipkin.autoconfigure.storage.stackdriver;
 
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import zipkin.internal.V2StorageComponent;
 import zipkin.storage.StorageComponent;
-import zipkin2.stackdriver.StackdriverStorage;
+import zipkin2.storage.stackdriver.StackdriverStorage;
 
 import static com.google.common.base.Preconditions.checkState;
 import static io.grpc.CallOptions.DEFAULT;

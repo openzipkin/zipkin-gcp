@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver;
+package zipkin2.storage.stackdriver;
 
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -27,8 +27,8 @@ import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoCon
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import zipkin.autoconfigure.stackdriver.ZipkinStackdriverStorageAutoConfiguration;
-import zipkin.autoconfigure.stackdriver.ZipkinStackdriverStorageProperties;
+import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConfiguration;
+import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

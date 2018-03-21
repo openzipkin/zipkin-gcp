@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver;
+package zipkin2.storage.stackdriver;
 
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.Trace;
@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import zipkin2.Call;
 import zipkin2.Span;
-import zipkin2.stackdriver.call.UnaryClientCall;
+import zipkin2.storage.stackdriver.call.UnaryClientCall;
 import zipkin2.storage.SpanConsumer;
 import zipkin2.translation.stackdriver.TraceTranslator;
 
