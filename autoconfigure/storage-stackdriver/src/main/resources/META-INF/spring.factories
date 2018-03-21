@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-zipkin.autoconfigure.stackdriver.ZipkinStackdriverStorageAutoConfiguration
+zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConfiguration

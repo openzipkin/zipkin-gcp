@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver;
+package zipkin2.storage.stackdriver;
 
 import com.google.auth.Credentials;
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
@@ -37,14 +37,14 @@ import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoCon
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import zipkin.autoconfigure.stackdriver.ZipkinStackdriverStorageAutoConfiguration;
-import zipkin.autoconfigure.stackdriver.ZipkinStackdriverStorageProperties;
+import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConfiguration;
+import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
 import zipkin2.Span;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.util.EnvironmentTestUtils.addEnvironment;
-import static zipkin2.stackdriver.StackdriverMockServer.CLIENT_SSL_CONTEXT;
+import static zipkin2.storage.stackdriver.StackdriverMockServer.CLIENT_SSL_CONTEXT;
 
 public class ZipkinStackdriverStorageIntegrationTest {
   @ClassRule public static final StackdriverMockServer mockServer = new StackdriverMockServer();
