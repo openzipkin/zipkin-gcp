@@ -11,9 +11,8 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver.translation;
+package zipkin2.translation.stackdriver;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import java.util.ArrayList;
@@ -21,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,10 +65,9 @@ public class TraceTranslatorTest {
     assertEquals(2, traces.size());
     Trace trace1 = traces.get(0);
     Trace trace2 = traces.get(1);
-    Map<String, Trace> traceMap =
-        ImmutableMap.of(
-            trace1.getTraceId(), trace1,
-            trace2.getTraceId(), trace2);
+    Map<String, Trace> traceMap = new LinkedHashMap<>();
+    traceMap.put(trace1.getTraceId(), trace1);
+    traceMap.put(trace2.getTraceId(), trace2);
     String key1 = "00000000000000000000000000000001";
     String key2 = "00000000000000000000000000000002";
     assertTrue(traceMap.containsKey(key1));

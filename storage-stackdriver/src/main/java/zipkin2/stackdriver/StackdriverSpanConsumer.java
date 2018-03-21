@@ -23,9 +23,9 @@ import java.util.Collection;
 import java.util.List;
 import zipkin2.Call;
 import zipkin2.Span;
-import zipkin2.storage.SpanConsumer;
 import zipkin2.stackdriver.call.UnaryClientCall;
-import zipkin2.stackdriver.translation.TraceTranslator;
+import zipkin2.storage.SpanConsumer;
+import zipkin2.translation.stackdriver.TraceTranslator;
 
 import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.METHOD_PATCH_TRACES;
 

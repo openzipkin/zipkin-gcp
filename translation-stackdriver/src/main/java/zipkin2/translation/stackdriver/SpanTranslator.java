@@ -11,15 +11,13 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver.translation;
+package zipkin2.translation.stackdriver;
 
-import com.google.common.primitives.UnsignedLongs;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.devtools.cloudtrace.v1.TraceSpan.SpanKind;
 import com.google.protobuf.Timestamp;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 import zipkin2.Span;
 
 /**
@@ -30,12 +28,12 @@ import zipkin2.Span;
  * split into two Stackdriver Trace Spans where the client-side span is a parent of the
  * server-side span. Other parent-child relationships will be preserved.
  */
-final class SpanTranslator {
+public final class SpanTranslator {
 
   static final LabelExtractor labelExtractor;
 
   static {
-    Map<String, String> renamedLabels = new HashMap<>();
+    Map<String, String> renamedLabels = new LinkedHashMap<>();
     renamedLabels.put("http.host", "/http/host");
     renamedLabels.put("http.method", "/http/method");
     renamedLabels.put("http.status_code", "/http/status_code");
@@ -48,16 +46,18 @@ final class SpanTranslator {
   /**
    * Converts a Zipkin Span into a Stackdriver Trace Span.
    *
+   * Ex.
+   * <pre>{@code
+   * traceSpan = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
+   * }</pre>
+   *
+   * <p>Note: the result does not include the trace ID from the input.
+   *
+   * @param spanBuilder the builder (to facilitate re-use)
    * @param zipkinSpan The Zipkin Span.
    * @return A Stackdriver Trace Span.
    */
-  static TraceSpan translate(Span zipkinSpan) {
-    TraceSpan.Builder builder = TraceSpan.newBuilder();
-    translate(builder, zipkinSpan);
-    return builder.build();
-  }
-
-  static TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span zipkinSpan) {
+  public static TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span zipkinSpan) {
     spanBuilder.setName(zipkinSpan.name() != null ? zipkinSpan.name() : "");
     SpanKind kind = getSpanKind(zipkinSpan.kind());
     spanBuilder.setKind(kind);
@@ -109,20 +109,31 @@ final class SpanTranslator {
     }
   }
 
-  private static long parseUnsignedLong(String id) {
-    if (id == null) {
-      return 0;
+  private static long parseUnsignedLong(String lowerHex) {
+    if (lowerHex == null) return 0;
+    long result = 0;
+    for (int i = 0; i < 16; i++){
+      char c = lowerHex.charAt(i);
+      result <<= 4;
+      if (c >= '0' && c <= '9') {
+        result |= c - '0';
+      } else if (c >= 'a' && c <= 'f') {
+        result |= c - 'a' + 10;
+      } else {
+        return 0;
+      }
     }
-    return UnsignedLongs.parseUnsignedLong(id, 16);
+    return result;
   }
 
   private static long rewriteId(long id) {
+    if (id == 0L) return 0;
     // To deterministically rewrite the ID, xor it with a random 64-bit constant.
     final long pad = 0x3f6a2ec3c810c2abL;
     return id ^ pad;
   }
 
-  private static SpanKind getSpanKind(@Nullable Span.Kind zipkinKind) {
+  private static SpanKind getSpanKind(/* Nullable */ Span.Kind zipkinKind) {
     if (zipkinKind == null) return SpanKind.SPAN_KIND_UNSPECIFIED;
     if (zipkinKind == Span.Kind.CLIENT) {
       return SpanKind.RPC_CLIENT;

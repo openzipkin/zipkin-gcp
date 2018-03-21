@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver.translation;
+package zipkin2.translation.stackdriver;
 
 import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
@@ -22,10 +22,7 @@ import java.util.Comparator;
 import java.util.List;
 import zipkin2.Span;
 
-/**
- * TraceTranslator converts a collection of Zipkin Spans into a Collection of Stackdriver Trace
- * Trace Spans.
- */
+/** Convenience utility for those not using  */
 public final class TraceTranslator {
 
   /**
@@ -36,11 +33,11 @@ public final class TraceTranslator {
    * @param zipkinSpans The Collection of Zipkin Spans.
    * @return A Collection of Stackdriver Trace Spans.
    */
-  public static Collection<Trace> translateSpans(String projectId, Collection<Span> zipkinSpans) {
+  public static List<Trace> translateSpans(String projectId, Collection<Span> zipkinSpans) {
     List<Span> sortedByTraceAndSpanId = sortByTraceAndSpanId(zipkinSpans);
     Trace.Builder currentTrace = null;
 
-    Collection<Trace> translatedTraces = new ArrayList<>();
+    List<Trace> result = new ArrayList<>();
     for (int i = 0, length = sortedByTraceAndSpanId.size(); i < length; i++) {
       Span currentSpan = sortedByTraceAndSpanId.get(i);
 
@@ -49,7 +46,7 @@ public final class TraceTranslator {
       if (traceId.length() == 16) traceId = "0000000000000000" + traceId;
 
       if (currentTrace == null || !traceId.equals(currentTrace.getTraceId())) {
-        finishTrace(currentTrace, translatedTraces);
+        finishTrace(currentTrace, result);
 
         currentTrace = Trace.newBuilder();
         currentTrace.setProjectId(projectId);
@@ -58,8 +55,8 @@ public final class TraceTranslator {
 
       appendSpan(currentTrace, currentSpan);
     }
-    finishTrace(currentTrace, translatedTraces);
-    return translatedTraces;
+    finishTrace(currentTrace, result);
+    return result;
   }
 
   private static List<Span> sortByTraceAndSpanId(Collection<Span> input) {
@@ -78,8 +75,7 @@ public final class TraceTranslator {
   }
 
   private static void appendSpan(Trace.Builder builder, Span zipkinSpan) {
-    TraceSpan span = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
-    builder.addSpans(span);
+    builder.addSpans(SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan));
   }
 
   private static void finishTrace(Trace.Builder traceBuilder, Collection<Trace> convertedTraces) {
