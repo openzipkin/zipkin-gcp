@@ -22,8 +22,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>zipkin-storage-stackdriver</artifactId>
-  <name>Zipkin Storage: Google Stackdriver Trace</name>
+  <artifactId>zipkin-translation-stackdriver</artifactId>
+  <name>Zipkin to Stackdriver Trace Translation</name>
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
@@ -31,25 +31,25 @@
 
   <dependencies>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>zipkin-translation-stackdriver</artifactId>
+      <groupId>io.zipkin.zipkin2</groupId>
+      <artifactId>zipkin</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-core</artifactId>
-      <version>${grpc.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-protobuf</artifactId>
-      <version>${grpc.version}</version>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-devtools-cloudtrace-v1</artifactId>
+      <version>${grpc-google-devtools-cloudtrace-v1.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>io.grpc</groupId>
+          <artifactId>grpc-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-testing</artifactId>
-      <version>${grpc.version}</version>
-      <scope>test</scope>
+      <groupId>io.zipkin.zipkin2</groupId>
+      <artifactId>zipkin</artifactId>
+      <type>test-jar</type>
     </dependency>
   </dependencies>
 </project>

@@ -11,12 +11,10 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver.translation;
+package zipkin2.translation.stackdriver;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.net.InetAddresses;
-import java.net.InetAddress;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.Test;
 import zipkin2.Endpoint;
@@ -49,10 +47,9 @@ public class LabelExtractorTest {
   @Test
   public void testLabelIsRenamed() {
     String prefix = "test.prefix";
-    Map<String, String> knownLabels =
-        ImmutableMap.of(
-            "known.1", "renamed.1",
-            "known.2", "renamed.2");
+    Map<String, String> knownLabels = new LinkedHashMap<>();
+    knownLabels.put("known.1", "renamed.1");
+    knownLabels.put("known.2", "renamed.2");
     LabelExtractor extractor = new LabelExtractor(knownLabels, prefix);
     Span zipkinSpan =
         Span.newBuilder()
@@ -92,7 +89,6 @@ public class LabelExtractorTest {
 
   @Test
   public void testEndpointIsSetIpv4() {
-    InetAddress lo = InetAddresses.forString("::1");
     Endpoint.Builder serverEndpointBuilder = Endpoint.newBuilder().serviceName("service1").port(80);
     serverEndpointBuilder.parseIp("10.0.0.1");
     Endpoint serverEndpoint = serverEndpointBuilder.build();
@@ -129,12 +125,11 @@ public class LabelExtractorTest {
 
   @Test
   public void testEndpointIsSetIpv6() {
-    InetAddress lo = InetAddresses.forString("::1");
     Endpoint.Builder serverEndpointBuilder = Endpoint.newBuilder().serviceName("service1").port(80);
-    serverEndpointBuilder.parseIp(lo);
+    serverEndpointBuilder.parseIp("::1");
     Endpoint serverEndpoint = serverEndpointBuilder.build();
     Endpoint.Builder clientEndpointBuilder = Endpoint.newBuilder().serviceName("service2").port(80);
-    clientEndpointBuilder.parseIp(lo);
+    clientEndpointBuilder.parseIp("::1");
     Endpoint clientEndpoint = clientEndpointBuilder.build();
     Span serverSpan =
         Span.newBuilder()

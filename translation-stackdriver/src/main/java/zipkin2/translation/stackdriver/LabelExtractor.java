@@ -11,13 +11,13 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.stackdriver.translation;
+package zipkin2.translation.stackdriver;
 
-import com.google.common.collect.ImmutableMap;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import zipkin2.Annotation;
 import zipkin2.Span;
 
@@ -43,7 +43,7 @@ final class LabelExtractor {
   private final Map<String, String> renamedLabels;
 
   LabelExtractor(Map<String, String> renamedLabels) {
-    this(ImmutableMap.copyOf(renamedLabels), "zipkin.io/");
+    this(renamedLabels, "zipkin.io/");
   }
 
   LabelExtractor(Map<String, String> renamedLabels, String prefix) {
@@ -99,9 +99,19 @@ final class LabelExtractor {
     }
   }
 
-  private String formatTimestamp(long microseconds) {
+  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+  // SimpleDateFormat is not thread safe
+  private static final ThreadLocal<SimpleDateFormat> DATE = new ThreadLocal<SimpleDateFormat>() {
+    @Override protected SimpleDateFormat initialValue() {
+      SimpleDateFormat result = new SimpleDateFormat("yyyy-MM-dd (HH:mm:ss.SSS)");
+      result.setTimeZone(UTC);
+      return result;
+    }
+  };
+
+  static String formatTimestamp(long microseconds) {
     long milliseconds = microseconds / 1000;
-    Date date = new Date(milliseconds);
-    return new SimpleDateFormat("yyyy-MM-dd (HH:mm:ss.SSS)").format(date);
+    return DATE.get().format(new Date(milliseconds));
   }
 }
