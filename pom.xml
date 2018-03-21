@@ -149,14 +149,6 @@
       <artifactId>zipkin</artifactId>
     </dependency>
 
-    <!-- don't worry. auto-* are source retention, not runtime -->
-    <dependency>
-      <groupId>com.google.auto.value</groupId>
-      <artifactId>auto-value</artifactId>
-      <version>1.5.4</version>
-      <scope>provided</scope>
-    </dependency>
-
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
