@@ -24,6 +24,7 @@
 
   <modules>
     <module>autoconfigure</module>
+    <module>benchmarks</module>
     <module>translation-stackdriver</module>
     <module>sender-stackdriver</module>
     <module>storage-stackdriver</module>
