@@ -24,7 +24,9 @@
 
   <modules>
     <module>autoconfigure</module>
+    <module>benchmarks</module>
     <module>translation-stackdriver</module>
+    <module>sender-stackdriver</module>
     <module>storage-stackdriver</module>
   </modules>
 
@@ -121,6 +123,11 @@
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>zipkin-translation-stackdriver</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>zipkin-sender-stackdriver</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

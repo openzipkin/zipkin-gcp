@@ -20,6 +20,7 @@ only have senders in Java, senders in other languages are welcome.
 
 Sender | Description
 --- | ---
+[Stackdriver Trace](./sender/stackdriver) | Free cloud service provider
 
 ## Collectors
 The component in a zipkin server that receives trace data is called a

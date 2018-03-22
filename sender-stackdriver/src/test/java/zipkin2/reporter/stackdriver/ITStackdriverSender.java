@@ -11,22 +11,23 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.storage.stackdriver;
+package zipkin2.reporter.stackdriver;
 
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceImplBase;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
-import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
+import zipkin2.Span;
 import zipkin2.TestObjects;
-import zipkin2.storage.SpanConsumer;
+import zipkin2.reporter.AsyncReporter;
 import zipkin2.translation.stackdriver.TraceTranslator;
 
 import static java.util.Arrays.asList;
@@ -37,34 +38,36 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-/** Same as ITStackdriverSender: tests everything wired together */
-public class ITStackdriverSpanConsumer {
+/** Same as ITStackdriverSpanConsumer: tests everything wired together */
+public class ITStackdriverSender {
   @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
   TestTraceService traceService = spy(new TestTraceService());
   String projectId = "test-project";
-  SpanConsumer spanConsumer;
+  AsyncReporter<Span> reporter;
 
   @Before public void setUp() {
     server.getServiceRegistry().addService(traceService);
-    spanConsumer = StackdriverStorage.newBuilder(server.getChannel())
-        .projectId(projectId)
-        .build()
-        .spanConsumer();
+    reporter = AsyncReporter.builder(
+        StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build()
+    )
+        .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
+        .build(StackdriverEncoder.V1);
   }
 
-  @Test public void accept_empty() throws Exception {
-    spanConsumer.accept(Collections.emptyList()).execute();
+  @Test public void sendSpans_empty() {
+    reporter.flush();
 
     verify(traceService, never()).patchTraces(any(), any());
   }
 
-  @Test public void accept() throws Exception {
+  @Test public void sendSpans() {
     onClientCall(observer -> {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
     });
 
-    spanConsumer.accept(asList(TestObjects.CLIENT_SPAN)).execute();
+    reporter.report(TestObjects.CLIENT_SPAN);
+    reporter.flush();
 
     ArgumentCaptor<PatchTracesRequest> requestCaptor =
         ArgumentCaptor.forClass(PatchTracesRequest.class);

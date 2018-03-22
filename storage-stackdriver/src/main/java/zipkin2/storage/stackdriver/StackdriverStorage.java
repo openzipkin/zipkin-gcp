@@ -14,6 +14,7 @@
 package zipkin2.storage.stackdriver;
 
 import io.grpc.CallOptions;
+import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import zipkin2.CheckResult;
@@ -32,12 +33,8 @@ import static io.grpc.CallOptions.DEFAULT;
 public final class StackdriverStorage extends StorageComponent {
 
   public static Builder newBuilder() {
-    return newBuilder("cloudtrace.googleapis.com");
-  }
-
-  public static Builder newBuilder(String apiHost) {
-    if (apiHost == null) throw new NullPointerException("apiHost == null");
-    Builder result = newBuilder(ManagedChannelBuilder.forTarget(apiHost).build());
+    ManagedChannel channel = ManagedChannelBuilder.forTarget("cloudtrace.googleapis.com").build();
+    Builder result = newBuilder(channel);
     result.shutdownChannelOnClose = true;
     return result;
   }
@@ -47,12 +44,12 @@ public final class StackdriverStorage extends StorageComponent {
   }
 
   public static final class Builder extends StorageComponent.Builder {
-    final ManagedChannel channel;
+    final Channel channel;
     String projectId;
     CallOptions callOptions = DEFAULT;
     boolean shutdownChannelOnClose;
 
-    Builder(ManagedChannel channel) {
+    Builder(Channel channel) {
       if (channel == null) throw new NullPointerException("channel == null");
       this.channel = channel;
     }
@@ -85,13 +82,13 @@ public final class StackdriverStorage extends StorageComponent {
       return this;
     }
 
-    public StackdriverStorage build() {
+    @Override public StackdriverStorage build() {
       if (projectId == null) throw new NullPointerException("projectId == null");
       return new StackdriverStorage(this);
     }
   }
 
-  final ManagedChannel channel;
+  final Channel channel;
   final CallOptions callOptions;
   final String projectId;
   final boolean shutdownChannelOnClose;
@@ -126,6 +123,6 @@ public final class StackdriverStorage extends StorageComponent {
     if (!shutdownChannelOnClose) return;
     if (closeCalled) return;
     closeCalled = true;
-    channel.shutdownNow();
+    ((ManagedChannel) channel).shutdownNow();
   }
 }
