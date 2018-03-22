@@ -42,7 +42,6 @@ public enum StackdriverEncoder implements BytesEncoder<Span> {
       String traceId = span.traceId();
       if (traceId.length() == 16) {
         for (int i = 0; i < 16; i++) result[i] = '0';
-        for (int i = 0; i < 16; i++) result[i] = '0';
         for (int i = 0; i < 16; i++) result[i + 16] = (byte) traceId.charAt(i);
       } else {
         for (int i = 0; i < 32; i++) result[i] = (byte) traceId.charAt(i);
