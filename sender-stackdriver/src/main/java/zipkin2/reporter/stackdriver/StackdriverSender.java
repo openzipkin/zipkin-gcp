@@ -18,6 +18,7 @@ import com.google.devtools.cloudtrace.v1.Traces;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Empty;
 import io.grpc.CallOptions;
+import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.util.List;
@@ -33,27 +34,23 @@ import static io.grpc.CallOptions.DEFAULT;
 public final class StackdriverSender extends Sender {
 
   public static Builder newBuilder() {
-    return newBuilder("cloudtrace.googleapis.com");
-  }
-
-  public static Builder newBuilder(String apiHost) {
-    if (apiHost == null) throw new NullPointerException("apiHost == null");
-    Builder result = newBuilder(ManagedChannelBuilder.forTarget(apiHost).build());
+    ManagedChannel channel = ManagedChannelBuilder.forTarget("cloudtrace.googleapis.com").build();
+    Builder result = newBuilder(channel);
     result.shutdownChannelOnClose = true;
     return result;
   }
 
-  public static Builder newBuilder(ManagedChannel channel) { // visible for testing
+  public static Builder newBuilder(Channel channel) { // visible for testing
     return new Builder(channel);
   }
 
   public static final class Builder {
-    final ManagedChannel channel;
+    final Channel channel;
     String projectId;
     CallOptions callOptions = DEFAULT;
     boolean shutdownChannelOnClose;
 
-    Builder(ManagedChannel channel) {
+    Builder(Channel channel) {
       if (channel == null) throw new NullPointerException("channel == null");
       this.channel = channel;
     }
@@ -76,7 +73,7 @@ public final class StackdriverSender extends Sender {
     }
   }
 
-  final ManagedChannel channel;
+  final Channel channel;
   final CallOptions callOptions;
   final String projectId;
   final boolean shutdownChannelOnClose;
@@ -116,8 +113,7 @@ public final class StackdriverSender extends Sender {
   }
 
   @Override public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
-    return PatchTracesRequestSizer.size(projectIdFieldSize,
-        traceIdPrefixedSpanSize - 32);
+    return PatchTracesRequestSizer.size(projectIdFieldSize, traceIdPrefixedSpanSize - 32);
   }
 
   /** close is typically called from a different thread */
@@ -157,7 +153,7 @@ public final class StackdriverSender extends Sender {
     if (!shutdownChannelOnClose) return;
     if (closeCalled) return;
     closeCalled = true;
-    channel.shutdownNow();
+    ((ManagedChannel) channel).shutdownNow();
   }
 
   final class PatchTracesCall extends UnaryClientCall<PatchTracesRequest, Empty> {
