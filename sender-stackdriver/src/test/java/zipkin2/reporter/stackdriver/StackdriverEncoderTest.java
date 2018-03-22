@@ -13,11 +13,11 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import org.junit.Test;
 import zipkin2.Span;
 import zipkin2.TestObjects;
+import zipkin2.translation.stackdriver.SpanTranslator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,23 +30,6 @@ public class StackdriverEncoderTest {
         .isEqualTo(encoder.encode(zipkinSpan).length);
   }
 
-  @Test public void encode_makesSingleEntryTraceWithoutProjectId() throws Exception {
-    byte[] serialized = encoder.encode(zipkinSpan);
-    Trace deserialized = Trace.parseFrom(serialized);
-
-    assertThat(deserialized.getTraceId())
-        .isEqualTo(zipkinSpan.traceId());
-
-    assertThat(deserialized.getProjectId())
-        .isEqualTo(Trace.getDefaultInstance().getProjectId());
-
-    // only testing the essence here, as other tests are in span translator
-    assertThat(deserialized.getSpansList())
-        .hasSize(1)
-        .extracting(TraceSpan::getName)
-        .containsExactly(zipkinSpan.name());
-  }
-
   @Test public void sizeInBytes_64BitTraceId() {
     String traceId = "216a2aea45d08fc9";
     zipkinSpan = zipkinSpan.toBuilder().traceId(traceId).build();
@@ -55,16 +38,27 @@ public class StackdriverEncoderTest {
         .isEqualTo(encoder.encode(zipkinSpan).length);
   }
 
-  @Test public void encode_64BitTraceId() throws Exception {
+  @Test public void encode_writesTraceIdPrefixedSpan() throws Exception {
+    assertTraceIdPrefixedSpan(encoder.encode(zipkinSpan), zipkinSpan.traceId());
+  }
+
+  @Test public void encode_writesPaddedTraceIdPrefixedSpan() throws Exception {
     String traceId = "216a2aea45d08fc9";
     zipkinSpan = zipkinSpan.toBuilder().traceId(traceId).build();
 
-    byte[] serialized = encoder.encode(zipkinSpan);
-    Trace deserialized = Trace.parseFrom(serialized);
+    assertTraceIdPrefixedSpan(encoder.encode(zipkinSpan), "0000000000000000216a2aea45d08fc9");
+  }
 
-    assertThat(deserialized.getTraceId())
-        .hasSize(32)
-        .startsWith("0000000000000000")
-        .endsWith(traceId);
+  void assertTraceIdPrefixedSpan(byte[] serialized, String expectedTraceId) throws Exception {
+    char[] traceId = new char[32];
+    for (int i = 0; i < 32; i++) traceId[i] = (char) serialized[i];
+
+    assertThat(new String(traceId))
+        .isEqualTo(expectedTraceId);
+
+    TraceSpan deserialized = TraceSpan.parser().parseFrom(serialized, 32, serialized.length - 32);
+
+    assertThat(deserialized)
+        .isEqualTo(SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build());
   }
 }

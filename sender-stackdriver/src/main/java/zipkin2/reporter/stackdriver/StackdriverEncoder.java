@@ -13,9 +13,9 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
-import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedOutputStream;
+import java.io.IOException;
 import java.util.List;
 import zipkin2.Span;
 import zipkin2.codec.BytesEncoder;
@@ -30,26 +30,35 @@ public enum StackdriverEncoder implements BytesEncoder<Span> {
     }
 
     @Override public int sizeInBytes(Span input) {
-      // TODO: this allocates things
-      return translate(input).getSerializedSize();
+      return 32 + translate(input).getSerializedSize();
     }
 
-    final ByteString LEADING_ZEROS = ByteString.copyFromUtf8("0000000000000000");
-
-    /** This encodes a Trace message containing the trace ID and a single span */
+    /** This encodes a TraceSpan message prefixed by a potentially padded 32 character trace ID */
     @Override public byte[] encode(Span span) {
-      return translate(span).toByteArray(); // serialize in proto3 format
+      TraceSpan translated = translate(span);
+      byte[] result = new byte[32 + translated.getSerializedSize()];
+
+      // Zipkin trace ID is conditionally 16 or 32 characters, but Stackdriver needs 32
+      String traceId = span.traceId();
+      if (traceId.length() == 16) {
+        for (int i = 0; i < 16; i++) result[i] = '0';
+        for (int i = 0; i < 16; i++) result[i] = '0';
+        for (int i = 0; i < 16; i++) result[i + 16] = (byte) traceId.charAt(i);
+      } else {
+        for (int i = 0; i < 32; i++) result[i] = (byte) traceId.charAt(i);
+      }
+
+      CodedOutputStream output = CodedOutputStream.newInstance(result, 32, result.length - 32);
+      try {
+        translated.writeTo(output);
+      } catch (IOException e) {
+        throw new AssertionError(e);
+      }
+      return result;
     }
 
-    Trace translate(Span span) {
-      // Zipkin trace ID is conditionally 16 or 32 characters, but Stackdriver needs 32
-      ByteString traceId = ByteString.copyFromUtf8(span.traceId());
-      if (traceId.size() == 16) traceId = LEADING_ZEROS.concat(traceId);
-      // create a single-entry trace message, unpacked later
-      return Trace.newBuilder()
-          .setTraceIdBytes(traceId)
-          .addSpans(SpanTranslator.translate(TraceSpan.newBuilder(), span))
-          .build();
+    TraceSpan translate(Span span) {
+      return SpanTranslator.translate(TraceSpan.newBuilder(), span).build();
     }
 
     @Override public byte[] encodeList(List<Span> spans) {

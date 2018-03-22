@@ -85,7 +85,7 @@ public final class StackdriverStorage extends StorageComponent {
       return this;
     }
 
-    public StackdriverStorage build() {
+    @Override public StackdriverStorage build() {
       if (projectId == null) throw new NullPointerException("projectId == null");
       return new StackdriverStorage(this);
     }

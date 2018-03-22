@@ -13,6 +13,7 @@
  */
 package zipkin2.reporter.stackdriver;
 
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceImplBase;
@@ -28,6 +29,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import zipkin2.Span;
+import zipkin2.translation.stackdriver.TraceTranslator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -49,53 +51,10 @@ public class StackdriverSenderTest {
     sender = StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build();
   }
 
-  @Test public void messageSizeInBytes_single() throws IOException {
+  @Test public void verifyRequestSent_single() throws IOException {
     byte[] oneTrace = StackdriverEncoder.V1.encode(span);
     List<byte[]> encodedSpans = ImmutableList.of(oneTrace);
 
-    int size = sender.messageSizeInBytes(oneTrace.length);
-    assertThat(sender.messageSizeInBytes(encodedSpans))
-        .isEqualTo(size);
-
-    assertMessageSizeSameAsActual(encodedSpans);
-  }
-
-  @Test public void messageSizeInBytes_multipleTraces() throws IOException {
-    // intentionally change only the boundaries to help break any offset-based logic
-    byte[] trace1 = StackdriverEncoder.V1.encode(
-        span.toBuilder().traceId("10000000000000000000000000000002").build()
-    );
-    byte[] trace2 = StackdriverEncoder.V1.encode(
-        span.toBuilder().traceId("10000000000000000000000000000001").build()
-    );
-    byte[] trace3 = StackdriverEncoder.V1.encode(
-        span.toBuilder().traceId("20000000000000000000000000000001").build()
-    );
-
-    List<byte[]> encodedSpans = ImmutableList.of(trace1, trace2, trace3);
-
-    assertMessageSizeSameAsActual(encodedSpans);
-  }
-
-  @Test public void messageSizeInBytes_multipleSpans() throws IOException {
-    // intentionally change only the boundaries to help break any offset-based logic
-    byte[] trace1 = StackdriverEncoder.V1.encode(
-        span.toBuilder().traceId("10000000000000000000000000000002").build()
-    );
-    byte[] trace2 = StackdriverEncoder.V1.encode(
-        span.toBuilder().traceId("10000000000000000000000000000001").build()
-    );
-    // intentionally out-of-order
-    byte[] trace1_spanb = StackdriverEncoder.V1.encode(
-        span.toBuilder().traceId("10000000000000000000000000000002").id("b").build()
-    );
-
-    List<byte[]> encodedSpans = ImmutableList.of(trace1, trace2, trace1_spanb);
-
-    assertMessageSizeSameAsActual(encodedSpans);
-  }
-
-  void assertMessageSizeSameAsActual(List<byte[]> encodedSpans) throws IOException {
     onClientCall(observer -> {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
@@ -104,8 +63,58 @@ public class StackdriverSenderTest {
     sender.sendSpans(encodedSpans).execute();
 
     // verify our estimate is correct
+    int actualSize = takeRequest().getSerializedSize();
+    assertThat(sender.messageSizeInBytes(oneTrace.length))
+        .isEqualTo(actualSize);
+  }
+
+  @Test public void verifyRequestSent_multipleTraces() throws IOException {
+    // intentionally change only the boundaries to help break any offset-based logic
+    List<Span> spans = ImmutableList.of(
+        span.toBuilder().traceId("10000000000000000000000000000002").build(),
+        span.toBuilder().traceId("10000000000000000000000000000001").build(),
+        span.toBuilder().traceId("20000000000000000000000000000001").build(),
+        span.toBuilder().traceId("20000000000000000000000000000002").build()
+    );
+
+    verifyRequestSent(spans);
+  }
+
+  @Test public void verifyRequestSent_multipleSpans() throws IOException {
+    // intentionally change only the boundaries to help break any offset-based logic
+    List<Span> spans = ImmutableList.of(
+        span.toBuilder().traceId("10000000000000000000000000000002").build(),
+        span.toBuilder().traceId("10000000000000000000000000000001").build(),
+        // intentionally out-of-order
+        span.toBuilder().traceId("10000000000000000000000000000002").id("b").build(),
+        span.toBuilder().traceId("10000000000000000000000000000001").id("c").build()
+    );
+
+    verifyRequestSent(spans);
+  }
+
+  void verifyRequestSent(List<Span> spans) throws IOException {
+    onClientCall(observer -> {
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+    });
+
+    List<byte[]> encodedSpans = FluentIterable.from(spans)
+        .transform(StackdriverEncoder.V1::encode)
+        .toList();
+
+    sender.sendSpans(encodedSpans).execute();
+
+    PatchTracesRequest request = takeRequest();
+
+    // sanity check the data
+    assertThat(request.getTraces().getTracesList())
+        .isEqualTo(TraceTranslator.translateSpans(projectId, spans));
+
+    // verify our estimate is correct
+    int actualSize = request.getSerializedSize();
     assertThat(sender.messageSizeInBytes(encodedSpans))
-        .isEqualTo(takeRequest().getSerializedSize());
+        .isEqualTo(actualSize);
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {

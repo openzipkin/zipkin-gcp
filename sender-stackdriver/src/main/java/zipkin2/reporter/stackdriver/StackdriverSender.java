@@ -13,15 +13,10 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
-import com.google.devtools.cloudtrace.v1.Trace;
-import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.devtools.cloudtrace.v1.Traces;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Empty;
-import com.google.protobuf.InvalidProtocolBufferException;
 import io.grpc.CallOptions;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -85,14 +80,14 @@ public final class StackdriverSender extends Sender {
   final CallOptions callOptions;
   final String projectId;
   final boolean shutdownChannelOnClose;
-  final int projectIdInBytes;
+  final int projectIdFieldSize;
 
   StackdriverSender(Builder builder) {
     channel = builder.channel;
     callOptions = builder.callOptions;
     projectId = builder.projectId;
     shutdownChannelOnClose = builder.shutdownChannelOnClose;
-    projectIdInBytes = 1 /* field no */ + CodedOutputStream.computeStringSizeNoTag(projectId);
+    projectIdFieldSize = 1 /* field no */ + CodedOutputStream.computeStringSizeNoTag(projectId);
   }
 
   @Override public Encoding encoding() {
@@ -103,61 +98,51 @@ public final class StackdriverSender extends Sender {
     return 1024 * 1024; // 1 MiB for now
   }
 
-  // StackdriverMessageSizer is not thread safe
-  static final ThreadLocal<StackdriverMessageSizer> MESSAGE_SIZER =
-      new ThreadLocal<StackdriverMessageSizer>() {
-        @Override protected StackdriverMessageSizer initialValue() {
-          return new StackdriverMessageSizer();
-        }
-      };
+  // re-use trace collator to avoid re-allocating arrays
+  final ThreadLocal<TraceCollator> traceCollator = new ThreadLocal<TraceCollator>() {
+    @Override protected TraceCollator initialValue() {
+      return new TraceCollator();
+    }
+  };
 
-  @Override public int messageSizeInBytes(List<byte[]> encodedTraces) {
-    return MESSAGE_SIZER.get().messageSizeInBytes(projectIdInBytes, encodedTraces);
+  @Override public int messageSizeInBytes(List<byte[]> traceIdPrefixedSpans) {
+    int length = traceIdPrefixedSpans.size();
+    if (length == 0) return 0;
+    if (length == 1) return messageSizeInBytes(traceIdPrefixedSpans.get(0).length);
+
+    PatchTracesRequestSizer sizer = new PatchTracesRequestSizer(projectIdFieldSize);
+    traceCollator.get().collate(traceIdPrefixedSpans, sizer);
+    return sizer.finish();
   }
 
-  @Override public int messageSizeInBytes(int traceSizeInBytes) {
-    return StackdriverMessageSizer.messageSizeInBytes(projectIdInBytes, traceSizeInBytes);
+  @Override public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
+    return PatchTracesRequestSizer.size(projectIdFieldSize,
+        traceIdPrefixedSpanSize - 32);
   }
 
   /** close is typically called from a different thread */
   volatile boolean closeCalled;
 
-  @Override public Call<Void> sendSpans(List<byte[]> encodedSpans) {
+  @Override public Call<Void> sendSpans(List<byte[]> traceIdPrefixedSpans) {
     if (closeCalled) throw new IllegalStateException("closed");
-    if (encodedSpans.isEmpty()) return Call.create(null);
-    PatchTracesRequest request = encodePatchTracesRequest(projectId, encodedSpans);
+    int length = traceIdPrefixedSpans.size();
+    if (length == 0) return Call.create(null);
+
+    Traces traces;
+    if (length == 1) {
+      traces = TracesParser.parse(projectId, traceIdPrefixedSpans.get(0));
+    } else {
+      TracesParser parser = new TracesParser(projectId);
+      traceCollator.get().collate(traceIdPrefixedSpans, parser);
+      traces = parser.finish();
+    }
+
+    PatchTracesRequest request = PatchTracesRequest.newBuilder()
+        .setProjectId(projectId)
+        .setTraces(traces)
+        .build();
+
     return new PatchTracesCall(request).map(EmptyToVoid.INSTANCE);
-  }
-
-  /**
-   * @param projectId stable for all spans
-   * @param encodedTraces unsorted serialized {@link Trace} objects that have only trace_id, and a single element span list.
-   */
-  static PatchTracesRequest encodePatchTracesRequest(String projectId, List<byte[]> encodedTraces) {
-    // TODO: the logic below could be rewritten to lazy chain all the byte arrays, eliminating a lot
-    // of GC churn. However, this is an optimization that can be done at any time.
-
-    // decode (traceid, span) from the input bytes and sort by trace ID
-    Multimap<String, TraceSpan> indexedById = MultimapBuilder.treeKeys().arrayListValues().build();
-    for (int i = 0, length = encodedTraces.size(); i < length; i++) {
-      try {
-        Trace trace = Trace.parseFrom(encodedTraces.get(i));
-        indexedById.put(trace.getTraceId(), trace.getSpans(0));
-      } catch (InvalidProtocolBufferException e) {
-        throw new AssertionError(e);
-      }
-    }
-
-    // Add the project ID to each trace
-    Traces.Builder traces = Traces.newBuilder();
-    for (String traceId : indexedById.keySet()) {
-      traces.addTraces(Trace.newBuilder()
-          .setTraceId(traceId)
-          .setProjectId(projectId)
-          .addAllSpans(indexedById.get(traceId)).build());
-    }
-
-    return PatchTracesRequest.newBuilder().setProjectId(projectId).setTraces(traces).build();
   }
 
   @Override public CheckResult check() {
@@ -181,23 +166,20 @@ public final class StackdriverSender extends Sender {
       super(channel, METHOD_PATCH_TRACES, callOptions, request);
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "PatchTracesCall{" + request() + "}";
     }
 
-    @Override
-    public PatchTracesCall clone() {
+    @Override public PatchTracesCall clone() {
       return new PatchTracesCall(request());
     }
   }
 
   enum EmptyToVoid implements Call.Mapper<Empty, Void> {
     INSTANCE {
-      @Override
-      public Void map(Empty empty) {
+      @Override public Void map(Empty empty) {
         return null;
       }
-    };
+    }
   }
 }
