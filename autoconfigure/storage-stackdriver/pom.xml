@@ -91,20 +91,14 @@
 
   <build>
     <plugins>
-      <plugin>
+     <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <version>${spring-boot.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>repackage</goal>
-            </goals>
-          </execution>
-        </executions>
         <configuration>
-          <layout>MODULE</layout>
-          <classifier>module</classifier>
+          <layoutFactory implementation="zipkin.layout.ZipkinLayoutFactory">
+            <name>custom</name>
+          </layoutFactory>
           <!-- https://github.com/spring-projects/spring-boot/issues/3426 transitive exclude doesn't work -->
           <excludeGroupIds>
             io.zipkin.java,io.zipkin.zipkin2,org.springframework.boot,commons-codec,com.fasterxml.jackson.core,com.fasterxml.jackson.dataformat,org.apache.httpcomponents,commons-logging,joda-time
@@ -112,6 +106,13 @@
           <!-- already packaged in zipkin-server -->
           <excludeArtifactIds>guava,gson,okio</excludeArtifactIds>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>io.zipkin.layout</groupId>
+            <artifactId>zipkin-layout-factory</artifactId>
+            <version>0.0.1</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
