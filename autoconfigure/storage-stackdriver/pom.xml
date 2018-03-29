@@ -99,6 +99,7 @@
           <layoutFactory implementation="zipkin.layout.ZipkinLayoutFactory">
             <name>custom</name>
           </layoutFactory>
+          <classifier>module</classifier>
           <!-- https://github.com/spring-projects/spring-boot/issues/3426 transitive exclude doesn't work -->
           <excludeGroupIds>
             io.zipkin.java,io.zipkin.zipkin2,org.springframework.boot,commons-codec,com.fasterxml.jackson.core,com.fasterxml.jackson.dataformat,org.apache.httpcomponents,commons-logging,joda-time
@@ -110,7 +111,7 @@
           <dependency>
             <groupId>io.zipkin.layout</groupId>
             <artifactId>zipkin-layout-factory</artifactId>
-            <version>0.0.1</version>
+            <version>0.0.2</version>
           </dependency>
         </dependencies>
       </plugin>
