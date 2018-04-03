@@ -98,7 +98,7 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
 
     @Bean(destroyMethod = "shutdownNow")
     ManagedChannel managedChannel(ZipkinStackdriverStorageProperties properties) {
-      return ManagedChannelBuilder.forTarget(properties.getApiHost()).usePlaintext(true).build();
+      return ManagedChannelBuilder.forTarget(properties.getApiHost()).usePlaintext().build();
     }
   }
 }
