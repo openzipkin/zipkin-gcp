@@ -100,7 +100,7 @@
             io.zipkin.java,io.zipkin.zipkin2,org.springframework.boot,commons-codec,com.fasterxml.jackson.core,com.fasterxml.jackson.dataformat,org.apache.httpcomponents,commons-logging,joda-time
           </excludeGroupIds>
           <!-- already packaged in zipkin-server -->
-          <excludeArtifactIds>guava,gson,okio</excludeArtifactIds>
+          <excludeArtifactIds>gson,okio</excludeArtifactIds>
         </configuration>
       </plugin>
     </plugins>
