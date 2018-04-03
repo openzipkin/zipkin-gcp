@@ -186,32 +186,32 @@
           <artifactId>maven</artifactId>
           <version>0.6.0</version>
         </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot.version}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>repackage</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <layoutFactory implementation="zipkin.layout.ZipkinLayoutFactory">
+              <name>zipkin</name>
+            </layoutFactory>
+            <classifier>module</classifier>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>io.zipkin.layout</groupId>
+              <artifactId>zipkin-layout-factory</artifactId>
+              <version>0.0.2</version>
+            </dependency>
+          </dependencies>
+        </plugin>
       </plugins>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <version>${spring-boot.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>repackage</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <layoutFactory implementation="zipkin.layout.ZipkinLayoutFactory">
-            <name>zipkin</name>
-          </layoutFactory>
-          <classifier>module</classifier>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>io.zipkin.layout</groupId>
-            <artifactId>zipkin-layout-factory</artifactId>
-            <version>0.0.2</version>
-          </dependency>
-        </dependencies>
-      </plugin>
     </pluginManagement>
 
     <plugins>
