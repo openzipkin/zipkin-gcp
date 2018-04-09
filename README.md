@@ -53,7 +53,14 @@ Each module will also have different minimum variables that need to be set.
 
 Ex.
 ```
-$ java -Dloader.path=stackdriver.jar -Dspring.profiles.active=stackdriver -cp zipkin.jar org.springframework.boot.loader.PropertiesLauncher
+$ curl -sSL https://zipkin.io/quickstart.sh | bash -s
+$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.java:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
+$ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
+    java \
+    -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
+    -Dspring.profiles.active=stackdriver \
+    -cp zipkin.jar \
+    org.springframework.boot.loader.PropertiesLauncher
 ```
 
 ## Example integrating Stackdriver Storage
