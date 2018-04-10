@@ -18,6 +18,8 @@ import com.google.devtools.cloudtrace.v1.TraceSpan.SpanKind;
 import com.google.protobuf.Timestamp;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import zipkin2.Span;
 
 /**
@@ -29,6 +31,7 @@ import zipkin2.Span;
  * server-side span. Other parent-child relationships will be preserved.
  */
 public final class SpanTranslator {
+  private static final Logger LOG = Logger.getLogger(SpanTranslator.class.getName());
 
   static final LabelExtractor labelExtractor;
 
@@ -58,6 +61,8 @@ public final class SpanTranslator {
    * @return A Stackdriver Trace Span.
    */
   public static TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span zipkinSpan) {
+    boolean logTranslation = LOG.isLoggable(Level.FINE);
+    if (logTranslation) LOG.fine(">> translating zipkin span: " + zipkinSpan);
     spanBuilder.setName(zipkinSpan.name() != null ? zipkinSpan.name() : "");
     SpanKind kind = getSpanKind(zipkinSpan.kind());
     spanBuilder.setKind(kind);
@@ -72,6 +77,7 @@ public final class SpanTranslator {
       }
     }
     spanBuilder.putAllLabels(labelExtractor.extract(zipkinSpan));
+    if (logTranslation) LOG.fine("<< translated to stackdriver span: " + spanBuilder);
     return spanBuilder;
   }
 

@@ -70,3 +70,46 @@ yourself by downloading a couple jars.
 
 [Here's an example](autoconfigure/storage-stackdriver#quick-start) of
 integrating Stackdriver storage.
+
+## Troubleshooting translation issues
+
+When using a component that sends data to Stackdriver, if you see nothing in the console,
+try enabling DEBUG logging on the translation component. If using Spring Boot (ex normal
+app or zipkin server integration), add the following system property:
+
+```
+-Dlogging.level.zipkin2.translation.stackdriver=DEBUG
+```
+
+Note: If using our docker image or anything that uses JAVA_OPTS, you can add this there.
+
+With this in place, you'll see the input and output of translation like below. Keep a copy
+of this when contacting us on [gitter](https://gitter.im/openzipkin/zipkin) for support.
+
+```
+2018-04-09 13:58:44.112 DEBUG [/] 11325 --- [   XNIO-2 I/O-3] z.t.stackdriver.SpanTranslator           : >> translating zipkin span: {"traceId":"d42316227862f939","parentId":"d42316227862f939","id":"dfbb21f9cf4c52b3","kind":"CLIENT","name":"get","timestamp":1523253523054380,"duration":4536,"localEndpoint":{"serviceName":"frontend","ipv4":"192.168.1.113"},"tags":{"http.method":"GET","http.path":"/api"}}
+2018-04-09 13:58:44.113 DEBUG [/] 11325 --- [   XNIO-2 I/O-3] z.t.stackdriver.SpanTranslator           : << translated to stackdriver span: span_id: 16199746076534411288
+kind: RPC_CLIENT
+name: "get"
+start_time {
+  seconds: 1523253523
+  nanos: 54380000
+}
+end_time {
+  seconds: 1523253523
+  nanos: 58916000
+}
+parent_span_id: 15286085897530046777
+labels {
+  key: "/http/method"
+  value: "GET"
+}
+labels {
+  key: "zipkin.io/http.path"
+  value: "/api"
+}
+labels {
+  key: "/component"
+  value: "frontend"
+}
+```
