@@ -140,7 +140,11 @@ public final class SpanTranslator {
   }
 
   private static SpanKind getSpanKind(/* Nullable */ Span.Kind zipkinKind) {
-    if (zipkinKind == null) return SpanKind.SPAN_KIND_UNSPECIFIED;
+    if (zipkinKind == null
+            || zipkinKind == Span.Kind.CONSUMER
+            || zipkinKind == Span.Kind.PRODUCER) {
+      return SpanKind.SPAN_KIND_UNSPECIFIED;
+    }
     if (zipkinKind == Span.Kind.CLIENT) {
       return SpanKind.RPC_CLIENT;
     }
