@@ -140,6 +140,8 @@ public final class SpanTranslator {
   }
 
   private static SpanKind getSpanKind(/* Nullable */ Span.Kind zipkinKind) {
+    // Stackdriver Trace still does not have any match for CONSUMER or PRODUCER, and sending it as
+    // UNRECOGNIZED triggers an error.
     if (zipkinKind == null
             || zipkinKind == Span.Kind.CONSUMER
             || zipkinKind == Span.Kind.PRODUCER) {
