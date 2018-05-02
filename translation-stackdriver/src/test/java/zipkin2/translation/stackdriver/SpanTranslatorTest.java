@@ -69,4 +69,15 @@ public class SpanTranslatorTest {
         .isEqualTo(TraceSpan.getDefaultInstance().getName())
         .isEmpty();
   }
+
+  @Test public void translate_consumerProducerSpan() {
+    assertThat(SpanTranslator.translate(TraceSpan.newBuilder(),
+            Span.newBuilder().traceId("2").id("3").kind(Span.Kind.CONSUMER).build())
+            .build().getKind())
+            .isEqualTo(TraceSpan.SpanKind.SPAN_KIND_UNSPECIFIED);
+    assertThat(SpanTranslator.translate(TraceSpan.newBuilder(),
+            Span.newBuilder().traceId("2").id("3").kind(Span.Kind.PRODUCER).build())
+            .build().getKind())
+            .isEqualTo(TraceSpan.SpanKind.SPAN_KIND_UNSPECIFIED);
+  }
 }
