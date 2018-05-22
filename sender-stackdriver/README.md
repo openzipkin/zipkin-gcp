@@ -25,6 +25,9 @@ sender = StackdriverSender.newBuilder()
 reporter = AsyncReporter.newBuilder(sender).build(StackdriverEncoder.V1);
 ```
 
+Note: Use 128-bit trace IDs and do not re-use span IDs across client and server.
+* Ex. in Brave `Tracing.Builder.supportsJoin(false).traceId128Bit(true)`
+
 Note: There are a few library dependencies implied
 * io.grpc:grpc-auth < for authentication in general
 * com.google.auth:google-auth-library-oauth2-http < for GCP oauth
