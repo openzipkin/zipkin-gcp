@@ -80,63 +80,7 @@ public class TraceTranslatorTest {
   }
 
   @Test
-  public void testMultihostServerRootSpan() {
-    Span span1 =
-        Span.newBuilder()
-            .traceId("1")
-            .id("1")
-            .name("/a")
-            .timestamp(1474488796000000L) // This is set because the server owns the span
-            .duration(5000000L)
-            .build();
-    Span span2 =
-        Span.newBuilder()
-            .kind(Kind.CLIENT)
-            .traceId("1")
-            .parentId("1")
-            .id("2")
-            .name("/b?client")
-            .timestamp(1474488797000000L) // This is set because the client owns the span.
-            .duration(1500000L)
-            .build();
-    Span span3 =
-        Span.newBuilder()
-            .kind(Kind.SERVER)
-            .shared(true)
-            .traceId("1")
-            .parentId("1")
-            .id("2")
-            .name("/b?server")
-            // timestamp is not set because the server does not own this span.
-            .build();
-    Span span4 =
-        Span.newBuilder()
-            .traceId("1")
-            .parentId("2")
-            .id("3")
-            .name("custom-span")
-            .timestamp(1474488797600000L)
-            .duration(200000L)
-            .build();
-
-    Collection<Trace> traces =
-        TraceTranslator.translateSpans("test-project", Arrays.asList(span1, span2, span3, span4));
-    assertEquals(1, traces.size());
-    Trace trace = traces.iterator().next();
-    Map<String, TraceSpan> spansByName = getSpansByName(trace);
-    assertThat(spansByName).containsOnlyKeys("/a", "/b?client", "/b?server", "custom-span");
-    assertDistinctSpanIds(trace);
-    assertThat(spansByName.get("custom-span").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?server").getSpanId());
-    assertThat(spansByName.get("/b?server").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?client").getSpanId());
-    assertThat(spansByName.get("/b?client").getParentSpanId())
-        .isEqualTo(spansByName.get("/a").getSpanId());
-    assertThat(spansByName.get("/a").getParentSpanId()).isEqualTo(0);
-  }
-
-  @Test
-  public void testMultihostServerRootSpan_noTimestamp() {
+  public void testServerRootSpan_noTimestamp() {
     Span span1 = Span.newBuilder().kind(Kind.SERVER).traceId("1").id("1").name("/a").build();
     Span span2 =
         Span.newBuilder()
@@ -146,28 +90,13 @@ public class TraceTranslatorTest {
             .id("2")
             .name("/b?client")
             .build();
-    Span span3 =
-        Span.newBuilder()
-            .kind(Kind.SERVER)
-            .shared(true)
-            .traceId("1")
-            .parentId("1")
-            .id("2")
-            .name("/b?server")
-            .build();
-    Span span4 = Span.newBuilder().traceId("1").parentId("2").id("3").name("custom-span").build();
-
     Collection<Trace> traces =
-        TraceTranslator.translateSpans("test-project", Arrays.asList(span1, span2, span3, span4));
+        TraceTranslator.translateSpans("test-project", Arrays.asList(span1, span2));
     assertEquals(1, traces.size());
     Trace trace = traces.iterator().next();
     Map<String, TraceSpan> spansByName = getSpansByName(trace);
-    assertThat(spansByName).containsOnlyKeys("/a", "/b?client", "/b?server", "custom-span");
+    assertThat(spansByName).containsOnlyKeys("/a", "/b?client");
     assertDistinctSpanIds(trace);
-    assertThat(spansByName.get("custom-span").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?server").getSpanId());
-    assertThat(spansByName.get("/b?server").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?client").getSpanId());
     assertThat(spansByName.get("/b?client").getParentSpanId())
         .isEqualTo(spansByName.get("/a").getSpanId());
     // Without the timestamp field, it's not possible to correctly set the root span's parentSpanId
@@ -175,127 +104,7 @@ public class TraceTranslatorTest {
   }
 
   @Test
-  public void testMultihostClientRootSpan() {
-    Span span1 =
-        Span.newBuilder()
-            .kind(Kind.CLIENT)
-            .traceId("1")
-            .id("1")
-            .name("/a?client")
-            .timestamp(1474488796000000L) // This is set because the client owns the span
-            .duration(5000000L)
-            .build();
-    Span span2 =
-        Span.newBuilder()
-            .kind(Kind.SERVER)
-            .shared(true)
-            .traceId("1")
-            .id("1")
-            .name("/a?server")
-            // timestamp is not set because the server does not own this span.
-            .build();
-    Span span3 =
-        Span.newBuilder()
-            .kind(Kind.CLIENT)
-            .traceId("1")
-            .parentId("1")
-            .id("2")
-            .name("/b?client")
-            .timestamp(1474488797000000L) // This is set because the client owns the span.
-            .duration(1500000L)
-            .build();
-    Span span4 =
-        Span.newBuilder()
-            .kind(Kind.SERVER)
-            .shared(true)
-            .traceId("1")
-            .parentId("1")
-            .id("2")
-            .name("/b?server")
-            // timestamp is not set because the server does not own this span.
-            .build();
-    Span span5 =
-        Span.newBuilder()
-            .traceId("1")
-            .parentId("2")
-            .id("3")
-            .name("custom-span")
-            .timestamp(1474488797600000L)
-            .duration(200000L)
-            .build();
-
-    Collection<Trace> traces =
-        TraceTranslator.translateSpans("test-project",
-            Arrays.asList(span1, span2, span3, span4, span5));
-    assertEquals(1, traces.size());
-    Trace trace = traces.iterator().next();
-    Map<String, TraceSpan> spansByName = getSpansByName(trace);
-    assertThat(spansByName)
-        .containsOnlyKeys("/a?client", "/a?server", "/b?client", "/b?server", "custom-span");
-    assertDistinctSpanIds(trace);
-    assertThat(spansByName.get("custom-span").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?server").getSpanId());
-    assertThat(spansByName.get("/b?server").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?client").getSpanId());
-    assertThat(spansByName.get("/b?client").getParentSpanId())
-        .isEqualTo(spansByName.get("/a?server").getSpanId());
-    assertThat(spansByName.get("/a?server").getParentSpanId())
-        .isEqualTo(spansByName.get("/a?client").getSpanId());
-    assertThat(spansByName.get("/a?client").getParentSpanId()).isEqualTo(0);
-  }
-
-  @Test
-  public void testMultihostClientRootSpan_noTimestamp() {
-    Span span1 = Span.newBuilder().kind(Kind.CLIENT).traceId("1").id("1").name("/a?client").build();
-    Span span2 =
-        Span.newBuilder()
-            .kind(Kind.SERVER)
-            .shared(true)
-            .traceId("1")
-            .id("1")
-            .name("/a?server")
-            .build();
-    Span span3 =
-        Span.newBuilder()
-            .kind(Kind.CLIENT)
-            .traceId("1")
-            .parentId("1")
-            .id("2")
-            .name("/b?client")
-            .build();
-    Span span4 =
-        Span.newBuilder()
-            .kind(Kind.SERVER)
-            .shared(true)
-            .traceId("1")
-            .parentId("1")
-            .id("2")
-            .name("/b?server")
-            .build();
-    Span span5 = Span.newBuilder().traceId("1").parentId("2").id("3").name("custom-span").build();
-
-    Collection<Trace> traces =
-        TraceTranslator.translateSpans("test-project",
-            Arrays.asList(span1, span2, span3, span4, span5));
-    assertEquals(1, traces.size());
-    Trace trace = traces.iterator().next();
-    Map<String, TraceSpan> spansByName = getSpansByName(trace);
-    assertThat(spansByName)
-        .containsOnlyKeys("/a?client", "/a?server", "/b?client", "/b?server", "custom-span");
-    assertDistinctSpanIds(trace);
-    assertThat(spansByName.get("custom-span").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?server").getSpanId());
-    assertThat(spansByName.get("/b?server").getParentSpanId())
-        .isEqualTo(spansByName.get("/b?client").getSpanId());
-    assertThat(spansByName.get("/b?client").getParentSpanId())
-        .isEqualTo(spansByName.get("/a?server").getSpanId());
-    assertThat(spansByName.get("/a?server").getParentSpanId())
-        .isEqualTo(spansByName.get("/a?client").getSpanId());
-    assertThat(spansByName.get("/a?client").getParentSpanId()).isEqualTo(0);
-  }
-
-  @Test
-  public void testSinglehostClientRootSpan() {
+  public void testClientRootSpan() {
     Span span1 =
         Span.newBuilder()
             .traceId("1")
@@ -343,8 +152,8 @@ public class TraceTranslatorTest {
             .build();
 
     Collection<Trace> traces =
-        TraceTranslator.translateSpans("test-project",
-            Arrays.asList(span1, span2, span3, span4, span5));
+        TraceTranslator.translateSpans(
+            "test-project", Arrays.asList(span1, span2, span3, span4, span5));
     assertEquals(1, traces.size());
     Trace trace = traces.iterator().next();
     Map<String, TraceSpan> spansByName = getSpansByName(trace);

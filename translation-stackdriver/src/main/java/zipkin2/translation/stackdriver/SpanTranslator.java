@@ -18,18 +18,12 @@ import com.google.devtools.cloudtrace.v1.TraceSpan.SpanKind;
 import com.google.protobuf.Timestamp;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import zipkin2.Span;
 
-/**
- * SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span.
- *
- * <p>It will rewrite span IDs so that multi-host Zipkin spans are converted to single-host
- * Stackdriver spans. Zipkin Spans with both server-side and client-side information will be
- * split into two Stackdriver Trace Spans where the client-side span is a parent of the
- * server-side span. Other parent-child relationships will be preserved.
- */
+import static java.util.logging.Level.FINE;
+
+/** SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span. */
 public final class SpanTranslator {
   private static final Logger LOG = Logger.getLogger(SpanTranslator.class.getName());
 
@@ -49,7 +43,8 @@ public final class SpanTranslator {
   /**
    * Converts a Zipkin Span into a Stackdriver Trace Span.
    *
-   * Ex.
+   * <p>Ex.
+   *
    * <pre>{@code
    * traceSpan = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
    * }</pre>
@@ -61,64 +56,30 @@ public final class SpanTranslator {
    * @return A Stackdriver Trace Span.
    */
   public static TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span zipkinSpan) {
-    boolean logTranslation = LOG.isLoggable(Level.FINE);
-    if (logTranslation) LOG.fine(">> translating zipkin span: " + zipkinSpan);
+    boolean logTranslation = LOG.isLoggable(FINE);
+    if (logTranslation) LOG.log(FINE, ">> translating zipkin span: {0}", zipkinSpan);
     spanBuilder.setName(zipkinSpan.name() != null ? zipkinSpan.name() : "");
     SpanKind kind = getSpanKind(zipkinSpan.kind());
     spanBuilder.setKind(kind);
-    rewriteIds(zipkinSpan, spanBuilder, kind);
+    spanBuilder.setParentSpanId(parseUnsignedLong(zipkinSpan.parentId()));
+    spanBuilder.setSpanId(parseUnsignedLong(zipkinSpan.id()));
     if (zipkinSpan.timestampAsLong() != 0L) {
       spanBuilder.setStartTime(createTimestamp(zipkinSpan.timestampAsLong()));
       if (zipkinSpan.durationAsLong() != 0L) {
-        Timestamp endTime = createTimestamp(
-            zipkinSpan.timestampAsLong() + zipkinSpan.durationAsLong()
-        );
+        Timestamp endTime =
+            createTimestamp(zipkinSpan.timestampAsLong() + zipkinSpan.durationAsLong());
         spanBuilder.setEndTime(endTime);
       }
     }
     spanBuilder.putAllLabels(labelExtractor.extract(zipkinSpan));
-    if (logTranslation) LOG.fine("<< translated to stackdriver span: " + spanBuilder);
+    if (logTranslation) LOG.log(FINE, "<< translated to stackdriver span: {0}", spanBuilder);
     return spanBuilder;
-  }
-
-  /**
-   * Rewrite Span IDs to split multi-host Zipkin spans into multiple single-host Stackdriver Trace
-   * spans.
-   */
-  private static void rewriteIds(Span zipkinSpan, TraceSpan.Builder builder, SpanKind kind) {
-    long id = parseUnsignedLong(zipkinSpan.id());
-    long parentId = parseUnsignedLong(zipkinSpan.parentId());
-    if (kind == SpanKind.RPC_CLIENT) {
-      builder.setSpanId(rewriteId(id));
-    } else {
-      builder.setSpanId(id);
-    }
-
-    // Change the parentSpanId of RPC_SERVER spans to use the rewritten spanId of the RPC_CLIENT
-    // spans.
-    if (kind == SpanKind.RPC_SERVER) {
-      if (Boolean.TRUE.equals(zipkinSpan.shared())) {
-        // This is a multi-host span.
-        // This means the parent client-side span has the same id as this span. When that fragment
-        // of
-        // the span was converted, it would have had id rewriteId(zipkinSpan.id)
-        builder.setParentSpanId(rewriteId(id));
-      } else {
-        // This span isn't shared: the server "owns" this span and it is a single-host span.
-        // This means the parent RPC_CLIENT span was a separate span with id=zipkinSpan.parentId.
-        // When
-        // that span fragment was converted, it would have had id=rewriteId(zipkinSpan.parentId)
-        builder.setParentSpanId(rewriteId(parentId));
-      }
-    } else {
-      builder.setParentSpanId(parentId);
-    }
   }
 
   private static long parseUnsignedLong(String lowerHex) {
     if (lowerHex == null) return 0;
     long result = 0;
-    for (int i = 0; i < 16; i++){
+    for (int i = 0; i < 16; i++) {
       char c = lowerHex.charAt(i);
       result <<= 4;
       if (c >= '0' && c <= '9') {
@@ -132,19 +93,12 @@ public final class SpanTranslator {
     return result;
   }
 
-  private static long rewriteId(long id) {
-    if (id == 0L) return 0;
-    // To deterministically rewrite the ID, xor it with a random 64-bit constant.
-    final long pad = 0x3f6a2ec3c810c2abL;
-    return id ^ pad;
-  }
-
   private static SpanKind getSpanKind(/* Nullable */ Span.Kind zipkinKind) {
     // Stackdriver Trace still does not have any match for CONSUMER or PRODUCER, and sending it as
     // UNRECOGNIZED triggers an error.
     if (zipkinKind == null
-            || zipkinKind == Span.Kind.CONSUMER
-            || zipkinKind == Span.Kind.PRODUCER) {
+        || zipkinKind == Span.Kind.CONSUMER
+        || zipkinKind == Span.Kind.PRODUCER) {
       return SpanKind.SPAN_KIND_UNSPECIFIED;
     }
     if (zipkinKind == Span.Kind.CLIENT) {

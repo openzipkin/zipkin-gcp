@@ -45,8 +45,7 @@ public class SpanTranslatorTest {
 
     assertThat(translated).isEqualTo(
         TraceSpan.newBuilder()
-            // client spans have their id rewritten with a consistent function
-            .setSpanId(Long.parseUnsignedLong(zipkinSpan.id(), 16) ^ 0x3f6a2ec3c810c2abL)
+            .setSpanId(Long.parseUnsignedLong(zipkinSpan.id(), 16))
             .setParentSpanId(Long.parseUnsignedLong(zipkinSpan.parentId(), 16))
             .setKind(TraceSpan.SpanKind.RPC_CLIENT)
             .setName("get")
