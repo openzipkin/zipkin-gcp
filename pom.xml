@@ -28,6 +28,7 @@
     <module>translation-stackdriver</module>
     <module>sender-stackdriver</module>
     <module>storage-stackdriver</module>
+    <module>propagation-stackdriver</module>
   </modules>
 
   <properties>
