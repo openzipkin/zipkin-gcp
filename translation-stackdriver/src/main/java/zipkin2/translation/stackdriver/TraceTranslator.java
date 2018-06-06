@@ -22,7 +22,7 @@ import java.util.Comparator;
 import java.util.List;
 import zipkin2.Span;
 
-/** Convenience utility for those not using  */
+/** Convenience utility for those not using io.zipkin.gcp:zipkin-sender-stackdriver */
 public final class TraceTranslator {
 
   /**

@@ -19,7 +19,7 @@
 
   <groupId>io.zipkin.gcp</groupId>
   <artifactId>zipkin-gcp-parent</artifactId>
-  <version>0.4.2-SNAPSHOT</version>
+  <version>0.5.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -48,9 +48,9 @@
     <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.8.3</zipkin.version>
-    <spring-boot.version>2.0.1.RELEASE</spring-boot.version>
-    <zipkin-reporter.version>2.6.0</zipkin-reporter.version>
+    <zipkin.version>2.8.4</zipkin.version>
+    <spring-boot.version>2.0.2.RELEASE</spring-boot.version>
+    <zipkin-reporter.version>2.6.1</zipkin-reporter.version>
 
     <!-- have to choose grpc's guava -->
     <guava.version>20.0</guava.version>
