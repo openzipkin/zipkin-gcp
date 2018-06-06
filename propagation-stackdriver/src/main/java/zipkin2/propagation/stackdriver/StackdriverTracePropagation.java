@@ -64,8 +64,9 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
 
   /**
    * Return the "x-cloud-trace-context" key.
-   * The value for that key is formatted in the following way:
-   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;o=TRACE_TRUE"
+   * The value for that key is formatted in the
+   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;o=TRACE_TRUE" or
+   * ""x-cloud-trace-context: TRACE_ID/SPAN_ID" formats.
    */
   public K getTraceIdKey() {
     return traceIdKey;

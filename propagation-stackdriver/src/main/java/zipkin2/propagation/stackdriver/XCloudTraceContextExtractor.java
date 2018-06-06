@@ -35,6 +35,12 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
     this.getter = getter;
   }
 
+  /**
+   * Creates a tracing context if the extracted string follows the
+   * "x-cloud-trace-context: TRACE_ID/SPAN_ID" format; or the
+   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;0=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is
+   * {@code 1}.
+   */
   @Override public TraceContextOrSamplingFlags extract(C carrier) {
     if (carrier == null) throw new NullPointerException("carrier == null");
 
@@ -54,7 +60,10 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
         String spanId = semicolonPos == -1
             ? tokens[1]
             : tokens[1].substring(0, semicolonPos);
-        if (traceId != null) {
+        boolean traceTrue = semicolonPos == -1
+            || tokens[1].length() == semicolonPos + 4 && tokens[1].charAt(semicolonPos + 3) == '1';
+
+        if (traceId != null && traceTrue) {
           result = TraceContextOrSamplingFlags.create(
               context.traceIdHigh(traceId[0])
                   .traceId(traceId[1])
