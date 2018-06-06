@@ -37,7 +37,7 @@ public class CompositeExtractor<C> implements TraceContext.Extractor<C> {
     return context;
   }
 
-  public static class FACTORY {
+  public static class Factory {
 
     public static <C> CompositeExtractor<C> newCompositeExtractor(
         TraceContext.Extractor<C>... extractors) {

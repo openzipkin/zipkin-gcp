@@ -68,7 +68,7 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
 
   @Override public <C> TraceContext.Extractor<C> extractor(Getter<C, K> getter) {
     if (getter == null) throw new NullPointerException("getter == null");
-    return CompositeExtractor.FACTORY.newCompositeExtractor(
+    return CompositeExtractor.Factory.newCompositeExtractor(
         new XCloudTraceContextExtractor<>(this, getter),
         b3Propagation.extractor(getter));
   }
