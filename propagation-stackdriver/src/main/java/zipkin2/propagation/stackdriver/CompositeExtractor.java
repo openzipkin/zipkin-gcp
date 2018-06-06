@@ -16,6 +16,10 @@ package zipkin2.propagation.stackdriver;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 
+/**
+ * Composite extractor that tries several extractors, in order, to retrieve the tracing context
+ * from a source.
+ */
 public class CompositeExtractor<C> implements TraceContext.Extractor<C> {
 
   private final TraceContext.Extractor<C>[] extractors;

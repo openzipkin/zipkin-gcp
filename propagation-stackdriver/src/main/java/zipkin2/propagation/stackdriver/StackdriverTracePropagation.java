@@ -19,6 +19,14 @@ import brave.propagation.TraceContext;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Stackdriver Trace propagation.
+ *
+ * <p>Tries to extract a trace ID and span ID using the {@code x-cloud-trace-context} key.
+ * If not present, tries the B3 key set, such as {@code X-B3-TraceId}, {@code X-B3-SpanId}, etc.
+ *
+ * <p>Uses {@link B3Propagation} injection, to inject the tracing context using B3 headers.
+ */
 public final class StackdriverTracePropagation<K> implements Propagation<K> {
 
   public static final Propagation.Factory FACTORY = new Propagation.Factory() {
@@ -54,6 +62,11 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
     this.b3Propagation = B3Propagation.FACTORY.create(keyFactory);
   }
 
+  /**
+   * Return the "x-cloud-trace-context" key.
+   * The value for that key is formatted in the following way:
+   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;o=TRACE_TRUE"
+   */
   public K getTraceIdKey() {
     return traceIdKey;
   }
