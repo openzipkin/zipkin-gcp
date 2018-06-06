@@ -40,7 +40,7 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
   };
 
   /**
-   * 128 or 64-bit trace ID lower-hex encoded into 32 or 16 characters (required)
+   * 128 trace ID lower-hex encoded into 32 characters (required)
    */
   private static final String TRACE_ID_NAME = "x-cloud-trace-context";
 

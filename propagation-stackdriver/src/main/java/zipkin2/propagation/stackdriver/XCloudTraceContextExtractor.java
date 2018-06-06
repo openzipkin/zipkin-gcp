@@ -29,7 +29,7 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
   private final StackdriverTracePropagation<K> propagation;
   private final Propagation.Getter<C, K> getter;
 
-  XCloudTraceContextExtractor(StackdriverTracePropagation<K> propagation,
+  public XCloudTraceContextExtractor(StackdriverTracePropagation<K> propagation,
       Propagation.Getter<C, K> getter) {
     this.propagation = propagation;
     this.getter = getter;
