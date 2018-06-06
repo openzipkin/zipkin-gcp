@@ -18,22 +18,39 @@ import brave.propagation.TraceContextOrSamplingFlags;
 
 public class CompositeExtractor<C> implements TraceContext.Extractor<C> {
 
-	private TraceContext.Extractor<C>[] extractors;
+  private final TraceContext.Extractor<C>[] extractors;
 
-	public CompositeExtractor(TraceContext.Extractor<C>... extractors) {
-		this.extractors = extractors;
-	}
+  private CompositeExtractor(TraceContext.Extractor<C>... extractors) {
+    this.extractors = extractors;
+  }
 
-	@Override
-	public TraceContextOrSamplingFlags extract(C carrier) {
-		TraceContextOrSamplingFlags context = TraceContextOrSamplingFlags.EMPTY;
+  @Override
+  public TraceContextOrSamplingFlags extract(C carrier) {
+    TraceContextOrSamplingFlags context = TraceContextOrSamplingFlags.EMPTY;
 
-		int currentExtractor = 0;
-		while (context == TraceContextOrSamplingFlags.EMPTY
-				&& currentExtractor < extractors.length) {
-			context = extractors[currentExtractor++].extract(carrier);
-		}
+    int currentExtractor = 0;
+    while (context == TraceContextOrSamplingFlags.EMPTY
+        && currentExtractor < extractors.length) {
+      context = extractors[currentExtractor++].extract(carrier);
+    }
 
-		return context;
-	}
+    return context;
+  }
+
+  public static class FACTORY {
+
+    public static <C> CompositeExtractor<C> newCompositeExtractor(
+        TraceContext.Extractor<C>... extractors) {
+      if (extractors == null) {
+        throw new NullPointerException("The extractors array can't be null.");
+      }
+      if (extractors.length == 0) {
+        throw new IllegalArgumentException("There must be one or more extractors.");
+      }
+
+      TraceContext.Extractor<C>[] extractorsCopy = new TraceContext.Extractor[extractors.length];
+      System.arraycopy(extractors, 0, extractorsCopy, 0, extractors.length);
+      return new CompositeExtractor<>(extractorsCopy);
+    }
+  }
 }
