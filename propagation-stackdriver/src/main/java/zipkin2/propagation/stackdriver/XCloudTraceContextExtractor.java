@@ -36,8 +36,9 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
 
   /**
    * Creates a tracing context if the extracted string follows the "x-cloud-trace-context:
-   * TRACE_ID/SPAN_ID" format; or the "x-cloud-trace-context: TRACE_ID/SPAN_ID;0=TRACE_TRUE" format
-   * and {@code TRACE_TRUE}'s value is {@code 1}.
+   * TRACE_ID" or "x-cloud-trace-context: TRACE_ID/SPAN_ID" format; or the
+   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;0=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is
+   * {@code 1}.
    */
   @Override
   public TraceContextOrSamplingFlags extract(C carrier) {
@@ -52,24 +53,20 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
 
       // Try to parse the trace IDs into the context
       TraceContext.Builder context = TraceContext.newBuilder();
+      long[] traceId = convertHexTraceIdToLong(tokens[0]);
+      if (traceId != null) {
+        boolean traceTrue = true;
 
-      if (tokens.length >= 2) {
-        long[] traceId = convertHexTraceIdToLong(tokens[0]);
-        int semicolonPos = tokens[1].indexOf(";");
-        String spanId = semicolonPos == -1 ? tokens[1] : tokens[1].substring(0, semicolonPos);
-        boolean traceTrue =
-            semicolonPos == -1
-                || tokens[1].length() == semicolonPos + 4
-                    && tokens[1].charAt(semicolonPos + 3) == '1';
+        if (tokens.length >= 2) {
+          int semicolonPos = tokens[1].indexOf(";");
+          traceTrue = semicolonPos == -1
+                  || tokens[1].length() == semicolonPos + 4
+                  && tokens[1].charAt(semicolonPos + 3) == '1';
+        }
 
-        if (traceId != null && traceTrue) {
-          result =
-              TraceContextOrSamplingFlags.create(
-                  context
-                      .traceIdHigh(traceId[0])
-                      .traceId(traceId[1])
-                      .spanId(Long.parseLong(spanId))
-                      .build());
+        if (traceTrue) {
+          result = TraceContextOrSamplingFlags.create(
+                  context.traceIdHigh(traceId[0]).traceId(traceId[1]).spanId(1L).build());
         }
       }
     }
