@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -45,26 +45,30 @@ public class ITStackdriverSender {
   String projectId = "test-project";
   AsyncReporter<Span> reporter;
 
-  @Before public void setUp() {
+  @Before
+  public void setUp() {
     server.getServiceRegistry().addService(traceService);
-    reporter = AsyncReporter.builder(
-        StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build()
-    )
-        .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
-        .build(StackdriverEncoder.V1);
+    reporter =
+        AsyncReporter.builder(
+                StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build())
+            .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
+            .build(StackdriverEncoder.V1);
   }
 
-  @Test public void sendSpans_empty() {
+  @Test
+  public void sendSpans_empty() {
     reporter.flush();
 
     verify(traceService, never()).patchTraces(any(), any());
   }
 
-  @Test public void sendSpans() {
-    onClientCall(observer -> {
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-    });
+  @Test
+  public void sendSpans() {
+    onClientCall(
+        observer -> {
+          observer.onNext(Empty.getDefaultInstance());
+          observer.onCompleted();
+        });
 
     reporter.report(TestObjects.CLIENT_SPAN);
     reporter.flush();
@@ -75,20 +79,23 @@ public class ITStackdriverSender {
     verify(traceService).patchTraces(requestCaptor.capture(), any());
 
     PatchTracesRequest request = requestCaptor.getValue();
-    assertThat(request.getProjectId())
-        .isEqualTo(projectId);
+    assertThat(request.getProjectId()).isEqualTo(projectId);
     assertThat(request.getTraces().getTracesList())
         .isEqualTo(TraceTranslator.translateSpans(projectId, asList(TestObjects.CLIENT_SPAN)));
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
-    doAnswer((Answer<Void>) invocationOnMock -> {
-      StreamObserver<Empty> observer = ((StreamObserver) invocationOnMock.getArguments()[1]);
-      onClientCall.accept(observer);
-      return null;
-    }).when(traceService).patchTraces(any(PatchTracesRequest.class), any(StreamObserver.class));
+    doAnswer(
+            (Answer<Void>)
+                invocationOnMock -> {
+                  StreamObserver<Empty> observer =
+                      ((StreamObserver) invocationOnMock.getArguments()[1]);
+                  onClientCall.accept(observer);
+                  return null;
+                })
+        .when(traceService)
+        .patchTraces(any(PatchTracesRequest.class), any(StreamObserver.class));
   }
 
-  static class TestTraceService extends TraceServiceImplBase {
-  }
+  static class TestTraceService extends TraceServiceImplBase {}
 }

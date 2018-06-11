@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -69,14 +69,16 @@ final class TraceCollator {
     System.arraycopy(currentTraceId, 0, lastTraceId, 0, 32);
   }
 
-  static final Comparator<byte[]> TRACE_ID_COMPARATOR = new Comparator<byte[]>() {
-    @Override public int compare(byte[] left, byte[] right) {
-      for (int i = 0; i < 32; i++) {
-        int comparison = UnsignedBytes.compare(left[i], right[i]);
-        if (comparison == 0) continue;
-        return comparison;
-      }
-      return 0;
-    }
-  };
+  static final Comparator<byte[]> TRACE_ID_COMPARATOR =
+      new Comparator<byte[]>() {
+        @Override
+        public int compare(byte[] left, byte[] right) {
+          for (int i = 0; i < 32; i++) {
+            int comparison = UnsignedBytes.compare(left[i], right[i]);
+            if (comparison == 0) continue;
+            return comparison;
+          }
+          return 0;
+        }
+      };
 }

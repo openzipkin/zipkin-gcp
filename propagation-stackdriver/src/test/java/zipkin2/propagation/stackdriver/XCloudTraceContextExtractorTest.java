@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -26,8 +26,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=1";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation) StackdriverTracePropagation.FACTORY.create(
-                Propagation.KeyFactory.STRING),
+            (StackdriverTracePropagation)
+                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
             (carrier, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
@@ -41,8 +41,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=0";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation) StackdriverTracePropagation.FACTORY.create(
-                Propagation.KeyFactory.STRING),
+            (StackdriverTracePropagation)
+                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
             (carrier, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
@@ -54,8 +54,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation) StackdriverTracePropagation.FACTORY.create(
-                Propagation.KeyFactory.STRING),
+            (StackdriverTracePropagation)
+                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
             (carrier, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
@@ -67,8 +67,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation) StackdriverTracePropagation.FACTORY.create(
-                Propagation.KeyFactory.STRING),
+            (StackdriverTracePropagation)
+                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
             (carrier, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
@@ -82,8 +82,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation) StackdriverTracePropagation.FACTORY.create(
-                Propagation.KeyFactory.STRING),
+            (StackdriverTracePropagation)
+                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
             (carrier, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());

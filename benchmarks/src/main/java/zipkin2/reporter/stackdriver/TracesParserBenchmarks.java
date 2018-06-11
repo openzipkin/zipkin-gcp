@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -50,23 +50,26 @@ public class TracesParserBenchmarks {
     HUNDRED_ENCODED_CLIENT_SPANS = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
       for (int j = 0; j < 10; j++) {
-        HUNDRED_ENCODED_CLIENT_SPANS.add(StackdriverEncoder.V1.encode(
-            CLIENT_SPAN.toBuilder()
-                .traceId(Integer.toHexString(i))
-                .id(Integer.toHexString(j))
-                .build()
-        ));
+        HUNDRED_ENCODED_CLIENT_SPANS.add(
+            StackdriverEncoder.V1.encode(
+                CLIENT_SPAN
+                    .toBuilder()
+                    .traceId(Integer.toHexString(i))
+                    .id(Integer.toHexString(j))
+                    .build()));
       }
     }
   }
 
   final TraceCollator collator = new TraceCollator();
 
-  @Benchmark public Traces parseClientSpan() {
+  @Benchmark
+  public Traces parseClientSpan() {
     return TracesParser.parse(PROJECT_ID, ENCODED_CLIENT_SPAN);
   }
 
-  @Benchmark public Traces parse100ClientSpans() {
+  @Benchmark
+  public Traces parse100ClientSpans() {
     TracesParser parser = new TracesParser(PROJECT_ID);
     collator.collate(HUNDRED_ENCODED_CLIENT_SPANS, parser);
     return parser.finish();
@@ -74,9 +77,10 @@ public class TracesParserBenchmarks {
 
   // Convenience main entry-point
   public static void main(String[] args) throws RunnerException {
-    Options opt = new OptionsBuilder()
-        .include(".*" + TracesParserBenchmarks.class.getSimpleName() + ".*")
-        .build();
+    Options opt =
+        new OptionsBuilder()
+            .include(".*" + TracesParserBenchmarks.class.getSimpleName() + ".*")
+            .build();
 
     new Runner(opt).run();
   }

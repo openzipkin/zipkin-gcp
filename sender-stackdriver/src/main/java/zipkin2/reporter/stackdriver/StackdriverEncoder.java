@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -25,16 +25,19 @@ import zipkin2.translation.stackdriver.SpanTranslator;
 @SuppressWarnings("ImmutableEnumChecker") // because span is immutable
 public enum StackdriverEncoder implements BytesEncoder<Span> {
   V1 {
-    @Override public Encoding encoding() {
+    @Override
+    public Encoding encoding() {
       return Encoding.PROTO3;
     }
 
-    @Override public int sizeInBytes(Span input) {
+    @Override
+    public int sizeInBytes(Span input) {
       return 32 + translate(input).getSerializedSize();
     }
 
     /** This encodes a TraceSpan message prefixed by a potentially padded 32 character trace ID */
-    @Override public byte[] encode(Span span) {
+    @Override
+    public byte[] encode(Span span) {
       TraceSpan translated = translate(span);
       byte[] result = new byte[32 + translated.getSerializedSize()];
 
@@ -60,7 +63,8 @@ public enum StackdriverEncoder implements BytesEncoder<Span> {
       return SpanTranslator.translate(TraceSpan.newBuilder(), span).build();
     }
 
-    @Override public byte[] encodeList(List<Span> spans) {
+    @Override
+    public byte[] encodeList(List<Span> spans) {
       throw new UnsupportedOperationException("used in rest api; unused in reporter and collector");
     }
   }

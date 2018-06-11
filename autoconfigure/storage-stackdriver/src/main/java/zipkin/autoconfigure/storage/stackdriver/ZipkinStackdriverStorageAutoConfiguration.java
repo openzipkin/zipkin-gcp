@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -33,8 +33,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import zipkin.internal.V2StorageComponent;
-import zipkin.storage.StorageComponent;
+import zipkin2.storage.StorageComponent;
 import zipkin2.storage.stackdriver.StackdriverStorage;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -87,20 +86,15 @@ public class ZipkinStackdriverStorageAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  V2StorageComponent storage(
+  StorageComponent storage(
       @Value("${zipkin.storage.strict-trace-id:true}") boolean strictTraceId,
       @Qualifier("projectId") String projectId,
       ManagedChannel managedChannel,
       Credentials credentials) {
-    StackdriverStorage result = StackdriverStorage.newBuilder(managedChannel)
+    return StackdriverStorage.newBuilder(managedChannel)
         .projectId(projectId)
         .strictTraceId(strictTraceId)
-        .callOptions(DEFAULT.withCallCredentials(MoreCallCredentials.from(credentials))).build();
-    return V2StorageComponent.create(result);
-  }
-
-  @Bean
-  StackdriverStorage v2Storage(V2StorageComponent component) {
-    return (StackdriverStorage) component.delegate();
+        .callOptions(DEFAULT.withCallCredentials(MoreCallCredentials.from(credentials)))
+        .build();
   }
 }

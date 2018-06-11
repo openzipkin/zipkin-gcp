@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -22,6 +22,7 @@ final class CallbackToUnaryClientCallListener<RespT> extends ClientCall.Listener
   private final Callback<RespT> callback;
   /** this differentiates between not yet set and null */
   boolean valueSet; // guarded by this
+
   RespT value; // guarded by this
 
   CallbackToUnaryClientCallListener(Callback<RespT> callback) {
@@ -29,8 +30,7 @@ final class CallbackToUnaryClientCallListener<RespT> extends ClientCall.Listener
   }
 
   @Override
-  public void onHeaders(Metadata headers) {
-  }
+  public void onHeaders(Metadata headers) {}
 
   @Override
   public synchronized void onMessage(RespT value) {

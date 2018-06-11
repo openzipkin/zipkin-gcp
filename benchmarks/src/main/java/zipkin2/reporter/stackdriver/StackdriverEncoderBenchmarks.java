@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -40,44 +40,49 @@ import zipkin2.codec.SpanBytesEncoder;
 @State(Scope.Thread)
 @Threads(1)
 public class StackdriverEncoderBenchmarks {
-  static final Span CLIENT_SPAN = Span.newBuilder()
-      .traceId("7180c278b62e8f6a216a2aea45d08fc9")
-      .parentId("6b221d5bc9e6496c")
-      .id("5b4185666d50f68b")
-      .name("get")
-      .kind(Span.Kind.CLIENT)
-      .localEndpoint(Endpoint.newBuilder().serviceName("frontend").build())
-      .remoteEndpoint(
-          Endpoint.newBuilder().serviceName("backend").ip("192.168.99.101").port(9000).build()
-      )
-      .timestamp(1_000_000L) // 1 second after epoch
-      .duration(123_456L)
-      .addAnnotation(1_123_000L, "foo")
-      .putTag("http.path", "/api")
-      .putTag("clnt/finagle.version", "6.45.0")
-      .build();
+  static final Span CLIENT_SPAN =
+      Span.newBuilder()
+          .traceId("7180c278b62e8f6a216a2aea45d08fc9")
+          .parentId("6b221d5bc9e6496c")
+          .id("5b4185666d50f68b")
+          .name("get")
+          .kind(Span.Kind.CLIENT)
+          .localEndpoint(Endpoint.newBuilder().serviceName("frontend").build())
+          .remoteEndpoint(
+              Endpoint.newBuilder().serviceName("backend").ip("192.168.99.101").port(9000).build())
+          .timestamp(1_000_000L) // 1 second after epoch
+          .duration(123_456L)
+          .addAnnotation(1_123_000L, "foo")
+          .putTag("http.path", "/api")
+          .putTag("clnt/finagle.version", "6.45.0")
+          .build();
 
-  @Benchmark public int sizeInBytesClientSpan_json_zipkin_json() {
+  @Benchmark
+  public int sizeInBytesClientSpan_json_zipkin_json() {
     return SpanBytesEncoder.JSON_V2.sizeInBytes(CLIENT_SPAN);
   }
 
-  @Benchmark public int sizeInBytesClientSpan_json_stackdriver_proto3() {
+  @Benchmark
+  public int sizeInBytesClientSpan_json_stackdriver_proto3() {
     return StackdriverEncoder.V1.sizeInBytes(CLIENT_SPAN);
   }
 
-  @Benchmark public byte[] encodeClientSpan_json_zipkin_json() {
+  @Benchmark
+  public byte[] encodeClientSpan_json_zipkin_json() {
     return SpanBytesEncoder.JSON_V2.encode(CLIENT_SPAN);
   }
 
-  @Benchmark public byte[] encodeClientSpan_json_stackdriver_proto3() {
+  @Benchmark
+  public byte[] encodeClientSpan_json_stackdriver_proto3() {
     return StackdriverEncoder.V1.encode(CLIENT_SPAN);
   }
 
   // Convenience main entry-point
   public static void main(String[] args) throws RunnerException {
-    Options opt = new OptionsBuilder()
-        .include(".*" + StackdriverEncoderBenchmarks.class.getSimpleName() + ".*")
-        .build();
+    Options opt =
+        new OptionsBuilder()
+            .include(".*" + StackdriverEncoderBenchmarks.class.getSimpleName() + ".*")
+            .build();
 
     new Runner(opt).run();
   }

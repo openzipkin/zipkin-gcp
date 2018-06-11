@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -40,7 +40,8 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
 
   AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 
-  @After public void close() {
+  @After
+  public void close() {
     context.close();
   }
 
@@ -61,9 +62,7 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
   @Test
   public void providesStorageComponent_whenStorageTypeStackdriverAndProjectIdSet() {
     addEnvironment(
-        context,
-        "zipkin.storage.type:stackdriver",
-        "zipkin.storage.stackdriver.project-id:zipkin");
+        context, "zipkin.storage.type:stackdriver", "zipkin.storage.stackdriver.project-id:zipkin");
     addEnvironment(context, "zipkin.storage.type:stackdriver");
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
@@ -91,8 +90,10 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
         .isEqualTo("localhost");
   }
 
-  @Configuration static class TestConfiguration {
-    @Bean("googleCredentials") public Credentials mockGoogleCredentials() throws IOException {
+  @Configuration
+  static class TestConfiguration {
+    @Bean("googleCredentials")
+    public Credentials mockGoogleCredentials() throws IOException {
       return mock(GoogleCredentials.class);
     }
 

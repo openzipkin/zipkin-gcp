@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -30,8 +30,8 @@ import zipkin2.translation.stackdriver.TraceTranslator;
 import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.METHOD_PATCH_TRACES;
 
 /**
- * Consumes Zipkin spans, translates them to Stackdriver spans using a provided
- * TraceTranslator, and issues a {@link PatchTracesRequest}.
+ * Consumes Zipkin spans, translates them to Stackdriver spans using a provided TraceTranslator, and
+ * issues a {@link PatchTracesRequest}.
  */
 final class StackdriverSpanConsumer implements SpanConsumer {
 

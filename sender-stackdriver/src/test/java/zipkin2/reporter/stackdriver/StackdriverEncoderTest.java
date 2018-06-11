@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -25,24 +25,26 @@ public class StackdriverEncoderTest {
   StackdriverEncoder encoder = StackdriverEncoder.V1;
   Span zipkinSpan = TestObjects.CLIENT_SPAN;
 
-  @Test public void sizeInBytes() {
-    assertThat(encoder.sizeInBytes(zipkinSpan))
-        .isEqualTo(encoder.encode(zipkinSpan).length);
+  @Test
+  public void sizeInBytes() {
+    assertThat(encoder.sizeInBytes(zipkinSpan)).isEqualTo(encoder.encode(zipkinSpan).length);
   }
 
-  @Test public void sizeInBytes_64BitTraceId() {
+  @Test
+  public void sizeInBytes_64BitTraceId() {
     String traceId = "216a2aea45d08fc9";
     zipkinSpan = zipkinSpan.toBuilder().traceId(traceId).build();
 
-    assertThat(encoder.sizeInBytes(zipkinSpan))
-        .isEqualTo(encoder.encode(zipkinSpan).length);
+    assertThat(encoder.sizeInBytes(zipkinSpan)).isEqualTo(encoder.encode(zipkinSpan).length);
   }
 
-  @Test public void encode_writesTraceIdPrefixedSpan() throws Exception {
+  @Test
+  public void encode_writesTraceIdPrefixedSpan() throws Exception {
     assertTraceIdPrefixedSpan(encoder.encode(zipkinSpan), zipkinSpan.traceId());
   }
 
-  @Test public void encode_writesPaddedTraceIdPrefixedSpan() throws Exception {
+  @Test
+  public void encode_writesPaddedTraceIdPrefixedSpan() throws Exception {
     String traceId = "216a2aea45d08fc9";
     zipkinSpan = zipkinSpan.toBuilder().traceId(traceId).build();
 
@@ -53,8 +55,7 @@ public class StackdriverEncoderTest {
     char[] traceId = new char[32];
     for (int i = 0; i < 32; i++) traceId[i] = (char) serialized[i];
 
-    assertThat(new String(traceId))
-        .isEqualTo(expectedTraceId);
+    assertThat(new String(traceId)).isEqualTo(expectedTraceId);
 
     TraceSpan deserialized = TraceSpan.parser().parseFrom(serialized, 32, serialized.length - 32);
 

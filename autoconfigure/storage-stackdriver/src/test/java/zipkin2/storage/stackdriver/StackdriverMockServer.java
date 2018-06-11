@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -63,9 +63,11 @@ public class StackdriverMockServer extends ExternalResource {
 
   public StackdriverMockServer() {
     this.port = SocketUtils.findAvailableTcpPort();
-    this.server = NettyServerBuilder.forPort(port)
-        .sslContext(SERVER_SSL_CONTEXT)
-        .addService(new Service()).build();
+    this.server =
+        NettyServerBuilder.forPort(port)
+            .sslContext(SERVER_SSL_CONTEXT)
+            .addService(new Service())
+            .build();
   }
 
   public int getPort() {

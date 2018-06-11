@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -87,22 +87,27 @@ public final class StackdriverSender extends Sender {
     projectIdFieldSize = 1 /* field no */ + CodedOutputStream.computeStringSizeNoTag(projectId);
   }
 
-  @Override public Encoding encoding() {
+  @Override
+  public Encoding encoding() {
     return Encoding.PROTO3;
   }
 
-  @Override public int messageMaxBytes() {
+  @Override
+  public int messageMaxBytes() {
     return 1024 * 1024; // 1 MiB for now
   }
 
   // re-use trace collator to avoid re-allocating arrays
-  final ThreadLocal<TraceCollator> traceCollator = new ThreadLocal<TraceCollator>() {
-    @Override protected TraceCollator initialValue() {
-      return new TraceCollator();
-    }
-  };
+  final ThreadLocal<TraceCollator> traceCollator =
+      new ThreadLocal<TraceCollator>() {
+        @Override
+        protected TraceCollator initialValue() {
+          return new TraceCollator();
+        }
+      };
 
-  @Override public int messageSizeInBytes(List<byte[]> traceIdPrefixedSpans) {
+  @Override
+  public int messageSizeInBytes(List<byte[]> traceIdPrefixedSpans) {
     int length = traceIdPrefixedSpans.size();
     if (length == 0) return 0;
     if (length == 1) return messageSizeInBytes(traceIdPrefixedSpans.get(0).length);
@@ -112,14 +117,16 @@ public final class StackdriverSender extends Sender {
     return sizer.finish();
   }
 
-  @Override public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
+  @Override
+  public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
     return PatchTracesRequestSizer.size(projectIdFieldSize, traceIdPrefixedSpanSize - 32);
   }
 
   /** close is typically called from a different thread */
   volatile boolean closeCalled;
 
-  @Override public Call<Void> sendSpans(List<byte[]> traceIdPrefixedSpans) {
+  @Override
+  public Call<Void> sendSpans(List<byte[]> traceIdPrefixedSpans) {
     if (closeCalled) throw new IllegalStateException("closed");
     int length = traceIdPrefixedSpans.size();
     if (length == 0) return Call.create(null);
@@ -133,23 +140,24 @@ public final class StackdriverSender extends Sender {
       traces = parser.finish();
     }
 
-    PatchTracesRequest request = PatchTracesRequest.newBuilder()
-        .setProjectId(projectId)
-        .setTraces(traces)
-        .build();
+    PatchTracesRequest request =
+        PatchTracesRequest.newBuilder().setProjectId(projectId).setTraces(traces).build();
 
     return new PatchTracesCall(request).map(EmptyToVoid.INSTANCE);
   }
 
-  @Override public CheckResult check() {
+  @Override
+  public CheckResult check() {
     return CheckResult.OK;
   }
 
-  @Override public final String toString() {
+  @Override
+  public final String toString() {
     return "StackdriverSender{" + projectId + "}";
   }
 
-  @Override public void close() {
+  @Override
+  public void close() {
     if (!shutdownChannelOnClose) return;
     if (closeCalled) return;
     closeCalled = true;
@@ -162,18 +170,21 @@ public final class StackdriverSender extends Sender {
       super(channel, METHOD_PATCH_TRACES, callOptions, request);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
       return "PatchTracesCall{" + request() + "}";
     }
 
-    @Override public PatchTracesCall clone() {
+    @Override
+    public PatchTracesCall clone() {
       return new PatchTracesCall(request());
     }
   }
 
   enum EmptyToVoid implements Call.Mapper<Empty, Void> {
     INSTANCE {
-      @Override public Void map(Empty empty) {
+      @Override
+      public Void map(Empty empty) {
         return null;
       }
     }

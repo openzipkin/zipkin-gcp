@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -22,34 +22,37 @@ import java.util.List;
 /**
  * Stackdriver Trace propagation.
  *
- * <p>Tries to extract a trace ID and span ID using the {@code x-cloud-trace-context} key.
- * If not present, tries the B3 key set, such as {@code X-B3-TraceId}, {@code X-B3-SpanId}, etc.
+ * <p>Tries to extract a trace ID and span ID using the {@code x-cloud-trace-context} key. If not
+ * present, tries the B3 key set, such as {@code X-B3-TraceId}, {@code X-B3-SpanId}, etc.
  *
  * <p>Uses {@link B3Propagation} injection, to inject the tracing context using B3 headers.
  */
 public final class StackdriverTracePropagation<K> implements Propagation<K> {
 
-  public static final Propagation.Factory FACTORY = new Propagation.Factory() {
-    @Override public <K> Propagation<K> create(KeyFactory<K> keyFactory) {
-      return new StackdriverTracePropagation<>(keyFactory);
-    }
+  public static final Propagation.Factory FACTORY =
+      new Propagation.Factory() {
+        @Override
+        public <K> Propagation<K> create(KeyFactory<K> keyFactory) {
+          return new StackdriverTracePropagation<>(keyFactory);
+        }
 
-    @Override public boolean supportsJoin() {
-      return false;
-    }
+        @Override
+        public boolean supportsJoin() {
+          return false;
+        }
 
-    @Override public boolean requires128BitTraceId() {
-      return true;
-    }
+        @Override
+        public boolean requires128BitTraceId() {
+          return true;
+        }
 
-    @Override public String toString() {
-      return "StackdriverTracePropagationFactory";
-    }
-  };
+        @Override
+        public String toString() {
+          return "StackdriverTracePropagationFactory";
+        }
+      };
 
-  /**
-   * 128 trace ID lower-hex encoded into 32 characters (required)
-   */
+  /** 128 trace ID lower-hex encoded into 32 characters (required) */
   private static final String TRACE_ID_NAME = "x-cloud-trace-context";
 
   private Propagation<K> b3Propagation;
@@ -63,28 +66,28 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
   }
 
   /**
-   * Return the "x-cloud-trace-context" key.
-   * The value for that key is formatted in the
-   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;o=TRACE_TRUE" or
-   * ""x-cloud-trace-context: TRACE_ID/SPAN_ID" formats.
+   * Return the "x-cloud-trace-context" key. The value for that key is formatted in the
+   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;o=TRACE_TRUE" or ""x-cloud-trace-context:
+   * TRACE_ID/SPAN_ID" formats.
    */
   public K getTraceIdKey() {
     return traceIdKey;
   }
 
-  @Override public List<K> keys() {
+  @Override
+  public List<K> keys() {
     return fields;
   }
 
-  @Override public <C> TraceContext.Injector<C> injector(Setter<C, K> setter) {
+  @Override
+  public <C> TraceContext.Injector<C> injector(Setter<C, K> setter) {
     return b3Propagation.injector(setter);
   }
 
-  @Override public <C> TraceContext.Extractor<C> extractor(Getter<C, K> getter) {
+  @Override
+  public <C> TraceContext.Extractor<C> extractor(Getter<C, K> getter) {
     if (getter == null) throw new NullPointerException("getter == null");
     return CompositeExtractor.Factory.newCompositeExtractor(
-        new XCloudTraceContextExtractor<>(this, getter),
-        b3Propagation.extractor(getter));
+        new XCloudTraceContextExtractor<>(this, getter), b3Propagation.extractor(getter));
   }
 }
-

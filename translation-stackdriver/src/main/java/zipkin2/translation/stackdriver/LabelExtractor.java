@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -22,17 +22,17 @@ import zipkin2.Annotation;
 import zipkin2.Span;
 
 /**
- * LabelExtractor extracts the set of Stackdriver Span labels equivalent to the annotations in
- * a given Zipkin Span.
+ * LabelExtractor extracts the set of Stackdriver Span labels equivalent to the annotations in a
+ * given Zipkin Span.
  *
- * <p>Zipkin annotations are converted to Stackdriver Span labels by using annotation.value as
- * the key and annotation.timestamp as the value.
+ * <p>Zipkin annotations are converted to Stackdriver Span labels by using annotation.value as the
+ * key and annotation.timestamp as the value.
  *
- * <p>Zipkin tags are converted to Stackdriver Span labels by using annotation.key as the key
- * and the String value of annotation.value as the value.
+ * <p>Zipkin tags are converted to Stackdriver Span labels by using annotation.key as the key and
+ * the String value of annotation.value as the value.
  *
- * <p>Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver
- * Trace name. Any Zipkin annotations without a Stackdriver label equivalent are renamed to
+ * <p>Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver Trace
+ * name. Any Zipkin annotations without a Stackdriver label equivalent are renamed to
  * zipkin.io/[key_name]
  */
 final class LabelExtractor {
@@ -102,13 +102,15 @@ final class LabelExtractor {
   private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
   // SimpleDateFormat is not thread safe
-  private static final ThreadLocal<SimpleDateFormat> DATE = new ThreadLocal<SimpleDateFormat>() {
-    @Override protected SimpleDateFormat initialValue() {
-      SimpleDateFormat result = new SimpleDateFormat("yyyy-MM-dd (HH:mm:ss.SSS)");
-      result.setTimeZone(UTC);
-      return result;
-    }
-  };
+  private static final ThreadLocal<SimpleDateFormat> DATE =
+      new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+          SimpleDateFormat result = new SimpleDateFormat("yyyy-MM-dd (HH:mm:ss.SSS)");
+          result.setTimeZone(UTC);
+          return result;
+        }
+      };
 
   static String formatTimestamp(long microseconds) {
     long milliseconds = microseconds / 1000;

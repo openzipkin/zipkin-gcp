@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -53,7 +53,8 @@ public class ZipkinStackdriverStorageIntegrationTest {
   StackdriverStorage storage;
   ZipkinStackdriverStorageProperties storageProperties;
 
-  @Before public void init() {
+  @Before
+  public void init() {
     addEnvironment(
         context,
         "zipkin.storage.type:stackdriver",
@@ -68,7 +69,8 @@ public class ZipkinStackdriverStorageIntegrationTest {
     storageProperties = context.getBean(ZipkinStackdriverStorageProperties.class);
   }
 
-  @After public void close() {
+  @After
+  public void close() {
     mockServer.reset();
     context.close();
   }
@@ -102,9 +104,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
   public void traceConsumerGetsCalled() throws Exception {
     List<Long> spanIds = LongStream.of(1, 2, 3).boxed().collect(Collectors.toList());
 
-    assertThat(mockServer.spanIds())
-        .withFailMessage("Unexpected traces in Stackdriver")
-        .isEmpty();
+    assertThat(mockServer.spanIds()).withFailMessage("Unexpected traces in Stackdriver").isEmpty();
 
     CountDownLatch spanCountdown = new CountDownLatch(3);
     mockServer.setSpanCountdown(spanCountdown);
@@ -124,28 +124,34 @@ public class ZipkinStackdriverStorageIntegrationTest {
         .containsExactlyElementsOf(spanIds);
   }
 
-  @Configuration static class TestConfiguration {
-    //TODO(denyska): figure out how to request credentials in StackdriverMockServer
-    @Bean("googleCredentials") public Credentials mockGoogleCredentials() {
+  @Configuration
+  static class TestConfiguration {
+    // TODO(denyska): figure out how to request credentials in StackdriverMockServer
+    @Bean("googleCredentials")
+    public Credentials mockGoogleCredentials() {
       return new Credentials() {
-        @Override public String getAuthenticationType() {
+        @Override
+        public String getAuthenticationType() {
           return null;
         }
 
-        @Override public Map<String, List<String>> getRequestMetadata(URI uri) {
+        @Override
+        public Map<String, List<String>> getRequestMetadata(URI uri) {
           return null;
         }
 
-        @Override public boolean hasRequestMetadata() {
+        @Override
+        public boolean hasRequestMetadata() {
           return false;
         }
 
-        @Override public boolean hasRequestMetadataOnly() {
+        @Override
+        public boolean hasRequestMetadataOnly() {
           return false;
         }
 
-        @Override public void refresh() {
-        }
+        @Override
+        public void refresh() {}
       };
     }
 

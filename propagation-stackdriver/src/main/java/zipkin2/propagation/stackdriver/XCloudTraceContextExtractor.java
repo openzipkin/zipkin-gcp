@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -11,7 +11,6 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-
 package zipkin2.propagation.stackdriver;
 
 import brave.propagation.Propagation;
@@ -29,19 +28,19 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
   private final StackdriverTracePropagation<K> propagation;
   private final Propagation.Getter<C, K> getter;
 
-  public XCloudTraceContextExtractor(StackdriverTracePropagation<K> propagation,
-      Propagation.Getter<C, K> getter) {
+  public XCloudTraceContextExtractor(
+      StackdriverTracePropagation<K> propagation, Propagation.Getter<C, K> getter) {
     this.propagation = propagation;
     this.getter = getter;
   }
 
   /**
-   * Creates a tracing context if the extracted string follows the
-   * "x-cloud-trace-context: TRACE_ID/SPAN_ID" format; or the
-   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;0=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is
-   * {@code 1}.
+   * Creates a tracing context if the extracted string follows the "x-cloud-trace-context:
+   * TRACE_ID/SPAN_ID" format; or the "x-cloud-trace-context: TRACE_ID/SPAN_ID;0=TRACE_TRUE" format
+   * and {@code TRACE_TRUE}'s value is {@code 1}.
    */
-  @Override public TraceContextOrSamplingFlags extract(C carrier) {
+  @Override
+  public TraceContextOrSamplingFlags extract(C carrier) {
     if (carrier == null) throw new NullPointerException("carrier == null");
 
     TraceContextOrSamplingFlags result = TraceContextOrSamplingFlags.EMPTY;
@@ -57,17 +56,20 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
       if (tokens.length >= 2) {
         long[] traceId = convertHexTraceIdToLong(tokens[0]);
         int semicolonPos = tokens[1].indexOf(";");
-        String spanId = semicolonPos == -1
-            ? tokens[1]
-            : tokens[1].substring(0, semicolonPos);
-        boolean traceTrue = semicolonPos == -1
-            || tokens[1].length() == semicolonPos + 4 && tokens[1].charAt(semicolonPos + 3) == '1';
+        String spanId = semicolonPos == -1 ? tokens[1] : tokens[1].substring(0, semicolonPos);
+        boolean traceTrue =
+            semicolonPos == -1
+                || tokens[1].length() == semicolonPos + 4
+                    && tokens[1].charAt(semicolonPos + 3) == '1';
 
         if (traceId != null && traceTrue) {
-          result = TraceContextOrSamplingFlags.create(
-              context.traceIdHigh(traceId[0])
-                  .traceId(traceId[1])
-                  .spanId(Long.parseLong(spanId)).build());
+          result =
+              TraceContextOrSamplingFlags.create(
+                  context
+                      .traceIdHigh(traceId[0])
+                      .traceId(traceId[1])
+                      .spanId(Long.parseLong(spanId))
+                      .build());
         }
       }
     }

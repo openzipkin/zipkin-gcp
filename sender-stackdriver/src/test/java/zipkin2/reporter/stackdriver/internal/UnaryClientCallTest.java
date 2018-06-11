@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -59,27 +59,32 @@ public class UnaryClientCallTest {
 
   PatchTracesCall call;
 
-  @Before public void setUp() throws Throwable {
+  @Before
+  public void setUp() throws Throwable {
     server.getServiceRegistry().addService(traceService);
     call = new PatchTracesCall(server.getChannel(), PatchTracesRequest.newBuilder().build());
   }
 
-  @Test public void execute_success() throws Throwable {
-    onClientCall(observer -> {
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-    });
+  @Test
+  public void execute_success() throws Throwable {
+    onClientCall(
+        observer -> {
+          observer.onNext(Empty.getDefaultInstance());
+          observer.onCompleted();
+        });
 
     call.execute();
 
     verifyPatchRequestSent();
   }
 
-  @Test public void enqueue_success() throws Throwable {
-    onClientCall(observer -> {
-      observer.onNext(Empty.getDefaultInstance());
-      observer.onCompleted();
-    });
+  @Test
+  public void enqueue_success() throws Throwable {
+    onClientCall(
+        observer -> {
+          observer.onNext(Empty.getDefaultInstance());
+          observer.onCompleted();
+        });
 
     awaitCallbackResult();
 
@@ -110,31 +115,38 @@ public class UnaryClientCallTest {
     awaitCallbackResult();
   }
 
-  static class TestTraceService extends TraceServiceImplBase {
-  }
+  static class TestTraceService extends TraceServiceImplBase {}
 
   void awaitCallbackResult() throws Throwable {
     AtomicReference<Throwable> ref = new AtomicReference<>();
     CountDownLatch latch = new CountDownLatch(1);
-    call.enqueue(new Callback<Empty>() {
-      @Override public void onSuccess(Empty empty) {
-        latch.countDown();
-      }
+    call.enqueue(
+        new Callback<Empty>() {
+          @Override
+          public void onSuccess(Empty empty) {
+            latch.countDown();
+          }
 
-      @Override public void onError(Throwable throwable) {
-        ref.set(throwable);
-        latch.countDown();
-      }
-    });
+          @Override
+          public void onError(Throwable throwable) {
+            ref.set(throwable);
+            latch.countDown();
+          }
+        });
     latch.await(10, TimeUnit.MILLISECONDS);
     if (ref.get() != null) throw ref.get();
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
-    doAnswer((Answer<Void>) invocationOnMock -> {
-      StreamObserver<Empty> observer = ((StreamObserver) invocationOnMock.getArguments()[1]);
-      onClientCall.accept(observer);
-      return null;
-    }).when(traceService).patchTraces(any(PatchTracesRequest.class), any(StreamObserver.class));
+    doAnswer(
+            (Answer<Void>)
+                invocationOnMock -> {
+                  StreamObserver<Empty> observer =
+                      ((StreamObserver) invocationOnMock.getArguments()[1]);
+                  onClientCall.accept(observer);
+                  return null;
+                })
+        .when(traceService)
+        .patchTraces(any(PatchTracesRequest.class), any(StreamObserver.class));
   }
 }

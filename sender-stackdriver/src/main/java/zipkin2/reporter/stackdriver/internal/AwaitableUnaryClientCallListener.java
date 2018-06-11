@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -25,6 +25,7 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
   final CountDownLatch countDown = new CountDownLatch(1);
   /** this differentiates between not yet set and null */
   boolean resultSet; // guarded by this
+
   Object result; // guarded by this
 
   /**
@@ -62,8 +63,7 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
   }
 
   @Override
-  public void onHeaders(Metadata headers) {
-  }
+  public void onHeaders(Metadata headers) {}
 
   @Override
   public synchronized void onMessage(V value) {
@@ -80,9 +80,10 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
   public synchronized void onClose(Status status, Metadata trailers) {
     if (status.isOk()) {
       if (!resultSet) {
-        result = Status.INTERNAL
-            .withDescription("No value received for unary call")
-            .asRuntimeException(trailers);
+        result =
+            Status.INTERNAL
+                .withDescription("No value received for unary call")
+                .asRuntimeException(trailers);
       }
     } else {
       result = status.asRuntimeException(trailers);

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -55,7 +55,8 @@ public final class StackdriverStorage extends StorageComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public final Builder strictTraceId(boolean strictTraceId) {
+    @Override
+    public final Builder strictTraceId(boolean strictTraceId) {
       if (!strictTraceId) {
         throw new UnsupportedOperationException("strictTraceId cannot be disabled");
       }
@@ -63,7 +64,8 @@ public final class StackdriverStorage extends StorageComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public final Builder searchEnabled(boolean searchEnabled) {
+    @Override
+    public final Builder searchEnabled(boolean searchEnabled) {
       if (!searchEnabled) {
         throw new UnsupportedOperationException("searchEnabled cannot be disabled");
       }
@@ -82,7 +84,8 @@ public final class StackdriverStorage extends StorageComponent {
       return this;
     }
 
-    @Override public StackdriverStorage build() {
+    @Override
+    public StackdriverStorage build() {
       if (projectId == null) throw new NullPointerException("projectId == null");
       return new StackdriverStorage(this);
     }
@@ -100,26 +103,31 @@ public final class StackdriverStorage extends StorageComponent {
     shutdownChannelOnClose = builder.shutdownChannelOnClose;
   }
 
-  @Override public SpanStore spanStore() {
+  @Override
+  public SpanStore spanStore() {
     throw new UnsupportedOperationException("Read operations are not supported");
   }
 
-  @Override public SpanConsumer spanConsumer() {
+  @Override
+  public SpanConsumer spanConsumer() {
     return new StackdriverSpanConsumer(channel, callOptions, projectId);
   }
 
-  @Override public CheckResult check() {
+  @Override
+  public CheckResult check() {
     return CheckResult.OK;
   }
 
-  @Override public final String toString() {
+  @Override
+  public final String toString() {
     return "StackdriverSender{" + projectId + "}";
   }
 
   /** close is typically called from a different thread */
   volatile boolean closeCalled;
 
-  @Override public void close() {
+  @Override
+  public void close() {
     if (!shutdownChannelOnClose) return;
     if (closeCalled) return;
     closeCalled = true;

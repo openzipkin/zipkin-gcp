@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -35,18 +35,21 @@ final class PatchTracesRequestSizer implements TraceCollator.Observer {
     this.projectIdFieldSize = projectIdFieldSize;
   }
 
-  @Override public void firstTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
+  @Override
+  public void firstTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
     traceSpanSize = traceIdPrefixedSpan.length - 32;
     currentTraceSize = traceSize(projectIdFieldSize, traceSpanSize);
   }
 
-  @Override public void nextSpan(byte[] traceIdPrefixedSpan) {
+  @Override
+  public void nextSpan(byte[] traceIdPrefixedSpan) {
     // we are appending a span to an existing trace, subtract trace ID prefix
     traceSpanSize = traceIdPrefixedSpan.length - 32;
     currentTraceSize += 1 + computeUInt32SizeNoTag(traceSpanSize) + traceSpanSize;
   }
 
-  @Override public void nextTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
+  @Override
+  public void nextTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
     traceListSize += 1 + computeUInt32SizeNoTag(currentTraceSize) + currentTraceSize;
     traceSpanSize = traceIdPrefixedSpan.length - 32;
     currentTraceSize = traceSize(projectIdFieldSize, traceSpanSize);

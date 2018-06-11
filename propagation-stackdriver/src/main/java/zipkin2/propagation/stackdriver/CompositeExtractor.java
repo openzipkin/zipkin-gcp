@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -17,8 +17,8 @@ import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 
 /**
- * Composite extractor that tries several extractors, in order, to retrieve the tracing context
- * from a source.
+ * Composite extractor that tries several extractors, in order, to retrieve the tracing context from
+ * a source.
  */
 public class CompositeExtractor<C> implements TraceContext.Extractor<C> {
 
@@ -33,8 +33,7 @@ public class CompositeExtractor<C> implements TraceContext.Extractor<C> {
     TraceContextOrSamplingFlags context = TraceContextOrSamplingFlags.EMPTY;
 
     int currentExtractor = 0;
-    while (context == TraceContextOrSamplingFlags.EMPTY
-        && currentExtractor < extractors.length) {
+    while (context == TraceContextOrSamplingFlags.EMPTY && currentExtractor < extractors.length) {
       context = extractors[currentExtractor++].extract(carrier);
     }
 

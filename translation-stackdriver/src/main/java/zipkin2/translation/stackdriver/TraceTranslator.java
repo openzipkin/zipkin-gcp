@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -29,7 +29,7 @@ public final class TraceTranslator {
    * Convert a Collection of Zipkin Spans into a Collection of Stackdriver Trace Spans.
    *
    * @param projectId The Google Cloud Platform projectId that should be used for Stackdriver Trace
-   * Traces.
+   *     Traces.
    * @param zipkinSpans The Collection of Zipkin Spans.
    * @return A Collection of Stackdriver Trace Spans.
    */

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2018 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -25,10 +25,12 @@ final class TracesParser implements TraceCollator.Observer {
     char[] traceId = new char[32];
     for (int i = 0; i < 32; i++) traceId[i] = (char) traceIdPrefixedSpan[i];
 
-    Trace trace = Trace.newBuilder()
-        .setProjectId(projectId)
-        .setTraceId(new String(traceId))
-        .addSpans(parseTraceIdPrefixedSpan(traceIdPrefixedSpan)).build();
+    Trace trace =
+        Trace.newBuilder()
+            .setProjectId(projectId)
+            .setTraceId(new String(traceId))
+            .addSpans(parseTraceIdPrefixedSpan(traceIdPrefixedSpan))
+            .build();
 
     return Traces.newBuilder().addTraces(trace).build();
   }
@@ -41,24 +43,28 @@ final class TracesParser implements TraceCollator.Observer {
     this.projectId = projectId;
   }
 
-  @Override public void firstTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
+  @Override
+  public void firstTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
     initCurrentTrace(traceId, traceIdPrefixedSpan);
     tracesBuilder.clear();
   }
 
   void initCurrentTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
-    currentTrace.clearSpans()
+    currentTrace
+        .clearSpans()
         .setProjectId(projectId)
         .setTraceId(new String(traceId))
         .addSpans(parseTraceIdPrefixedSpan(traceIdPrefixedSpan));
   }
 
-  @Override public void nextSpan(byte[] traceIdPrefixedSpan) {
+  @Override
+  public void nextSpan(byte[] traceIdPrefixedSpan) {
     TraceSpan traceSpan = parseTraceIdPrefixedSpan(traceIdPrefixedSpan);
     currentTrace.addSpans(traceSpan);
   }
 
-  @Override public void nextTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
+  @Override
+  public void nextTrace(char[] traceId, byte[] traceIdPrefixedSpan) {
     tracesBuilder.addTraces(currentTrace);
     initCurrentTrace(traceId, traceIdPrefixedSpan);
   }
