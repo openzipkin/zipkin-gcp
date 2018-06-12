@@ -2,6 +2,12 @@
 
 This is a propagation that behaves like `B3Propagation`, but also extracts the tracing context from the 'x-cloud-trace-context' key.
 
+To use it, you can feed it into your tracing system in the following way:
+
+`Tracing.newBuilder().propagationFactory(StackdriverTracePropagation.FACTORY).build();`
+
+If using Spring Boot auto-configuration, you can also add a dependency to `org.springframework.cloud:spring-cloud-gcp-starter-trace` and this propagation will be automatically set up.
+
 # Extractor
 
 This propagation makes use of the `CompositeExtractor` concept, which attempts to extract the tracing context from multiple extractors.
