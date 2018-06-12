@@ -54,11 +54,15 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
       // Try to parse the trace IDs into the context
       TraceContext.Builder context = TraceContext.newBuilder();
       long[] traceId = convertHexTraceIdToLong(tokens[0]);
+      // traceId is null if invalid
       if (traceId != null) {
         boolean traceTrue = true;
 
+        String spanId = "1";
+        // A span ID exists. A TRACE_TRUE flag also possibly exists.
         if (tokens.length >= 2) {
           int semicolonPos = tokens[1].indexOf(";");
+          spanId = semicolonPos == -1 ? tokens[1] : tokens[1].substring(0, semicolonPos);
           traceTrue = semicolonPos == -1
                   || tokens[1].length() == semicolonPos + 4
                   && tokens[1].charAt(semicolonPos + 3) == '1';
@@ -66,7 +70,10 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
 
         if (traceTrue) {
           result = TraceContextOrSamplingFlags.create(
-                  context.traceIdHigh(traceId[0]).traceId(traceId[1]).spanId(1L).build());
+                  context.traceIdHigh(traceId[0])
+                          .traceId(traceId[1])
+                          .spanId(Long.parseUnsignedLong(spanId))
+                          .build());
         }
       }
     }

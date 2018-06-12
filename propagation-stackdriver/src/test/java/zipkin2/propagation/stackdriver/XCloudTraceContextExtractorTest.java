@@ -33,7 +33,7 @@ public class XCloudTraceContextExtractorTest {
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
-    assertThat(context.context().spanId()).isEqualTo(1L);
+    assertThat(context.context().spanId()).isEqualTo(4981115762139876185L);
   }
 
   @Test
@@ -74,7 +74,7 @@ public class XCloudTraceContextExtractorTest {
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
-    assertThat(context.context().spanId()).isEqualTo(1L);
+    assertThat(context.context().spanId()).isEqualTo(4981115762139876185L);
   }
 
   @Test
@@ -90,5 +90,20 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
     assertThat(context.context().spanId()).isEqualTo(1L);
+  }
+
+  @Test
+  public void testExtractXCloudTraceContext_unsignedLong() {
+    String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/13804021222261907717";
+    XCloudTraceContextExtractor extractor =
+            new XCloudTraceContextExtractor<>(
+                    (StackdriverTracePropagation)
+                            StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
+                    (carrier, key) -> xCloudTraceContext);
+
+    TraceContextOrSamplingFlags context = extractor.extract(new Object());
+    assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
+    assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
+    assertThat(context.context().spanId()).isEqualTo(-4642722851447643899L);
   }
 }
