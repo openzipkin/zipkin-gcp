@@ -72,7 +72,7 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
           result = TraceContextOrSamplingFlags.create(
                   context.traceIdHigh(traceId[0])
                           .traceId(traceId[1])
-                          .spanId(Long.parseUnsignedLong(spanId))
+                          .spanId(parseUnsignedLong(spanId))
                           .build());
         }
       }
@@ -107,5 +107,58 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
       return null;
     }
     return result;
+  }
+
+  /** Strictly parses unsigned numbers without a java 8 dependency. */
+  static long parseUnsignedLong(String input) throws NumberFormatException {
+    if (input == null) throw new NumberFormatException("input == null");
+    int len = input.length();
+    if (len == 0) throw new NumberFormatException("empty input");
+    if (len > 20) throw new NumberFormatException("too long for uint64: " + input);
+
+    // Bear in mind the following:
+    // * maximum int64  is  9223372036854775807. Note it is 19 characters
+    // * maximum uint64 is 18446744073709551615. Note it is 20 characters
+
+    // It is safe to use defaults to parse <= 18 characters.
+    if (len <= 18) return Long.parseLong(input);
+
+    // we now know it is 19 or 20 characters: safely parse the left 18 characters
+    long left = Long.parseLong(input.substring(0, 18));
+
+    int digit19 = digitAt(input, 18);
+    int rightDigits = 20 - len;
+    if (rightDigits == 1) {
+      return left * 10 + digit19; // even 19 9's fit safely in a uint64
+    }
+
+    int digit20 = digitAt(input, 19);
+    int right = digit19 * 10 + digit20;
+    // we can run into trouble if the 18 character prefix is greater than the prefix of the
+    // maximum uint64, or the remaining two digits will make the number overflow
+    // Reminder, largest uint64 is 18446744073709551615
+    if (left > 184467440737095516L || (left == 184467440737095516L && right > 15)) {
+      throw new NumberFormatException("out of range for uint64: " + input);
+    }
+    return left * 100 + right; // we are safe!
+  }
+
+  private static int digitAt(String input, int position) {
+    if (input.length() <= position) throw new NumberFormatException("position out of bounds");
+
+    switch (input.charAt(position)) {
+      case '0' : return 0;
+      case '1' : return 1;
+      case '2' : return 2;
+      case '3' : return 3;
+      case '4' : return 4;
+      case '5' : return 5;
+      case '6' : return 6;
+      case '7' : return 7;
+      case '8' : return 8;
+      case '9' : return 9;
+      default: throw new NumberFormatException("char at position " + position + "("
+              + input.charAt(position) + ") isn't a number");
+    }
   }
 }

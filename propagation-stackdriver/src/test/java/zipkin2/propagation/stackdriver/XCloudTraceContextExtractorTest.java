@@ -18,6 +18,7 @@ import brave.propagation.TraceContextOrSamplingFlags;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class XCloudTraceContextExtractorTest {
 
@@ -105,5 +106,27 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
     assertThat(context.context().spanId()).isEqualTo(-4642722851447643899L);
+  }
+
+  @Test
+  public void parseUnsignedLong() {
+    // max int64
+    assertThat(XCloudTraceContextExtractor.parseUnsignedLong("9223372036854775807"))
+            .isEqualTo(Long.parseUnsignedLong("9223372036854775807"));
+
+    // max int64 + 1
+    assertThat(XCloudTraceContextExtractor.parseUnsignedLong("9223372036854775808"))
+            .isEqualTo(Long.parseUnsignedLong("9223372036854775808"));
+
+    // max uint64
+    assertThat(XCloudTraceContextExtractor.parseUnsignedLong("18446744073709551615"))
+            .isEqualTo(Long.parseUnsignedLong("18446744073709551615"));
+
+    // max uint64 + 1
+    try {
+      XCloudTraceContextExtractor.parseUnsignedLong("18446744073709551616");
+      failBecauseExceptionWasNotThrown(NumberFormatException.class);
+    } catch (NumberFormatException e) {
+    }
   }
 }
