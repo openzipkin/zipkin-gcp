@@ -48,17 +48,17 @@
     <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.9.4</zipkin.version>
+    <zipkin.version>2.10.1</zipkin.version>
     <spring-boot.version>2.0.3.RELEASE</spring-boot.version>
-    <zipkin-reporter.version>2.7.3</zipkin-reporter.version>
+    <zipkin-reporter.version>2.7.6</zipkin-reporter.version>
 
     <!-- have to choose grpc's guava -->
     <guava.version>20.0</guava.version>
 
     <!-- must match https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-    <grpc.version>1.11.0</grpc.version>
-    <netty-tcnative-boringssl-static.version>2.0.7.Final</netty-tcnative-boringssl-static.version>
-    <brave.version>5.1.0</brave.version>
+    <grpc.version>1.13.1</grpc.version>
+    <netty-tcnative-boringssl-static.version>2.0.8.Final</netty-tcnative-boringssl-static.version>
+    <brave.version>5.1.2</brave.version>
   </properties>
 
   <name>Zipkin Google Cloud Platform(Parent)</name>
