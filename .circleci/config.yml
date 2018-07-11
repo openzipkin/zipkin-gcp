@@ -41,7 +41,7 @@ jobs:
           name: Collect test reports
           command: |
             mkdir -p /tmp/test-reports/unit-tests/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} /tmp/test-reports/junit/ \;
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} /tmp/test-reports/unit-tests/ \;
 
       - store_test_results:
           path: /tmp/test-reports/
