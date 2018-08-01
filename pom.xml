@@ -48,17 +48,19 @@
     <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.10.1</zipkin.version>
+    <zipkin.version>2.10.4</zipkin.version>
     <spring-boot.version>2.0.3.RELEASE</spring-boot.version>
-    <zipkin-reporter.version>2.7.6</zipkin-reporter.version>
+    <zipkin-reporter.version>2.7.7</zipkin-reporter.version>
 
     <!-- have to choose grpc's guava -->
     <guava.version>20.0</guava.version>
 
     <!-- must match https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-    <grpc.version>1.13.1</grpc.version>
-    <netty-tcnative-boringssl-static.version>2.0.8.Final</netty-tcnative-boringssl-static.version>
-    <brave.version>5.1.2</brave.version>
+    <grpc.version>1.14.0</grpc.version>
+    <netty-tcnative-boringssl-static.version>2.0.12.Final</netty-tcnative-boringssl-static.version>
+    <brave.version>5.1.5</brave.version>
+
+    <maven-failsafe-plugin.version>2.22.0</maven-failsafe-plugin.version>
   </properties>
 
   <name>Zipkin Google Cloud Platform(Parent)</name>
@@ -162,7 +164,7 @@
       <dependency>
         <groupId>io.zipkin.brave</groupId>
         <artifactId>brave</artifactId>
-        <version>5.0.0</version>
+        <version>${brave.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -182,7 +184,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.9.1</version>
+      <version>3.10.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -197,11 +199,11 @@
   <build>
     <pluginManagement>
       <plugins>
-        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.5.3 -->
+        <!-- mvn -N io.takari:maven:wrapper -Dmaven=3.5.4 -->
         <plugin>
           <groupId>io.takari</groupId>
           <artifactId>maven</artifactId>
-          <version>0.6.0</version>
+          <version>0.6.1</version>
         </plugin>
         <plugin>
           <groupId>org.springframework.boot</groupId>
@@ -248,12 +250,12 @@
           <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-compiler-javac-errorprone</artifactId>
-            <version>2.8.3</version>
+            <version>2.8.4</version>
           </dependency>
           <dependency>
             <groupId>com.google.errorprone</groupId>
             <artifactId>error_prone_core</artifactId>
-            <version>2.2.0</version>
+            <version>2.3.1</version>
           </dependency>
         </dependencies>
       </plugin>
@@ -261,7 +263,7 @@
       <plugin>
         <groupId>net.orfjackal.retrolambda</groupId>
         <artifactId>retrolambda-maven-plugin</artifactId>
-        <version>2.5.3</version>
+        <version>2.5.4</version>
         <executions>
           <execution>
             <goals>
@@ -277,9 +279,23 @@
       </plugin>
 
       <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.0</version>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-failsafe-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven-failsafe-plugin.version}</version>
+      </plugin>
+
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.16</version>
+        <version>1.17</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
@@ -303,6 +319,11 @@
         <configuration>
           <createChecksum>true</createChecksum>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.8.2</version>
       </plugin>
 
       <plugin>
@@ -347,12 +368,23 @@
       </plugin>
 
       <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.21.0</version>
-      </plugin>
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.21.0</version>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.0.0-M2</version>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[1.8,10)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
@@ -398,7 +430,7 @@
 
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.1</version>
             <configuration>
               <failOnError>false</failOnError>
               <!-- hush pedantic warnings: we don't put param and return on everything! -->
