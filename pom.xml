@@ -48,8 +48,8 @@
     <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.10.4</zipkin.version>
-    <spring-boot.version>2.0.3.RELEASE</spring-boot.version>
+    <zipkin.version>2.11.1</zipkin.version>
+    <spring-boot.version>2.0.4.RELEASE</spring-boot.version>
     <zipkin-reporter.version>2.7.7</zipkin-reporter.version>
 
     <!-- have to choose grpc's guava -->
