@@ -81,7 +81,8 @@ public class ZipkinStackdriverStorageAutoConfiguration {
   @Bean(destroyMethod = "shutdownNow")
   @ConditionalOnMissingBean
   ManagedChannel managedChannel(ZipkinStackdriverStorageProperties properties) {
-    checkState(OpenSsl.isAvailable() || jettyAlpnAvailable(), "OpenSsl required");
+    checkState(OpenSsl.isAvailable() || jettyAlpnAvailable(),
+        "OpenSsl or ALPN is required. This usually requires either JDK9+, jetty-alpn, or netty-tcnative-boringssl-static");
     return ManagedChannelBuilder.forTarget(properties.getApiHost()).build();
   }
 
