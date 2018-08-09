@@ -20,6 +20,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.auth.MoreCallCredentials;
 import io.netty.handler.ssl.OpenSsl;
+import io.netty.util.internal.PlatformDependent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -80,7 +81,8 @@ public class ZipkinStackdriverStorageAutoConfiguration {
   @Bean(destroyMethod = "shutdownNow")
   @ConditionalOnMissingBean
   ManagedChannel managedChannel(ZipkinStackdriverStorageProperties properties) {
-    checkState(OpenSsl.isAvailable(), "OpenSsl required");
+    checkState(OpenSsl.isAvailable() || jettyAlpnAvailable(),
+        "OpenSsl or ALPN is required. This usually requires either JDK9+, jetty-alpn, or netty-tcnative-boringssl-static");
     return ManagedChannelBuilder.forTarget(properties.getApiHost()).build();
   }
 
@@ -96,5 +98,19 @@ public class ZipkinStackdriverStorageAutoConfiguration {
         .strictTraceId(strictTraceId)
         .callOptions(DEFAULT.withCallCredentials(MoreCallCredentials.from(credentials)))
         .build();
+  }
+
+  // ALPN check from https://github.com/netty/netty/blob/1065e0f26e0d47a67c479b0fad81efab5d9438d9/handler/src/main/java/io/netty/handler/ssl/JettyAlpnSslEngine.java
+  private static boolean jettyAlpnAvailable() {
+    if (PlatformDependent.javaVersion() <= 8) {
+      try {
+        // Always use bootstrap class loader.
+        Class.forName("sun.security.ssl.ALPNExtension", true, null);
+        return true;
+      } catch (Throwable ignore) {
+        // alpn-boot was not loaded.
+      }
+    }
+    return false;
   }
 }
