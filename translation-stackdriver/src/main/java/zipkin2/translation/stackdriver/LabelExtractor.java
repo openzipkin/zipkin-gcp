@@ -39,15 +39,9 @@ final class LabelExtractor {
 
   private static final String kAgentLabelKey = "/agent";
   private static final String kComponentLabelKey = "/component";
-  private final String prefix;
   private final Map<String, String> renamedLabels;
 
   LabelExtractor(Map<String, String> renamedLabels) {
-    this(renamedLabels, "zipkin.io/");
-  }
-
-  LabelExtractor(Map<String, String> renamedLabels, String prefix) {
-    this.prefix = prefix;
     this.renamedLabels = renamedLabels;
   }
 
@@ -92,11 +86,8 @@ final class LabelExtractor {
   }
 
   private String getLabelName(String zipkinName) {
-    if (renamedLabels.containsKey(zipkinName)) {
-      return renamedLabels.get(zipkinName);
-    } else {
-      return prefix + zipkinName;
-    }
+    String renamed = renamedLabels.get(zipkinName);
+    return renamed != null ? renamed : zipkinName;
   }
 
   private static final TimeZone UTC = TimeZone.getTimeZone("UTC");

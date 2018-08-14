@@ -57,11 +57,11 @@ public class SpanTranslatorTest {
                 .setName("get")
                 .setStartTime(Timestamp.newBuilder().setSeconds(1).build())
                 .setEndTime(Timestamp.newBuilder().setSeconds(1).setNanos(123_456_000).build())
-                .putLabels("zipkin.io/clnt/finagle.version", "6.45.0")
-                .putLabels("zipkin.io/http.path", "/api")
+                .putLabels("clnt/finagle.version", "6.45.0")
+                .putLabels("http.path", "/api")
                 .putLabels("/component", "frontend")
                 // annotations are written with UTC datestamps
-                .putLabels("zipkin.io/foo", "1970-01-01 (00:00:01.123)")
+                .putLabels("foo", "1970-01-01 (00:00:01.123)")
                 .build());
   }
 

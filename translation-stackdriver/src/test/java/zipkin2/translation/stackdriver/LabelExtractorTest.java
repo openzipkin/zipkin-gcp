@@ -28,29 +28,27 @@ import static org.junit.Assert.assertTrue;
 
 public class LabelExtractorTest {
   @Test
-  public void testPrefixIsApplied() {
-    String prefix = "test.prefix";
-    LabelExtractor extractor = new LabelExtractor(Collections.<String, String>emptyMap(), prefix);
+  public void testLabel() {
+    LabelExtractor extractor = new LabelExtractor(Collections.emptyMap());
     Span zipkinSpan =
         Span.newBuilder()
             .traceId("4")
             .name("test-span")
             .id("5")
             .addAnnotation(1, "annotation.key.1")
-            .putTag("binary.annotation.key.1", "value")
+            .putTag("tag.key.1", "value")
             .build();
     Map<String, String> labels = extractor.extract(zipkinSpan);
-    assertTrue(labels.containsKey(prefix + "annotation.key.1"));
-    assertTrue(labels.containsKey(prefix + "binary.annotation.key.1"));
+    assertTrue(labels.containsKey("annotation.key.1"));
+    assertTrue(labels.containsKey("tag.key.1"));
   }
 
   @Test
   public void testLabelIsRenamed() {
-    String prefix = "test.prefix";
     Map<String, String> knownLabels = new LinkedHashMap<>();
     knownLabels.put("known.1", "renamed.1");
     knownLabels.put("known.2", "renamed.2");
-    LabelExtractor extractor = new LabelExtractor(knownLabels, prefix);
+    LabelExtractor extractor = new LabelExtractor(knownLabels);
     Span zipkinSpan =
         Span.newBuilder()
             .traceId("4")
@@ -58,7 +56,7 @@ public class LabelExtractorTest {
             .id("5")
             .addAnnotation(1, "annotation.key.1")
             .addAnnotation(13, "known.1")
-            .putTag("binary.annotation.key.1", "value")
+            .putTag("tag.key.1", "value")
             .putTag("known.2", "known.value")
             .build();
     Map<String, String> labels = extractor.extract(zipkinSpan);
@@ -70,8 +68,7 @@ public class LabelExtractorTest {
 
   @Test
   public void testAgentLabelIsSet() {
-    LabelExtractor extractor =
-        new LabelExtractor(Collections.<String, String>emptyMap(), "test.prefix");
+    LabelExtractor extractor = new LabelExtractor(Collections.emptyMap());
     Span rootSpan = Span.newBuilder().traceId("4").name("test-span").id("5").build();
     Span nonRootSpan =
         Span.newBuilder().traceId("4").name("child-span").id("6").parentId("5").build();
@@ -113,14 +110,13 @@ public class LabelExtractorTest {
             .localEndpoint(clientEndpoint)
             .build();
 
-    String prefix = "test.prefix/";
-    LabelExtractor extractor = new LabelExtractor(Collections.<String, String>emptyMap(), prefix);
+    LabelExtractor extractor = new LabelExtractor(Collections.emptyMap());
     Map<String, String> serverLabels = extractor.extract(serverSpan);
-    assertEquals("10.0.0.1", serverLabels.get(prefix + "endpoint.ipv4"));
-    assertNull(serverLabels.get(prefix + "endpoint.ipv6"));
+    assertEquals("10.0.0.1", serverLabels.get("endpoint.ipv4"));
+    assertNull(serverLabels.get("endpoint.ipv6"));
     Map<String, String> clientLabels = extractor.extract(clientSpan);
-    assertNull(clientLabels.get(prefix + "endpoint.ipv4"));
-    assertNull(clientLabels.get(prefix + "endpoint.ipv6"));
+    assertNull(clientLabels.get("endpoint.ipv4"));
+    assertNull(clientLabels.get("endpoint.ipv6"));
   }
 
   @Test
@@ -149,20 +145,18 @@ public class LabelExtractorTest {
             .localEndpoint(clientEndpoint)
             .build();
 
-    String prefix = "test.prefix/";
-    LabelExtractor extractor = new LabelExtractor(Collections.<String, String>emptyMap(), prefix);
+    LabelExtractor extractor = new LabelExtractor(Collections.emptyMap());
     Map<String, String> serverLabels = extractor.extract(serverSpan);
-    assertNull(serverLabels.get(prefix + "endpoint.ipv4"));
-    assertEquals("::1", serverLabels.get(prefix + "endpoint.ipv6"));
+    assertNull(serverLabels.get("endpoint.ipv4"));
+    assertEquals("::1", serverLabels.get("endpoint.ipv6"));
     Map<String, String> clientLabels = extractor.extract(clientSpan);
-    assertNull(clientLabels.get(prefix + "endpoint.ipv4"));
-    assertNull(clientLabels.get(prefix + "endpoint.ipv6"));
+    assertNull(clientLabels.get("endpoint.ipv4"));
+    assertNull(clientLabels.get("endpoint.ipv6"));
   }
 
   @Test
   public void testComponentLabelIsSet() {
-    LabelExtractor extractor =
-        new LabelExtractor(Collections.<String, String>emptyMap(), "test.prefix");
+    LabelExtractor extractor = new LabelExtractor(Collections.emptyMap());
     Span clientSpan =
         Span.newBuilder()
             .traceId("4")
