@@ -40,6 +40,8 @@ final class LabelExtractor {
   private static final String kAgentLabelKey = "/agent";
   private static final String kComponentLabelKey = "/component";
   private final Map<String, String> renamedLabels;
+  // The maximum label value size in Stackdriver is 16 KiB. This should be safe.
+  static final int LABEL_LENGTH_MAX = 8192;
 
   LabelExtractor(Map<String, String> renamedLabels) {
     this.renamedLabels = renamedLabels;
@@ -54,7 +56,11 @@ final class LabelExtractor {
   Map<String, String> extract(Span zipkinSpan) {
     Map<String, String> result = new LinkedHashMap<>();
     for (Map.Entry<String, String> tag : zipkinSpan.tags().entrySet()) {
-      result.put(getLabelName(tag.getKey()), tag.getValue());
+      String value = tag.getValue();
+      if (value.length() > LABEL_LENGTH_MAX) {
+        value = value.substring(0, LABEL_LENGTH_MAX);
+      }
+      result.put(getLabelName(tag.getKey()), value);
     }
 
     // Only use server receive spans to extract endpoint data as spans
