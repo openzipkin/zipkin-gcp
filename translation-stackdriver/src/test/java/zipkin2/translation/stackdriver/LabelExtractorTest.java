@@ -37,10 +37,14 @@ public class LabelExtractorTest {
             .id("5")
             .addAnnotation(1, "annotation.key.1")
             .putTag("tag.key.1", "value")
+            .putTag("long.tag", new String(new char[10000]).replace("\0", "a"))
             .build();
     Map<String, String> labels = extractor.extract(zipkinSpan);
     assertTrue(labels.containsKey("annotation.key.1"));
     assertTrue(labels.containsKey("tag.key.1"));
+    assertTrue(labels.get("tag.key.1").equals("value"));
+    assertTrue(labels.get("long.tag").equals(
+        new String(new char[LabelExtractor.LABEL_LENGTH_MAX]).replace("\0", "a")));
   }
 
   @Test
