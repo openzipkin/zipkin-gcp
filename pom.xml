@@ -48,7 +48,7 @@
     <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.11.1</zipkin.version>
+    <zipkin.version>2.11.4</zipkin.version>
     <spring-boot.version>2.0.4.RELEASE</spring-boot.version>
     <zipkin-reporter.version>2.7.7</zipkin-reporter.version>
 
@@ -58,7 +58,7 @@
     <!-- must match https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
     <grpc.version>1.14.0</grpc.version>
     <netty-tcnative-boringssl-static.version>2.0.12.Final</netty-tcnative-boringssl-static.version>
-    <brave.version>5.1.5</brave.version>
+    <brave.version>5.2.0</brave.version>
 
     <maven-failsafe-plugin.version>2.22.0</maven-failsafe-plugin.version>
   </properties>
@@ -207,7 +207,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.7.0</version>
+          <version>3.8.0</version>
           <inherited>true</inherited>
           <configuration>
             <!-- Retrolambda will rewrite lambdas as Java 6 bytecode -->
