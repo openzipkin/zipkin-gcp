@@ -20,16 +20,22 @@ import brave.propagation.TraceContextOrSamplingFlags;
  * Composite extractor that tries several extractors, in order, to retrieve the tracing context from
  * a source.
  */
-public class CompositeExtractor<C> implements TraceContext.Extractor<C> {
+final class CompositeExtractor<C> implements TraceContext.Extractor<C> {
+  static <C> CompositeExtractor<C> create(TraceContext.Extractor<C>... extractors) {
+    if (extractors == null) throw new NullPointerException("extractors == null");
+    if (extractors.length == 0) throw new NullPointerException("extractors are empty ");
+    TraceContext.Extractor<C>[] extractorsCopy = new TraceContext.Extractor[extractors.length];
+    System.arraycopy(extractors, 0, extractorsCopy, 0, extractors.length);
+    return new CompositeExtractor<>(extractorsCopy);
+  }
 
-  private final TraceContext.Extractor<C>[] extractors;
+  final TraceContext.Extractor<C>[] extractors;
 
-  private CompositeExtractor(TraceContext.Extractor<C>... extractors) {
+  CompositeExtractor(TraceContext.Extractor<C>... extractors) {
     this.extractors = extractors;
   }
 
-  @Override
-  public TraceContextOrSamplingFlags extract(C carrier) {
+  @Override public TraceContextOrSamplingFlags extract(C carrier) {
     TraceContextOrSamplingFlags context = TraceContextOrSamplingFlags.EMPTY;
 
     int currentExtractor = 0;
@@ -38,22 +44,5 @@ public class CompositeExtractor<C> implements TraceContext.Extractor<C> {
     }
 
     return context;
-  }
-
-  public static class Factory {
-
-    public static <C> CompositeExtractor<C> newCompositeExtractor(
-        TraceContext.Extractor<C>... extractors) {
-      if (extractors == null) {
-        throw new NullPointerException("The extractors array can't be null.");
-      }
-      if (extractors.length == 0) {
-        throw new IllegalArgumentException("There must be one or more extractors.");
-      }
-
-      TraceContext.Extractor<C>[] extractorsCopy = new TraceContext.Extractor[extractors.length];
-      System.arraycopy(extractors, 0, extractorsCopy, 0, extractors.length);
-      return new CompositeExtractor<>(extractorsCopy);
-    }
   }
 }

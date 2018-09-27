@@ -53,11 +53,11 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
       };
 
   /** 128 trace ID lower-hex encoded into 32 characters (required) */
-  private static final String TRACE_ID_NAME = "x-cloud-trace-context";
+  static final String TRACE_ID_NAME = "x-cloud-trace-context";
 
-  private Propagation<K> b3Propagation;
-  private final K traceIdKey;
-  private List<K> fields;
+  final Propagation<K> b3Propagation;
+  final K traceIdKey;
+  final List<K> fields;
 
   StackdriverTracePropagation(KeyFactory<K> keyFactory) {
     this.traceIdKey = keyFactory.create(TRACE_ID_NAME);
@@ -72,20 +72,17 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
     return traceIdKey;
   }
 
-  @Override
-  public List<K> keys() {
+  @Override public List<K> keys() {
     return fields;
   }
 
-  @Override
-  public <C> TraceContext.Injector<C> injector(Setter<C, K> setter) {
+  @Override public <C> TraceContext.Injector<C> injector(Setter<C, K> setter) {
     return b3Propagation.injector(setter);
   }
 
-  @Override
-  public <C> TraceContext.Extractor<C> extractor(Getter<C, K> getter) {
+  @Override public <C> TraceContext.Extractor<C> extractor(Getter<C, K> getter) {
     if (getter == null) throw new NullPointerException("getter == null");
-    return CompositeExtractor.Factory.newCompositeExtractor(
+    return CompositeExtractor.create(
         new XCloudTraceContextExtractor<>(this, getter), b3Propagation.extractor(getter));
   }
 }

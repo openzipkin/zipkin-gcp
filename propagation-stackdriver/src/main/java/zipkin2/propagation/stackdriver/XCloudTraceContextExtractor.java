@@ -21,27 +21,25 @@ import java.util.logging.Logger;
 
 import static brave.internal.HexCodec.lenientLowerHexToUnsignedLong;
 
-public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<C> {
+final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<C> {
 
-  private static final Logger LOG = Logger.getLogger(XCloudTraceContextExtractor.class.getName());
+  static final Logger LOG = Logger.getLogger(XCloudTraceContextExtractor.class.getName());
 
-  private final StackdriverTracePropagation<K> propagation;
-  private final Propagation.Getter<C, K> getter;
+  final StackdriverTracePropagation<K> propagation;
+  final Propagation.Getter<C, K> getter;
 
-  public XCloudTraceContextExtractor(
-      StackdriverTracePropagation<K> propagation, Propagation.Getter<C, K> getter) {
+  XCloudTraceContextExtractor(StackdriverTracePropagation<K> propagation,
+      Propagation.Getter<C, K> getter) {
     this.propagation = propagation;
     this.getter = getter;
   }
 
   /**
-   * Creates a tracing context if the extracted string follows the "x-cloud-trace-context:
-   * TRACE_ID" or "x-cloud-trace-context: TRACE_ID/SPAN_ID" format; or the
-   * "x-cloud-trace-context: TRACE_ID/SPAN_ID;0=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is
-   * {@code 1}.
+   * Creates a tracing context if the extracted string follows the "x-cloud-trace-context: TRACE_ID"
+   * or "x-cloud-trace-context: TRACE_ID/SPAN_ID" format; or the "x-cloud-trace-context:
+   * TRACE_ID/SPAN_ID;0=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is {@code 1}.
    */
-  @Override
-  public TraceContextOrSamplingFlags extract(C carrier) {
+  @Override public TraceContextOrSamplingFlags extract(C carrier) {
     if (carrier == null) throw new NullPointerException("carrier == null");
 
     TraceContextOrSamplingFlags result = TraceContextOrSamplingFlags.EMPTY;
@@ -64,16 +62,16 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
           int semicolonPos = tokens[1].indexOf(";");
           spanId = semicolonPos == -1 ? tokens[1] : tokens[1].substring(0, semicolonPos);
           traceTrue = semicolonPos == -1
-                  || tokens[1].length() == semicolonPos + 4
-                  && tokens[1].charAt(semicolonPos + 3) == '1';
+              || tokens[1].length() == semicolonPos + 4
+              && tokens[1].charAt(semicolonPos + 3) == '1';
         }
 
         if (traceTrue) {
           result = TraceContextOrSamplingFlags.create(
-                  context.traceIdHigh(traceId[0])
-                          .traceId(traceId[1])
-                          .spanId(parseUnsignedLong(spanId))
-                          .build());
+              context.traceIdHigh(traceId[0])
+                  .traceId(traceId[1])
+                  .spanId(parseUnsignedLong(spanId))
+                  .build());
         }
       }
     }
@@ -81,7 +79,7 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
     return result;
   }
 
-  private long[] convertHexTraceIdToLong(String hexTraceId) {
+  static long[] convertHexTraceIdToLong(String hexTraceId) {
     long[] result = new long[2];
     int length = hexTraceId.length();
 
@@ -147,18 +145,29 @@ public final class XCloudTraceContextExtractor<C, K> implements TraceContext.Ext
     if (input.length() <= position) throw new NumberFormatException("position out of bounds");
 
     switch (input.charAt(position)) {
-      case '0' : return 0;
-      case '1' : return 1;
-      case '2' : return 2;
-      case '3' : return 3;
-      case '4' : return 4;
-      case '5' : return 5;
-      case '6' : return 6;
-      case '7' : return 7;
-      case '8' : return 8;
-      case '9' : return 9;
-      default: throw new NumberFormatException("char at position " + position + "("
-              + input.charAt(position) + ") isn't a number");
+      case '0':
+        return 0;
+      case '1':
+        return 1;
+      case '2':
+        return 2;
+      case '3':
+        return 3;
+      case '4':
+        return 4;
+      case '5':
+        return 5;
+      case '6':
+        return 6;
+      case '7':
+        return 7;
+      case '8':
+        return 8;
+      case '9':
+        return 9;
+      default:
+        throw new NumberFormatException("char at position " + position + "("
+            + input.charAt(position) + ") isn't a number");
     }
   }
 }
