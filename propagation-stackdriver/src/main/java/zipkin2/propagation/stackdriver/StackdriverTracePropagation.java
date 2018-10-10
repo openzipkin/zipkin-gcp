@@ -22,8 +22,8 @@ import java.util.List;
 /**
  * Stackdriver Trace propagation.
  *
- * <p>Tries to extract a trace ID and span ID using the {@code x-cloud-trace-context} key. If not
- * present, tries the B3 key set, such as {@code X-B3-TraceId}, {@code X-B3-SpanId}, etc.
+ * <p>Tries to extract a trace ID and span ID using the B3 key set, such as {@code X-B3-TraceId}, {@code X-B3-SpanId},
+ * etc. If not present, tries the {@code x-cloud-trace-context} key.
  *
  * <p>Uses {@link B3Propagation} injection, to inject the tracing context using B3 headers.
  */
@@ -83,6 +83,6 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
   @Override public <C> TraceContext.Extractor<C> extractor(Getter<C, K> getter) {
     if (getter == null) throw new NullPointerException("getter == null");
     return CompositeExtractor.create(
-        new XCloudTraceContextExtractor<>(this, getter), b3Propagation.extractor(getter));
+            b3Propagation.extractor(getter), new XCloudTraceContextExtractor<>(this, getter));
   }
 }
