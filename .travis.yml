@@ -1,3 +1,4 @@
 language: java
+# circleci tests JDK 11 build
 jdk:
   - oraclejdk8

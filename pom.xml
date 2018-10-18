@@ -41,26 +41,29 @@
 
     <main.basedir>${project.basedir}</main.basedir>
 
-    <license-maven-plugin.version>2.11</license-maven-plugin.version>
-
     <slf4j.version>1.7.25</slf4j.version>
     <!-- only used for protos, we could possibly obviate this if a problem -->
     <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.11.6</zipkin.version>
+    <zipkin.version>2.11.7</zipkin.version>
     <spring-boot.version>2.0.5.RELEASE</spring-boot.version>
-    <zipkin-reporter.version>2.7.9</zipkin-reporter.version>
+    <zipkin-reporter.version>2.7.10</zipkin-reporter.version>
 
     <!-- have to choose grpc's guava -->
     <guava.version>20.0</guava.version>
 
     <!-- must match https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-    <grpc.version>1.15.0</grpc.version>
+    <grpc.version>1.15.1</grpc.version>
     <netty-tcnative-boringssl-static.version>2.0.12.Final</netty-tcnative-boringssl-static.version>
-    <brave.version>5.4.1</brave.version>
+    <brave.version>5.4.3</brave.version>
 
-    <maven-failsafe-plugin.version>2.22.0</maven-failsafe-plugin.version>
+    <!-- override to set exclusions per-project -->
+    <errorprone.args />
+    <errorprone.version>2.3.2</errorprone.version>
+
+    <license-maven-plugin.version>2.11</license-maven-plugin.version>
+    <maven-failsafe-plugin.version>2.22.1</maven-failsafe-plugin.version>
   </properties>
 
   <name>Zipkin Google Cloud Platform(Parent)</name>
@@ -153,7 +156,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>1.9.5</version>
+        <version>2.23.0</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -184,7 +187,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.10.0</version>
+      <version>3.11.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -250,7 +253,7 @@
       <plugin>
         <groupId>net.orfjackal.retrolambda</groupId>
         <artifactId>retrolambda-maven-plugin</artifactId>
-        <version>2.5.4</version>
+        <version>2.5.5</version>
         <executions>
           <execution>
             <goals>
@@ -366,7 +369,7 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[1.8,11)</version>
+                  <version>[1.8,12)</version>
                 </requireJavaVersion>
               </rules>
             </configuration>
@@ -398,10 +401,9 @@
 
   <profiles>
     <profile>
-      <id>error-prone</id>
+      <id>error-prone-1.8</id>
       <activation>
-        <!-- error-prone isn't happy in jdk 10 yet https://github.com/google/error-prone/issues/860#issuecomment-396154710 -->
-        <jdk>[1.8,10)</jdk>
+        <jdk>1.8</jdk>
         <activeByDefault>false</activeByDefault>
       </activation>
       <build>
@@ -419,9 +421,8 @@
                 <configuration>
                   <compilerId>javac-with-errorprone</compilerId>
                   <forceJavacCompilerUse>true</forceJavacCompilerUse>
-                  <!-- error-prone doesn't like generated code -->
                   <compilerArgs>
-                    <arg>-XepDisableWarningsInGeneratedCode</arg>
+                    <arg>${errorprone.args}</arg>
                   </compilerArgs>
                 </configuration>
               </execution>
@@ -430,14 +431,52 @@
               <dependency>
                 <groupId>org.codehaus.plexus</groupId>
                 <artifactId>plexus-compiler-javac-errorprone</artifactId>
-                <version>2.8.4</version>
+                <version>2.8.5</version>
               </dependency>
               <dependency>
                 <groupId>com.google.errorprone</groupId>
                 <artifactId>error_prone_core</artifactId>
-                <version>2.3.1</version>
+                <version>${errorprone.version}</version>
               </dependency>
             </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>error-prone-9+</id>
+      <activation>
+        <jdk>[9,)</jdk>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <!-- only use errorprone on main source tree -->
+                <id>default-compile</id>
+                <phase>compile</phase>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+                <configuration>
+                  <forceJavacCompilerUse>true</forceJavacCompilerUse>
+                  <compilerArgs>
+                    <arg>-XDcompilePolicy=simple</arg>
+                    <arg>-Xplugin:ErrorProne ${errorprone.args}</arg>
+                  </compilerArgs>
+                  <annotationProcessorPaths>
+                    <processorPath>
+                      <groupId>com.google.errorprone</groupId>
+                      <artifactId>error_prone_core</artifactId>
+                      <version>${errorprone.version}</version>
+                    </processorPath>
+                  </annotationProcessorPaths>
+                </configuration>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
