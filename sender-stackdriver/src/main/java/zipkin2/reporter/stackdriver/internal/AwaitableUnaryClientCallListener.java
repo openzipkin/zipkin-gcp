@@ -29,7 +29,7 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
   Object result; // guarded by this
 
   /**
-   * Blocks until {@link #onMessage} or {@link #onClose}. Throws if no value was received, multiple
+   * Blocks until {@link #onClose}. Throws if no value was received, multiple
    * values were received, or there was a status error.
    */
   V await() throws IOException {
