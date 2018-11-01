@@ -13,6 +13,7 @@
  */
 package zipkin2.reporter.stackdriver.internal;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ClientCall;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -29,19 +30,21 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
 
   Object result; // guarded by this
 
-  long timeoutMs = 5000; // how long to wait for server response in milliseconds
+  @VisibleForTesting
+  static long TIMEOUT_MS = 5000; // how long to wait for server response in milliseconds
 
   /**
    * Blocks until {@link #onClose}. Throws if no value was received, multiple
-   * values were received, there was a status error, or waited longer than {@link #timeoutMs}.
+   * values were received, there was a status error, or waited longer than {@link #TIMEOUT_MS}.
    */
   V await() throws IOException {
     boolean interrupted = false;
     try {
       while (true) {
         try {
-          if (!countDown.await(this.timeoutMs, TimeUnit.MILLISECONDS)) {
-            throw new IllegalStateException("Send failed after waiting for " + timeoutMs + "ms.");
+          if (!countDown.await(this.TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            throw new IllegalStateException("timeout waiting for onClose. TIMEOUT_MS=" + TIMEOUT_MS
+                + ", resultSet=" + resultSet);
           }
           Object result;
           synchronized (this) {
