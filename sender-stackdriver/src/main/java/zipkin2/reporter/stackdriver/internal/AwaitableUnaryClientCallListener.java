@@ -13,7 +13,6 @@
  */
 package zipkin2.reporter.stackdriver.internal;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.grpc.ClientCall;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -30,7 +29,7 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
 
   Object result; // guarded by this
 
-  @VisibleForTesting
+  // visible for testing
   static long TIMEOUT_MS = 5000; // how long to wait for server response in milliseconds
 
   /**
@@ -43,7 +42,7 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
       while (true) {
         try {
           if (!countDown.await(this.TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-            throw new IllegalStateException("timeout waiting for onClose. TIMEOUT_MS=" + TIMEOUT_MS
+            throw new IllegalStateException("timeout waiting for onClose. timeoutMs=" + TIMEOUT_MS
                 + ", resultSet=" + resultSet);
           }
           Object result;
