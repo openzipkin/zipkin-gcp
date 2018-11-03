@@ -21,6 +21,7 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -113,6 +114,22 @@ public class UnaryClientCallTest {
     onClientCall(observer -> observer.onError(new IllegalStateException()));
 
     awaitCallbackResult();
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void execute_timeout() throws Throwable {
+    AwaitableUnaryClientCallListener.TIMEOUT_MS = 50;
+    onClientCall(
+        observer ->
+            Executors.newSingleThreadExecutor().submit(() ->
+            {
+              try {
+                Thread.sleep(100);
+              } catch (InterruptedException e) {}
+              observer.onCompleted();
+            }));
+
+    call.execute();
   }
 
   static class TestTraceService extends TraceServiceImplBase {}

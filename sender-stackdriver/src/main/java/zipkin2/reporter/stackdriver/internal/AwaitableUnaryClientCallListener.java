@@ -18,8 +18,9 @@ import io.grpc.Metadata;
 import io.grpc.Status;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-/** Blocks until {@link #onMessage} or {@link #onClose}. */
+/** Blocks until {@link #onClose}. */
 // ported from zipkin2.reporter.internal.AwaitableCallback
 final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
   final CountDownLatch countDown = new CountDownLatch(1);
@@ -28,16 +29,22 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
 
   Object result; // guarded by this
 
+  // visible for testing
+  static long TIMEOUT_MS = 5000; // how long to wait for server response in milliseconds
+
   /**
    * Blocks until {@link #onClose}. Throws if no value was received, multiple
-   * values were received, or there was a status error.
+   * values were received, there was a status error, or waited longer than {@link #TIMEOUT_MS}.
    */
   V await() throws IOException {
     boolean interrupted = false;
     try {
       while (true) {
         try {
-          countDown.await();
+          if (!countDown.await(this.TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            throw new IllegalStateException("timeout waiting for onClose. timeoutMs=" + TIMEOUT_MS
+                + ", resultSet=" + resultSet);
+          }
           Object result;
           synchronized (this) {
             if (!resultSet) continue;
