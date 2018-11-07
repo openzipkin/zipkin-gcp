@@ -35,6 +35,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
     assertThat(context.context().spanId()).isEqualTo(4981115762139876185L);
+    assertThat(context.context().sampled()).isTrue();
   }
 
   @Test
@@ -47,11 +48,11 @@ public class XCloudTraceContextExtractorTest {
             (carrier, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
-    assertThat(context).isEqualTo(TraceContextOrSamplingFlags.EMPTY);
+    assertThat(context.context().sampled()).isFalse();
   }
 
   @Test
-  public void testExtractXCloudTraceContext_invalidTraceTrue() {
+  public void testExtractXCloudTraceContext_missingTraceTrueValue() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
@@ -60,7 +61,10 @@ public class XCloudTraceContextExtractorTest {
             (carrier, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
-    assertThat(context).isEqualTo(TraceContextOrSamplingFlags.EMPTY);
+    assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
+    assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
+    assertThat(context.context().spanId()).isEqualTo(4981115762139876185L);
+    assertThat(context.context().sampled()).isNull();
   }
 
   @Test
@@ -76,6 +80,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
     assertThat(context.context().spanId()).isEqualTo(4981115762139876185L);
+    assertThat(context.context().sampled()).isNull();
   }
 
   @Test
@@ -91,6 +96,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
     assertThat(context.context().spanId()).isEqualTo(1L);
+    assertThat(context.context().sampled()).isNull();
   }
 
   @Test
@@ -106,6 +112,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
     assertThat(context.context().spanId()).isEqualTo(-4642722851447643899L);
+    assertThat(context.context().sampled()).isNull();
   }
 
   @Test
