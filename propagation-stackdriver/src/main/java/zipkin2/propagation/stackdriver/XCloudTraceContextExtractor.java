@@ -53,10 +53,11 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
       // Try to parse the trace IDs into the context
       TraceContext.Builder context = TraceContext.newBuilder();
       long[] traceId = convertHexTraceIdToLong(tokens[0]);
+
       // traceId is null if invalid
       if (traceId != null) {
         String spanId = "1";
-        Boolean traceTrue = null;
+        Boolean traceTrue = null; // null means to defer trace decision to sampler
 
         // A span ID exists. A TRACE_TRUE flag also possibly exists.
         if (tokens.length >= 2) {
