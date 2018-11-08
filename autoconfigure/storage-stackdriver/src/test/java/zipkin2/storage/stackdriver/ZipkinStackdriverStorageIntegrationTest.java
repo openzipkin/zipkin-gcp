@@ -34,6 +34,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
+import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,7 +44,6 @@ import zipkin2.Span;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.boot.test.util.EnvironmentTestUtils.addEnvironment;
 import static zipkin2.storage.stackdriver.StackdriverMockServer.CLIENT_SSL_CONTEXT;
 
 public class ZipkinStackdriverStorageIntegrationTest {
@@ -55,11 +55,10 @@ public class ZipkinStackdriverStorageIntegrationTest {
 
   @Before
   public void init() {
-    addEnvironment(
-        context,
+    TestPropertyValues.of(
         "zipkin.storage.type:stackdriver",
         "zipkin.storage.stackdriver.project-id:test_project",
-        "zipkin.storage.stackdriver.api-host:localhost:" + mockServer.getPort());
+        "zipkin.storage.stackdriver.api-host:localhost:" + mockServer.getPort()).applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
         TestConfiguration.class,
