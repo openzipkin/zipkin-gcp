@@ -13,11 +13,12 @@
  */
 package zipkin2.propagation.stackdriver;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static brave.internal.HexCodec.lenientLowerHexToUnsignedLong;
 
@@ -37,7 +38,7 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
   /**
    * Creates a tracing context if the extracted string follows the "x-cloud-trace-context: TRACE_ID"
    * or "x-cloud-trace-context: TRACE_ID/SPAN_ID" format; or the "x-cloud-trace-context:
-   * TRACE_ID/SPAN_ID;0=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is {@code 1}.
+   * TRACE_ID/SPAN_ID;o=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is {@code 1}.
    */
   @Override public TraceContextOrSamplingFlags extract(C carrier) {
     if (carrier == null) throw new NullPointerException("carrier == null");
@@ -52,34 +53,41 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
       // Try to parse the trace IDs into the context
       TraceContext.Builder context = TraceContext.newBuilder();
       long[] traceId = convertHexTraceIdToLong(tokens[0]);
+
       // traceId is null if invalid
       if (traceId != null) {
-        boolean traceTrue = true;
-
         String spanId = "1";
+        Boolean traceTrue = null; // null means to defer trace decision to sampler
+
         // A span ID exists. A TRACE_TRUE flag also possibly exists.
         if (tokens.length >= 2) {
-          int semicolonPos = tokens[1].indexOf(";");
-          spanId = semicolonPos == -1 ? tokens[1] : tokens[1].substring(0, semicolonPos);
-          traceTrue = semicolonPos == -1
-              || tokens[1].length() == semicolonPos + 4
-              && tokens[1].charAt(semicolonPos + 3) == '1';
+          String[] traceOptionTokens = tokens[1].split(";");
+
+          if (traceOptionTokens.length >= 1 && !traceOptionTokens[0].isEmpty()) {
+            spanId = traceOptionTokens[0];
+          }
+
+          if (traceOptionTokens.length >= 2) {
+            traceTrue = extractTraceTrueFromToken(traceOptionTokens[1]);
+          }
         }
 
-        if (traceTrue) {
-          result = TraceContextOrSamplingFlags.create(
-              context.traceIdHigh(traceId[0])
-                  .traceId(traceId[1])
-                  .spanId(parseUnsignedLong(spanId))
-                  .build());
+        context = context.traceIdHigh(traceId[0])
+            .traceId(traceId[1])
+            .spanId(parseUnsignedLong(spanId));
+
+        if (traceTrue != null) {
+          context = context.sampled(traceTrue);
         }
+
+        result = TraceContextOrSamplingFlags.create(context.build());
       }
     }
 
     return result;
   }
 
-  static long[] convertHexTraceIdToLong(String hexTraceId) {
+  private static long[] convertHexTraceIdToLong(String hexTraceId) {
     long[] result = new long[2];
     int length = hexTraceId.length();
 
@@ -139,6 +147,32 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
       throw new NumberFormatException("out of range for uint64: " + input);
     }
     return left * 100 + right; // we are safe!
+  }
+
+  /**
+   * Parses the TRACE_TRUE from the header token substring in the form: 'o=TRACE_TRUE'.
+   *
+   * @return Optional containing the Span ID if present.
+   */
+  private static Boolean extractTraceTrueFromToken(String traceTrueToken) {
+    int equalsIndex = traceTrueToken.indexOf("=");
+
+    Boolean result = null;
+
+    if (equalsIndex != -1) {
+      String optionName = traceTrueToken.substring(0, equalsIndex);
+      String traceTrueValue = traceTrueToken.substring(equalsIndex + 1, traceTrueToken.length());
+
+      if (optionName.equalsIgnoreCase("o")) {
+        if (traceTrueValue.equals("1")) {
+          result = true;
+        } else if (traceTrueValue.equals("0")) {
+          result = false;
+        }
+      }
+    }
+
+    return result;
   }
 
   private static int digitAt(String input, int position) {
