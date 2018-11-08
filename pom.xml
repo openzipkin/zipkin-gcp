@@ -46,17 +46,17 @@
     <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.11.7</zipkin.version>
-    <spring-boot.version>2.0.5.RELEASE</spring-boot.version>
+    <zipkin.version>2.11.8</zipkin.version>
+    <spring-boot.version>2.1.0.RELEASE</spring-boot.version>
     <zipkin-reporter.version>2.7.10</zipkin-reporter.version>
 
     <!-- have to choose grpc's guava -->
     <guava.version>20.0</guava.version>
 
     <!-- must match https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-    <grpc.version>1.15.1</grpc.version>
-    <netty-tcnative-boringssl-static.version>2.0.12.Final</netty-tcnative-boringssl-static.version>
-    <brave.version>5.4.3</brave.version>
+    <grpc.version>1.16.1</grpc.version>
+    <netty-tcnative-boringssl-static.version>2.0.17.Final</netty-tcnative-boringssl-static.version>
+    <brave.version>5.5.0</brave.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
@@ -242,7 +242,7 @@
             <dependency>
               <groupId>io.zipkin.layout</groupId>
               <artifactId>zipkin-layout-factory</artifactId>
-              <version>0.0.2</version>
+              <version>0.0.3</version>
             </dependency>
           </dependencies>
         </plugin>
