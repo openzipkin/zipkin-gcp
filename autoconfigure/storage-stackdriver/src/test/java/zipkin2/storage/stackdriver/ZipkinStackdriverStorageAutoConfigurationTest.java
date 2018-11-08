@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
+import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +33,6 @@ import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperti
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.springframework.boot.test.util.EnvironmentTestUtils.addEnvironment;
 
 public class ZipkinStackdriverStorageAutoConfigurationTest {
 
@@ -47,7 +47,7 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
 
   @Test
   public void doesntProvideStorageComponent_whenStorageTypeNotStackdriver() {
-    addEnvironment(context, "zipkin.storage.type:elasticsearch");
+    TestPropertyValues.of("zipkin.storage.type:elasticsearch").applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
         ZipkinStackdriverStorageProperties.class,
@@ -61,9 +61,10 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
 
   @Test
   public void providesStorageComponent_whenStorageTypeStackdriverAndProjectIdSet() {
-    addEnvironment(
-        context, "zipkin.storage.type:stackdriver", "zipkin.storage.stackdriver.project-id:zipkin");
-    addEnvironment(context, "zipkin.storage.type:stackdriver");
+    TestPropertyValues.of(
+       "zipkin.storage.type:stackdriver",
+        "zipkin.storage.stackdriver.project-id:zipkin",
+        "zipkin.storage.type:stackdriver").applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
         ZipkinStackdriverStorageAutoConfiguration.class,
@@ -75,11 +76,10 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
 
   @Test
   public void canOverrideProperty_apiHost() {
-    addEnvironment(
-        context,
+    TestPropertyValues.of(
         "zipkin.storage.type:stackdriver",
         "zipkin.storage.stackdriver.project-id:zipkin",
-        "zipkin.storage.stackdriver.api-host:localhost");
+        "zipkin.storage.stackdriver.api-host:localhost").applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
         ZipkinStackdriverStorageAutoConfiguration.class,
