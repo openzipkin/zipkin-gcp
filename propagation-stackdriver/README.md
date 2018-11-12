@@ -21,7 +21,7 @@ It checks the `x-cloud-trace-context` key, which is structured in the following 
 `x-cloud-trace-context: TRACE_ID/SPAN_ID;o=TRACE_TRUE`
 
 * `TRACE_ID`: a 32-character hexadecimal value representing a 128-bit number.
-* `SPAN_ID`: decimal representation of the unsigned span ID. If 0, it is ignored by Zipkin.
+* `SPAN_ID`: decimal representation of the unsigned span ID.
 * `TRACE_TRUE`: `1` if the request should be traced, `0` otherwise.
 
 If `TRACE_TRUE` is absent, the request is traced by default.

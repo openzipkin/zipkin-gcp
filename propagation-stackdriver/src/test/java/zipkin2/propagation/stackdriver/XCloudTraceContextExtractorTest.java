@@ -95,7 +95,7 @@ public class XCloudTraceContextExtractorTest {
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
     assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
-    assertThat(context.context().spanId()).isEqualTo(1L);
+    assertThat(context.context().spanId()).isEqualTo(context.context().traceId());
     assertThat(context.context().sampled()).isNull();
   }
 

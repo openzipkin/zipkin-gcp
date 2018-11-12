@@ -56,15 +56,17 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
 
       // traceId is null if invalid
       if (traceId != null) {
-        String spanId = "1";
+        long spanId = traceId[1]; // default spanId is to use lower bits of traceId
         Boolean traceTrue = null; // null means to defer trace decision to sampler
 
         // A span ID exists. A TRACE_TRUE flag also possibly exists.
         if (tokens.length >= 2) {
           String[] traceOptionTokens = tokens[1].split(";");
 
-          if (traceOptionTokens.length >= 1 && !traceOptionTokens[0].isEmpty()) {
-            spanId = traceOptionTokens[0];
+          if (traceOptionTokens.length >= 1
+              && !traceOptionTokens[0].isEmpty()
+              && !traceOptionTokens.equals("0")) {
+            spanId = parseUnsignedLong(traceOptionTokens[0]);
           }
 
           if (traceOptionTokens.length >= 2) {
@@ -74,7 +76,7 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
 
         context = context.traceIdHigh(traceId[0])
             .traceId(traceId[1])
-            .spanId(parseUnsignedLong(spanId));
+            .spanId(spanId);
 
         if (traceTrue != null) {
           context = context.sampled(traceTrue);
@@ -155,21 +157,18 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
    * @return Optional containing the Span ID if present.
    */
   private static Boolean extractTraceTrueFromToken(String traceTrueToken) {
-    int equalsIndex = traceTrueToken.indexOf("=");
+    int optionIndex = traceTrueToken.indexOf("o=");
 
     Boolean result = null;
 
-    if (equalsIndex != -1) {
-      String optionName = traceTrueToken.substring(0, equalsIndex);
-      String traceTrueValue = traceTrueToken.substring(equalsIndex + 1, traceTrueToken.length());
+    if (optionIndex != -1) {
+      String traceTrueValue = traceTrueToken.substring(optionIndex + 2, traceTrueToken.length());
 
-      if (optionName.equalsIgnoreCase("o")) {
-        if (traceTrueValue.equals("1")) {
-          result = true;
-        } else if (traceTrueValue.equals("0")) {
-          result = false;
-        }
-      }
+			if (traceTrueValue.equals("1")) {
+				result = true;
+			} else if (traceTrueValue.equals("0")) {
+				result = false;
+			}
     }
 
     return result;
