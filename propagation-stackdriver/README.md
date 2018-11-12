@@ -24,8 +24,13 @@ It checks the `x-cloud-trace-context` key, which is structured in the following 
 * `SPAN_ID`: decimal representation of the unsigned span ID.
 * `TRACE_TRUE`: `1` if the request should be traced, `0` otherwise.
 
-If `TRACE_TRUE` is absent, the request is traced by default.
-In other words, this extractor will trace keys structured like `x-cloud-trace-context: TRACE_ID/SPAN_ID`.
+### Notes
+
+- One may also choose to omit the span ID by setting it to `0`: `TRACE_ID/0;o=TRACE_TRUE`.
+  In this case, the span ID will default to being the lower 64-bits of the trace ID.
+
+- If `TRACE_TRUE` is absent, then the sampler will determine whether the request is traced or not.
+
 
 # Injector
 
