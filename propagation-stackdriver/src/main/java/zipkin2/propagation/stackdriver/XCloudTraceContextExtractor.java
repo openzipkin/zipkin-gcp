@@ -164,11 +164,11 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
     if (optionIndex != -1) {
       String traceTrueValue = traceTrueToken.substring(optionIndex + 2, traceTrueToken.length());
 
-			if (traceTrueValue.equals("1")) {
-				result = true;
-			} else if (traceTrueValue.equals("0")) {
-				result = false;
-			}
+      if (traceTrueValue.equals("1")) {
+        result = true;
+      } else if (traceTrueValue.equals("0")) {
+        result = false;
+      }
     }
 
     return result;
