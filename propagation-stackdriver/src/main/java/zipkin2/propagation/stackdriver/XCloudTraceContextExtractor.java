@@ -65,7 +65,7 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
 
           if (traceOptionTokens.length >= 1
               && !traceOptionTokens[0].isEmpty()
-              && !traceOptionTokens.equals("0")) {
+              && !traceOptionTokens[0].equals("0")) {
             spanId = parseUnsignedLong(traceOptionTokens[0]);
           }
 

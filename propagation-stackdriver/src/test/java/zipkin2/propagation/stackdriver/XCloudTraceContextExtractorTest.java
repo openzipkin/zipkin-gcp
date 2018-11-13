@@ -39,6 +39,22 @@ public class XCloudTraceContextExtractorTest {
   }
 
   @Test
+  public void testExtractXCloudTraceContext_spanIdZero() {
+    String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/0;o=1";
+    XCloudTraceContextExtractor extractor =
+        new XCloudTraceContextExtractor<>(
+            (StackdriverTracePropagation)
+                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
+            (carrier, key) -> xCloudTraceContext);
+
+    TraceContextOrSamplingFlags context = extractor.extract(new Object());
+    assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
+    assertThat(context.context().traceIdHigh()).isEqualTo(-8081649345970823455L);
+    assertThat(context.context().spanId()).isEqualTo(-7348336952112078057L);
+    assertThat(context.context().sampled()).isTrue();
+  }
+
+  @Test
   public void testExtractXCloudTraceContext_traceFalse() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=0";
     XCloudTraceContextExtractor extractor =
