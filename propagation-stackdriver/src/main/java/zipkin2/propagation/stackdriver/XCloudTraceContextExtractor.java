@@ -13,6 +13,7 @@
  */
 package zipkin2.propagation.stackdriver;
 
+import brave.propagation.TraceIdContext;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,13 +51,11 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
     if (xCloudTraceContext != null) {
       String[] tokens = xCloudTraceContext.split("/");
 
-      // Try to parse the trace IDs into the context
-      TraceContext.Builder context = TraceContext.newBuilder();
       long[] traceId = convertHexTraceIdToLong(tokens[0]);
 
       // traceId is null if invalid
       if (traceId != null) {
-        long spanId = traceId[1]; // default spanId is to use lower bits of traceId
+        long spanId = 0; // 0 indicates no span ID is set by the user
         Boolean traceTrue = null; // null means to defer trace decision to sampler
 
         // A span ID exists. A TRACE_TRUE flag also possibly exists.
@@ -64,8 +63,7 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
           String[] traceOptionTokens = tokens[1].split(";");
 
           if (traceOptionTokens.length >= 1
-              && !traceOptionTokens[0].isEmpty()
-              && !traceOptionTokens[0].equals("0")) {
+              && !traceOptionTokens[0].isEmpty()) {
             spanId = parseUnsignedLong(traceOptionTokens[0]);
           }
 
@@ -74,15 +72,22 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
           }
         }
 
-        context = context.traceIdHigh(traceId[0])
-            .traceId(traceId[1])
-            .spanId(spanId);
-
-        if (traceTrue != null) {
-          context = context.sampled(traceTrue);
+        if (spanId == 0) {
+          result = TraceContextOrSamplingFlags.create(
+              TraceIdContext.newBuilder()
+                  .traceIdHigh(traceId[0])
+                  .traceId(traceId[1])
+                  .sampled(traceTrue)
+                  .build());
+        } else {
+          result = TraceContextOrSamplingFlags.create(
+              TraceContext.newBuilder()
+                  .traceIdHigh(traceId[0])
+                  .traceId(traceId[1])
+                  .spanId(spanId)
+                  .sampled(traceTrue)
+                  .build());
         }
-
-        result = TraceContextOrSamplingFlags.create(context.build());
       }
     }
 

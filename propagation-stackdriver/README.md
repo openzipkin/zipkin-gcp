@@ -27,7 +27,7 @@ It checks the `x-cloud-trace-context` key, which is structured in the following 
 ### Notes
 
 - One may also choose to omit the span ID by setting it to 0 like this: `TRACE_ID/0;o=TRACE_TRUE`.
-  In this case, the span ID will default to being the lower 64-bits of the trace ID.
+  In this case, a new root span will be generated for the request.
 
 - If `TRACE_TRUE` is omitted, then the decision to trace the request will be deferred to the sampler.
 
