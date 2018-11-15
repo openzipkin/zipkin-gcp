@@ -70,7 +70,7 @@ java -Dloader.path=stackdriver -Dspring.profiles.active=stackdriver -cp zipkin.j
 
 Once your storage is enabled, verify it is running:
 ```bash
-$ curl -s localhost:9411/health|jq .zipkin.StackdriverStorage
+$ curl -s localhost:9411/health|jq .zipkin.details.StackdriverStorage
 {
   "status": "UP"
 }
