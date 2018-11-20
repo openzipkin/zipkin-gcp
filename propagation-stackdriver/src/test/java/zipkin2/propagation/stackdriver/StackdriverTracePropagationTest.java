@@ -13,18 +13,20 @@
  */
 package zipkin2.propagation.stackdriver;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StackdriverTracePropagationTest {
-  static final String XCLOUD_VALUE = "c108dc108dc108dc108dc108dc108d00";
+  static final String XCLOUD_TRACE_ID = "c108dc108dc108dc108dc108dc108d00";
+  static final String XCLOUD_VALUE = XCLOUD_TRACE_ID + "/1234";
+
   static final String B3_HEADER = "b3";
   static final String B3_TRACE_ID = "b3b3b3b3b3b34da6a3ce929d0e0e4736";
   static final String B3_VALUE =  B3_TRACE_ID + "-00f067aa0ba902b7-1";
@@ -52,7 +54,7 @@ public class StackdriverTracePropagationTest {
 
     TraceContextOrSamplingFlags ctx = extractor.extract(headers);
 
-    assertThat(ctx.context().traceIdString()).isEqualTo(XCLOUD_VALUE);
+    assertThat(ctx.context().traceIdString()).isEqualTo(XCLOUD_TRACE_ID);
   }
 
   @Test
