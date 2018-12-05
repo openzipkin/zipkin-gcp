@@ -20,7 +20,7 @@
   <parent>
     <artifactId>zipkin-gcp-parent</artifactId>
     <groupId>io.zipkin.gcp</groupId>
-    <version>0.8.4-SNAPSHOT</version>
+    <version>0.9.0</version>
   </parent>
 
   <artifactId>benchmarks</artifactId>
