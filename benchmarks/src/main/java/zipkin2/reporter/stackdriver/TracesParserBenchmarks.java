@@ -65,12 +65,12 @@ public class TracesParserBenchmarks {
 
   @Benchmark
   public Traces parseClientSpan() {
-    return TracesParser.parse(PROJECT_ID, ENCODED_CLIENT_SPAN);
+    return WriteSpansRequestParser.parse(PROJECT_ID, ENCODED_CLIENT_SPAN);
   }
 
   @Benchmark
   public Traces parse100ClientSpans() {
-    TracesParser parser = new TracesParser(PROJECT_ID);
+    WriteSpansRequestParser parser = new WriteSpansRequestParser(PROJECT_ID);
     collator.collate(HUNDRED_ENCODED_CLIENT_SPANS, parser);
     return parser.finish();
   }

@@ -13,14 +13,17 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
-import com.google.devtools.cloudtrace.v1.Traces;
+import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
+import com.google.devtools.cloudtrace.v2.Span;
+import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Empty;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import java.io.IOException;
 import java.util.List;
 import zipkin2.Call;
 import zipkin2.CheckResult;
@@ -28,7 +31,7 @@ import zipkin2.codec.Encoding;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 
-import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.METHOD_PATCH_TRACES;
+import static com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag;
 import static io.grpc.CallOptions.DEFAULT;
 
 public final class StackdriverSender extends Sender {
@@ -73,18 +76,26 @@ public final class StackdriverSender extends Sender {
     }
   }
 
+  static final ByteString SPAN_ID_PREFIX = ByteString.copyFromUtf8("/spans/");
+
   final Channel channel;
   final CallOptions callOptions;
-  final String projectId;
+  final ByteString projectName;
+  final ByteString traceIdPrefix;
   final boolean shutdownChannelOnClose;
-  final int projectIdFieldSize;
+  final int projectNameFieldSize;
+  final int spanNameSize;
+  final int spanNameFieldSize;
 
   StackdriverSender(Builder builder) {
     channel = builder.channel;
     callOptions = builder.callOptions;
-    projectId = builder.projectId;
+    projectName = ByteString.copyFromUtf8("projects/" + builder.projectId);
+    traceIdPrefix = projectName.concat(ByteString.copyFromUtf8("/traces/"));
     shutdownChannelOnClose = builder.shutdownChannelOnClose;
-    projectIdFieldSize = 1 /* field no */ + CodedOutputStream.computeStringSizeNoTag(projectId);
+    projectNameFieldSize = 1 /* field no */ + CodedOutputStream.computeBytesSizeNoTag(projectName);
+    spanNameSize = traceIdPrefix.size() + 32 + SPAN_ID_PREFIX.size() + 16;
+    spanNameFieldSize = 1 /* field no */ + spanNameSize;
   }
 
   @Override
@@ -97,29 +108,23 @@ public final class StackdriverSender extends Sender {
     return 1024 * 1024; // 1 MiB for now
   }
 
-  // re-use trace collator to avoid re-allocating arrays
-  final ThreadLocal<TraceCollator> traceCollator =
-      new ThreadLocal<TraceCollator>() {
-        @Override
-        protected TraceCollator initialValue() {
-          return new TraceCollator();
-        }
-      };
-
   @Override
   public int messageSizeInBytes(List<byte[]> traceIdPrefixedSpans) {
     int length = traceIdPrefixedSpans.size();
     if (length == 0) return 0;
     if (length == 1) return messageSizeInBytes(traceIdPrefixedSpans.get(0).length);
 
-    PatchTracesRequestSizer sizer = new PatchTracesRequestSizer(projectIdFieldSize);
-    traceCollator.get().collate(traceIdPrefixedSpans, sizer);
-    return sizer.finish();
+    int size = projectNameFieldSize;
+    for (byte[] traceIdPrefixedSpan : traceIdPrefixedSpans) {
+      size += spanFieldSize(traceIdPrefixedSpan.length);
+    }
+
+    return size;
   }
 
   @Override
   public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
-    return PatchTracesRequestSizer.size(projectIdFieldSize, traceIdPrefixedSpanSize - 32);
+    return projectNameFieldSize + spanFieldSize(traceIdPrefixedSpanSize - 32);
   }
 
   /** close is typically called from a different thread */
@@ -131,19 +136,13 @@ public final class StackdriverSender extends Sender {
     int length = traceIdPrefixedSpans.size();
     if (length == 0) return Call.create(null);
 
-    Traces traces;
-    if (length == 1) {
-      traces = TracesParser.parse(projectId, traceIdPrefixedSpans.get(0));
-    } else {
-      TracesParser parser = new TracesParser(projectId);
-      traceCollator.get().collate(traceIdPrefixedSpans, parser);
-      traces = parser.finish();
+    BatchWriteSpansRequest.Builder request = BatchWriteSpansRequest.newBuilder()
+        .setNameBytes(projectName);
+    for (byte[] traceIdPrefixedSpan : traceIdPrefixedSpans) {
+      request.addSpans(parseTraceIdPrefixedSpan(traceIdPrefixedSpan));
     }
 
-    PatchTracesRequest request =
-        PatchTracesRequest.newBuilder().setProjectId(projectId).setTraces(traces).build();
-
-    return new PatchTracesCall(request).map(EmptyToVoid.INSTANCE);
+    return new BatchWriteSpansCall(request.build()).map(EmptyToVoid.INSTANCE);
   }
 
   @Override
@@ -153,7 +152,7 @@ public final class StackdriverSender extends Sender {
 
   @Override
   public final String toString() {
-    return "StackdriverSender{" + projectId + "}";
+    return "StackdriverSender{" + projectName.toStringUtf8() + "}";
   }
 
   @Override
@@ -164,10 +163,40 @@ public final class StackdriverSender extends Sender {
     ((ManagedChannel) channel).shutdownNow();
   }
 
-  final class PatchTracesCall extends UnaryClientCall<PatchTracesRequest, Empty> {
+  Span parseTraceIdPrefixedSpan(byte[] traceIdPrefixedSpan) {
+    // start parsing after the trace ID
+    int off = 32, len = traceIdPrefixedSpan.length - off;
+    Span.Builder span = Span.newBuilder();
+    try {
+      span.mergeFrom(traceIdPrefixedSpan, off, len);
+    } catch (IOException e) {
+      throw new AssertionError(e);
+    }
 
-    PatchTracesCall(PatchTracesRequest request) {
-      super(channel, METHOD_PATCH_TRACES, callOptions, request);
+    ByteString.Output spanName = ByteString.newOutput(spanNameSize);
+
+    try {
+      traceIdPrefix.writeTo(spanName);
+      spanName.write(traceIdPrefixedSpan, 0, 32);
+      SPAN_ID_PREFIX.writeTo(spanName);
+      span.getSpanIdBytes().writeTo(spanName);
+    } catch (IOException e) {
+      throw new AssertionError(e);
+    }
+
+    span.setNameBytes(spanName.toByteString());
+    return span.build();
+  }
+
+  int spanFieldSize(int spanSize) {
+    int sizeOfSpanMessage = spanSize + spanNameFieldSize;
+    return /* field no */ 1 + computeUInt32SizeNoTag(sizeOfSpanMessage) + sizeOfSpanMessage;
+  }
+
+  final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
+
+    BatchWriteSpansCall(BatchWriteSpansRequest request) {
+      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request);
     }
 
     @Override
@@ -176,8 +205,8 @@ public final class StackdriverSender extends Sender {
     }
 
     @Override
-    public PatchTracesCall clone() {
-      return new PatchTracesCall(request());
+    public BatchWriteSpansCall clone() {
+      return new BatchWriteSpansCall(request());
     }
   }
 

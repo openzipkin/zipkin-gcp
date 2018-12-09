@@ -13,21 +13,23 @@
  */
 package zipkin2.translation.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.TraceSpan;
-import com.google.devtools.cloudtrace.v1.TraceSpan.SpanKind;
+import com.google.devtools.cloudtrace.v2.Span.TimeEvent;
+import com.google.devtools.cloudtrace.v2.Span.TimeEvents;
 import com.google.protobuf.Timestamp;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
+import zipkin2.Annotation;
 import zipkin2.Span;
 
 import static java.util.logging.Level.FINE;
+import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableStringProto;
 
 /** SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span. */
 public final class SpanTranslator {
   private static final Logger LOG = Logger.getLogger(SpanTranslator.class.getName());
 
-  static final LabelExtractor labelExtractor;
+  static final AttributesExtractor ATTRIBUTES_EXTRACTOR;
 
   static {
     Map<String, String> renamedLabels = new LinkedHashMap<>();
@@ -37,7 +39,7 @@ public final class SpanTranslator {
     renamedLabels.put("http.request.size", "/request/size");
     renamedLabels.put("http.response.size", "/response/size");
     renamedLabels.put("http.url", "/http/url");
-    labelExtractor = new LabelExtractor(renamedLabels);
+    ATTRIBUTES_EXTRACTOR = new AttributesExtractor(renamedLabels);
   }
 
   /**
@@ -49,20 +51,29 @@ public final class SpanTranslator {
    * traceSpan = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
    * }</pre>
    *
-   * <p>Note: the result does not include the trace ID from the input.
+   * <p>Note: the result does not set {@link com.google.devtools.cloudtrace.v2.Span.Builder#setName(String)}
+   * and it is up to callers to make sure to fill it using the project ID and trace ID.
    *
    * @param spanBuilder the builder (to facilitate re-use)
    * @param zipkinSpan The Zipkin Span.
    * @return A Stackdriver Trace Span.
    */
-  public static TraceSpan.Builder translate(TraceSpan.Builder spanBuilder, Span zipkinSpan) {
+  public static com.google.devtools.cloudtrace.v2.Span.Builder translate(
+      com.google.devtools.cloudtrace.v2.Span.Builder spanBuilder,
+      Span zipkinSpan) {
     boolean logTranslation = LOG.isLoggable(FINE);
     if (logTranslation) LOG.log(FINE, ">> translating zipkin span: {0}", zipkinSpan);
-    spanBuilder.setName(zipkinSpan.name() != null ? zipkinSpan.name() : "");
-    SpanKind kind = getSpanKind(zipkinSpan.kind());
-    spanBuilder.setKind(kind);
-    spanBuilder.setParentSpanId(parseUnsignedLong(zipkinSpan.parentId()));
-    spanBuilder.setSpanId(parseUnsignedLong(zipkinSpan.id()));
+
+    spanBuilder.setSpanId(zipkinSpan.id());
+    if (zipkinSpan.parentId() != null ) {
+      spanBuilder.setParentSpanId(zipkinSpan.parentId());
+    }
+
+    // NOTE: opencensus prefixes Send. and Recv. based on Kind. For now we reproduce our V1 behavior
+    // of using the span name as the display name as is.
+    spanBuilder.setDisplayName(
+        toTruncatableStringProto(zipkinSpan.name() != null ? zipkinSpan.name() : ""));
+
     if (zipkinSpan.timestampAsLong() != 0L) {
       spanBuilder.setStartTime(createTimestamp(zipkinSpan.timestampAsLong()));
       if (zipkinSpan.durationAsLong() != 0L) {
@@ -71,43 +82,22 @@ public final class SpanTranslator {
         spanBuilder.setEndTime(endTime);
       }
     }
-    spanBuilder.putAllLabels(labelExtractor.extract(zipkinSpan));
+    spanBuilder.setAttributes(ATTRIBUTES_EXTRACTOR.extract(zipkinSpan));
+
+    if (!zipkinSpan.annotations().isEmpty()) {
+      TimeEvents.Builder events = TimeEvents.newBuilder();
+      for (Annotation annotation : zipkinSpan.annotations()) {
+        events.addTimeEvent(TimeEvent.newBuilder()
+            .setTime(createTimestamp(annotation.timestamp()))
+            .setAnnotation(TimeEvent.Annotation.newBuilder()
+                .setDescription(toTruncatableStringProto(annotation.value())))
+        );
+      }
+      spanBuilder.setTimeEvents(events);
+    }
+
     if (logTranslation) LOG.log(FINE, "<< translated to stackdriver span: {0}", spanBuilder);
     return spanBuilder;
-  }
-
-  private static long parseUnsignedLong(String lowerHex) {
-    if (lowerHex == null) return 0;
-    long result = 0;
-    for (int i = 0; i < 16; i++) {
-      char c = lowerHex.charAt(i);
-      result <<= 4;
-      if (c >= '0' && c <= '9') {
-        result |= c - '0';
-      } else if (c >= 'a' && c <= 'f') {
-        result |= c - 'a' + 10;
-      } else {
-        return 0;
-      }
-    }
-    return result;
-  }
-
-  private static SpanKind getSpanKind(/* Nullable */ Span.Kind zipkinKind) {
-    // Stackdriver Trace still does not have any match for CONSUMER or PRODUCER, and sending it as
-    // UNRECOGNIZED triggers an error.
-    if (zipkinKind == null
-        || zipkinKind == Span.Kind.CONSUMER
-        || zipkinKind == Span.Kind.PRODUCER) {
-      return SpanKind.SPAN_KIND_UNSPECIFIED;
-    }
-    if (zipkinKind == Span.Kind.CLIENT) {
-      return SpanKind.RPC_CLIENT;
-    }
-    if (zipkinKind == Span.Kind.SERVER) {
-      return SpanKind.RPC_SERVER;
-    }
-    return SpanKind.UNRECOGNIZED;
   }
 
   private static Timestamp createTimestamp(long microseconds) {

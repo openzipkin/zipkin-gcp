@@ -43,7 +43,7 @@
 
     <slf4j.version>1.7.25</slf4j.version>
     <!-- only used for protos, we could possibly obviate this if a problem -->
-    <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
+    <grpc-google-cloud-trace-v2.version>0.38.0</grpc-google-cloud-trace-v2.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
     <zipkin.version>2.11.11</zipkin.version>
