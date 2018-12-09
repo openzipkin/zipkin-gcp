@@ -19,6 +19,7 @@ import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Empty;
+import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
@@ -173,18 +174,17 @@ public final class StackdriverSender extends Sender {
       throw new AssertionError(e);
     }
 
-    ByteString.Output spanName = ByteString.newOutput(spanNameSize);
+    int offset = 0;
+    byte[] spanName = new byte[spanNameSize];
+    traceIdPrefix.copyTo(spanName, offset);
+    offset += traceIdPrefix.size();
+    System.arraycopy(traceIdPrefixedSpan, 0, spanName, offset, 32);
+    offset += 32;
+    SPAN_ID_PREFIX.copyTo(spanName, offset);
+    offset += SPAN_ID_PREFIX.size();
+    span.getSpanIdBytes().copyTo(spanName, offset);
 
-    try {
-      traceIdPrefix.writeTo(spanName);
-      spanName.write(traceIdPrefixedSpan, 0, 32);
-      SPAN_ID_PREFIX.writeTo(spanName);
-      span.getSpanIdBytes().writeTo(spanName);
-    } catch (IOException e) {
-      throw new AssertionError(e);
-    }
-
-    span.setNameBytes(spanName.toByteString());
+    span.setNameBytes(UnsafeByteOperations.unsafeWrap(spanName));
     return span.build();
   }
 
