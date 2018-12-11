@@ -57,6 +57,8 @@
     <netty-tcnative-boringssl-static.version>2.0.17.Final</netty-tcnative-boringssl-static.version>
     <brave.version>5.5.2</brave.version>
 
+    <assertj.version>3.11.1</assertj.version>
+
     <!-- override to set exclusions per-project -->
     <errorprone.args />
     <errorprone.version>2.3.2</errorprone.version>
@@ -186,7 +188,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.11.1</version>
+      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

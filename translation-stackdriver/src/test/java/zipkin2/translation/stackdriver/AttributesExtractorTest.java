@@ -13,6 +13,7 @@
  */
 package zipkin2.translation.stackdriver;
 
+import com.google.devtools.cloudtrace.v2.AttributeValue;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -21,10 +22,9 @@ import zipkin2.Endpoint;
 import zipkin2.Span;
 import zipkin2.Span.Kind;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
 
 public class AttributesExtractorTest {
   @Test
@@ -37,14 +37,9 @@ public class AttributesExtractorTest {
             .id("5")
             .addAnnotation(1, "annotation.key.1")
             .putTag("tag.key.1", "value")
-            .putTag("long.tag", new String(new char[10000]).replace("\0", "a"))
             .build();
-    Map<String, String> labels = extractor.extract(zipkinSpan);
-    assertTrue(labels.containsKey("annotation.key.1"));
-    assertTrue(labels.containsKey("tag.key.1"));
-    assertTrue(labels.get("tag.key.1").equals("value"));
-    assertTrue(labels.get("long.tag").equals(
-        new String(new char[AttributesExtractor.LABEL_LENGTH_MAX]).replace("\0", "a")));
+    Map<String, AttributeValue> labels = extractor.extract(zipkinSpan).getAttributeMapMap();
+    assertThat(labels).containsExactly(entry("tag.key.1", toAttributeValue("value")));
   }
 
   @Test
@@ -63,11 +58,10 @@ public class AttributesExtractorTest {
             .putTag("tag.key.1", "value")
             .putTag("known.2", "known.value")
             .build();
-    Map<String, String> labels = extractor.extract(zipkinSpan);
-    assertFalse(labels.containsKey("known.1"));
-    assertTrue(labels.containsKey("renamed.1"));
-    assertFalse(labels.containsKey("known.2"));
-    assertTrue(labels.containsKey("renamed.2"));
+    Map<String, AttributeValue> labels = extractor.extract(zipkinSpan).getAttributeMapMap();
+    assertThat(labels).contains(
+        entry("known.1", toAttributeValue("renamed.1")),
+        entry("known.2", toAttributeValue("renamed.2")));
   }
 
   @Test
@@ -77,14 +71,14 @@ public class AttributesExtractorTest {
     Span nonRootSpan =
         Span.newBuilder().traceId("4").name("child-span").id("6").parentId("5").build();
 
-    Map<String, String> rootLabels = extractor.extract(rootSpan);
-    assertEquals("zipkin-java", rootLabels.get("/agent"));
-    Map<String, String> nonRootLabels = extractor.extract(nonRootSpan);
-    assertNull(nonRootLabels.get("/agent"));
+    Map<String, AttributeValue> rootLabels = extractor.extract(rootSpan).getAttributeMapMap();
+    assertThat(rootLabels).containsEntry("/agent", toAttributeValue("zipkin-java"));
+    Map<String, AttributeValue> nonRootLabels = extractor.extract(nonRootSpan).getAttributeMapMap();
+    assertThat(nonRootLabels).doesNotContainKey("/agent");
 
     System.setProperty("stackdriver.trace.zipkin.agent", "zipkin-test");
-    rootLabels = extractor.extract(rootSpan);
-    assertEquals("zipkin-test", rootLabels.get("/agent"));
+    rootLabels = extractor.extract(rootSpan).getAttributeMapMap();
+    assertThat(rootLabels).containsEntry("/agent", toAttributeValue("zipkin-test"));
     System.clearProperty("stackdriver.trace.zipkin.agent");
   }
 
@@ -115,12 +109,11 @@ public class AttributesExtractorTest {
             .build();
 
     AttributesExtractor extractor = new AttributesExtractor(Collections.emptyMap());
-    Map<String, String> serverLabels = extractor.extract(serverSpan);
-    assertEquals("10.0.0.1", serverLabels.get("endpoint.ipv4"));
-    assertNull(serverLabels.get("endpoint.ipv6"));
-    Map<String, String> clientLabels = extractor.extract(clientSpan);
-    assertNull(clientLabels.get("endpoint.ipv4"));
-    assertNull(clientLabels.get("endpoint.ipv6"));
+    Map<String, AttributeValue> serverLabels = extractor.extract(serverSpan).getAttributeMapMap();
+    assertThat(serverLabels).containsEntry("endpoint.ipv4", toAttributeValue("10.0.0.1"));
+    assertThat(serverLabels).doesNotContainKey("endpoint.ipv6");
+    Map<String, AttributeValue> clientLabels = extractor.extract(clientSpan).getAttributeMapMap();
+    assertThat(clientLabels).doesNotContainKeys("endpoint.ipv4", "endpoint.ipv6");
   }
 
   @Test
@@ -150,12 +143,11 @@ public class AttributesExtractorTest {
             .build();
 
     AttributesExtractor extractor = new AttributesExtractor(Collections.emptyMap());
-    Map<String, String> serverLabels = extractor.extract(serverSpan);
-    assertNull(serverLabels.get("endpoint.ipv4"));
-    assertEquals("::1", serverLabels.get("endpoint.ipv6"));
-    Map<String, String> clientLabels = extractor.extract(clientSpan);
-    assertNull(clientLabels.get("endpoint.ipv4"));
-    assertNull(clientLabels.get("endpoint.ipv6"));
+    Map<String, AttributeValue> serverLabels = extractor.extract(serverSpan).getAttributeMapMap();
+    assertThat(serverLabels).doesNotContainKey("endpoint.ipv4");
+    assertThat(serverLabels).containsEntry("endpoint.ipv6", toAttributeValue("::1"));
+    Map<String, AttributeValue> clientLabels = extractor.extract(clientSpan).getAttributeMapMap();
+    assertThat(clientLabels).doesNotContainKeys("endpoint.ipv4", "endpoint.ipv6");
   }
 
   @Test
@@ -176,9 +168,9 @@ public class AttributesExtractorTest {
             .localEndpoint(Endpoint.newBuilder().serviceName("service2").build())
             .parentId("5")
             .build();
-    Map<String, String> clientLabels = extractor.extract(clientSpan);
-    assertEquals("service1", clientLabels.get("/component"));
-    Map<String, String> serverLabels = extractor.extract(serverSpan);
-    assertEquals("service2", serverLabels.get("/component"));
+    Map<String, AttributeValue> clientLabels = extractor.extract(clientSpan).getAttributeMapMap();
+    assertThat(clientLabels).containsEntry("/component", toAttributeValue("service1"));
+    Map<String, AttributeValue> serverLabels = extractor.extract(serverSpan).getAttributeMapMap();
+    assertThat(serverLabels).containsEntry("/component", toAttributeValue("service2"));
   }
 }

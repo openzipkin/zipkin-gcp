@@ -201,7 +201,7 @@ public final class StackdriverSender extends Sender {
 
     @Override
     public String toString() {
-      return "PatchTracesCall{" + request() + "}";
+      return "BatchWriteSpansCall{" + request() + "}";
     }
 
     @Override

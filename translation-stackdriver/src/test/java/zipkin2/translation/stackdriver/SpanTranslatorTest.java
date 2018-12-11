@@ -13,13 +13,14 @@
  */
 package zipkin2.translation.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.protobuf.Timestamp;
 import org.junit.Test;
 import zipkin2.Endpoint;
 import zipkin2.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
+import static zipkin2.translation.stackdriver.SpanTranslator.createTimestamp;
 
 public class SpanTranslatorTest {
   /** This test is intentionally sensitive, so changing other parts makes obvious impact here */
@@ -46,48 +47,41 @@ public class SpanTranslatorTest {
             .putTag("clnt/finagle.version", "6.45.0")
             .build();
 
-    TraceSpan translated = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
+    com.google.devtools.cloudtrace.v2.Span
+        translated = SpanTranslator.translate(
+            com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
 
     assertThat(translated)
         .isEqualTo(
-            TraceSpan.newBuilder()
-                .setSpanId(Long.parseUnsignedLong(zipkinSpan.id(), 16))
-                .setParentSpanId(Long.parseUnsignedLong(zipkinSpan.parentId(), 16))
-                .setKind(TraceSpan.SpanKind.RPC_CLIENT)
+            com.google.devtools.cloudtrace.v2.Span.newBuilder()
+                .setSpanId(zipkinSpan.id())
+                .setParentSpanId(zipkinSpan.parentId())
                 .setName("get")
                 .setStartTime(Timestamp.newBuilder().setSeconds(1).build())
                 .setEndTime(Timestamp.newBuilder().setSeconds(1).setNanos(123_456_000).build())
-                .putLabels("clnt/finagle.version", "6.45.0")
-                .putLabels("http.path", "/api")
-                .putLabels("/component", "frontend")
-                // annotations are written with UTC datestamps
-                .putLabels("foo", "1970-01-01 (00:00:01.123)")
+                .setAttributes(com.google.devtools.cloudtrace.v2.Span.Attributes.newBuilder()
+                    .putAttributeMap("clnt/finagle.version", toAttributeValue("6.45.0"))
+                    .putAttributeMap("http.path", toAttributeValue("/api"))
+                    .putAttributeMap("/component", toAttributeValue("frontend"))
+                    .build())
+                .setTimeEvents(com.google.devtools.cloudtrace.v2.Span.TimeEvents.newBuilder()
+                    .addTimeEvent(com.google.devtools.cloudtrace.v2.Span.TimeEvent.newBuilder()
+                        .setTime(createTimestamp(1_123_000L))
+                        .setAnnotation(
+                            com.google.devtools.cloudtrace.v2.Span.TimeEvent.Annotation.newBuilder()
+                                .setDescription(SpanUtil.toTruncatableStringProto("foo"))
+                                .build())
+                        .build())
+                    .build())
                 .build());
   }
 
   @Test
   public void translate_missingName() {
     Span zipkinSpan = Span.newBuilder().traceId("3").id("2").build();
-    TraceSpan translated = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
+    com.google.devtools.cloudtrace.v2.Span translated = SpanTranslator.translate(
+        com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
 
-    assertThat(translated.getName()).isEqualTo(TraceSpan.getDefaultInstance().getName()).isEmpty();
-  }
-
-  @Test
-  public void translate_consumerProducerSpan() {
-    assertThat(
-            SpanTranslator.translate(
-                    TraceSpan.newBuilder(),
-                    Span.newBuilder().traceId("2").id("3").kind(Span.Kind.CONSUMER).build())
-                .build()
-                .getKind())
-        .isEqualTo(TraceSpan.SpanKind.SPAN_KIND_UNSPECIFIED);
-    assertThat(
-            SpanTranslator.translate(
-                    TraceSpan.newBuilder(),
-                    Span.newBuilder().traceId("2").id("3").kind(Span.Kind.PRODUCER).build())
-                .build()
-                .getKind())
-        .isEqualTo(TraceSpan.SpanKind.SPAN_KIND_UNSPECIFIED);
+    assertThat(translated.getDisplayName().getValue()).isEmpty();
   }
 }

@@ -30,7 +30,8 @@ import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableStringProto;
  * <p>Zipkin tags are converted to Stackdriver Span labels by using annotation.key as the key and
  * the String value of annotation.value as the value.
  *
- * <p>Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver Trace
+ * <p>Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver
+ * Trace
  * name. Any Zipkin annotations without a Stackdriver label equivalent are renamed to
  * zipkin.io/[key_name]
  */
@@ -38,6 +39,7 @@ final class AttributesExtractor {
 
   private static final String kAgentLabelKey = "/agent";
   private static final String kComponentLabelKey = "/component";
+  private static final String kKindLabelKey = "/kind";
   private final Map<String, String> renamedLabels;
 
   AttributesExtractor(Map<String, String> renamedLabels) {
@@ -52,6 +54,11 @@ final class AttributesExtractor {
    */
   Attributes extract(Span zipkinSpan) {
     Attributes.Builder attributes = Attributes.newBuilder();
+
+    // Add Kind as a tag for now since there is no structured way of sending it with Stackdriver
+    // Trace API V2
+    attributes.putAttributeMap(kKindLabelKey, toAttributeValue(kindLabel(zipkinSpan.kind())));
+
     for (Map.Entry<String, String> tag : zipkinSpan.tags().entrySet()) {
       attributes.putAttributeMap(tag.getKey(), toAttributeValue(tag.getValue()));
     }
@@ -83,14 +90,29 @@ final class AttributesExtractor {
     return attributes.build();
   }
 
+  static AttributeValue toAttributeValue(String text) {
+    return AttributeValue.newBuilder()
+        .setStringValue(toTruncatableStringProto(text))
+        .build();
+  }
+
   private String getLabelName(String zipkinName) {
     String renamed = renamedLabels.get(zipkinName);
     return renamed != null ? renamed : zipkinName;
   }
 
-  private AttributeValue toAttributeValue(String text) {
-    return AttributeValue.newBuilder()
-        .setStringValue(toTruncatableStringProto(text))
-        .build();
+  private String kindLabel(Span.Kind kind) {
+    switch (kind) {
+      case CLIENT:
+        return "client";
+      case SERVER:
+        return "server";
+      case PRODUCER:
+        return "producer";
+      case CONSUMER:
+        return "consumner";
+      default:
+        return kind.name().toLowerCase();
+    }
   }
 }

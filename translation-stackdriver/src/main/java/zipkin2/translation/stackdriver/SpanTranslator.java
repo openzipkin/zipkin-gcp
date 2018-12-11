@@ -100,7 +100,7 @@ public final class SpanTranslator {
     return spanBuilder;
   }
 
-  private static Timestamp createTimestamp(long microseconds) {
+  static Timestamp createTimestamp(long microseconds) {
     long seconds = (microseconds / 1000000);
     int remainderMicros = (int) (microseconds % 1000000);
     int remainderNanos = remainderMicros * 1000;
