@@ -13,19 +13,17 @@
  */
 package zipkin.autoconfigure.storage.stackdriver;
 
+import static com.google.common.base.Preconditions.checkState;
+import static io.grpc.CallOptions.DEFAULT;
+
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.common.io.ByteStreams;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.auth.MoreCallCredentials;
-import io.netty.handler.ssl.OpenSsl;
-import io.netty.util.internal.PlatformDependent;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Collections;
+import io.grpc.netty.shaded.io.netty.handler.ssl.OpenSsl;
+import io.grpc.netty.shaded.io.netty.util.internal.PlatformDependent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,8 +35,11 @@ import org.springframework.context.annotation.Configuration;
 import zipkin2.storage.StorageComponent;
 import zipkin2.storage.stackdriver.StackdriverStorage;
 
-import static com.google.common.base.Preconditions.checkState;
-import static io.grpc.CallOptions.DEFAULT;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Collections;
 
 @Configuration
 @EnableConfigurationProperties(ZipkinStackdriverStorageProperties.class)
