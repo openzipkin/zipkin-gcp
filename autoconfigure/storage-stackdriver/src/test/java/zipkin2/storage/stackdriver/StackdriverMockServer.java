@@ -13,6 +13,8 @@
  */
 package zipkin2.storage.stackdriver;
 
+import static java.util.Collections.unmodifiableSet;
+
 import com.google.common.collect.Sets;
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.Trace;
@@ -20,22 +22,21 @@ import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
 import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.protobuf.Empty;
 import io.grpc.Server;
-import io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
+import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
+import io.grpc.netty.shaded.io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.grpc.stub.StreamObserver;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
-import java.security.cert.CertificateException;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import javax.net.ssl.SSLException;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.SocketUtils;
 
-import static java.util.Collections.unmodifiableSet;
+import java.security.cert.CertificateException;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import javax.net.ssl.SSLException;
 
 /** Starts up a local Stackdriver Trace server, listening for GRPC requests on {@link #grpcURI}. */
 public class StackdriverMockServer extends ExternalResource {

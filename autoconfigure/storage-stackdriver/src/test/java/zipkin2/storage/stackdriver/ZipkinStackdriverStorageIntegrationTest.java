@@ -13,22 +13,19 @@
  */
 package zipkin2.storage.stackdriver;
 
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static zipkin2.storage.stackdriver.StackdriverMockServer.CLIENT_SSL_CONTEXT;
+
 import com.google.auth.Credentials;
 import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceBlockingStub;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.OpenSsl;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslProvider;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import io.grpc.netty.shaded.io.netty.handler.ssl.OpenSsl;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
+import io.grpc.netty.shaded.io.netty.handler.ssl.SslProvider;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -42,9 +39,13 @@ import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConf
 import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
 import zipkin2.Span;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static zipkin2.storage.stackdriver.StackdriverMockServer.CLIENT_SSL_CONTEXT;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 public class ZipkinStackdriverStorageIntegrationTest {
   @ClassRule public static final StackdriverMockServer mockServer = new StackdriverMockServer();
