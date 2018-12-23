@@ -112,9 +112,7 @@ public class StackdriverSenderTest {
     BatchWriteSpansRequest request = takeRequest();
 
     List<com.google.devtools.cloudtrace.v2.Span> translated =
-        spans.stream()
-            .map(this::translate)
-            .collect(Collectors.toList());
+        SpanTranslator.translate(projectId, spans);
 
     // sanity check the data
     assertThat(request.getSpansList()).containsExactlyElementsOf(translated);
@@ -122,15 +120,6 @@ public class StackdriverSenderTest {
     // verify our estimate is correct
     int actualSize = request.getSerializedSize();
     assertThat(sender.messageSizeInBytes(encodedSpans)).isEqualTo(actualSize);
-  }
-
-  com.google.devtools.cloudtrace.v2.Span translate(Span span) {
-    com.google.devtools.cloudtrace.v2.Span.Builder translated =
-        SpanTranslator.translate(com.google.devtools.cloudtrace.v2.Span.newBuilder(),
-            span);
-    translated.setName(
-        "projects/" + projectId + "/traces/" + span.traceId() + "/spans/" + span.id());
-    return translated.build();
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {

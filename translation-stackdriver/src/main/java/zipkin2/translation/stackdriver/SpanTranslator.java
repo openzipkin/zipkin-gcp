@@ -16,7 +16,9 @@ package zipkin2.translation.stackdriver;
 import com.google.devtools.cloudtrace.v2.Span.TimeEvent;
 import com.google.devtools.cloudtrace.v2.Span.TimeEvents;
 import com.google.protobuf.Timestamp;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import zipkin2.Annotation;
@@ -40,6 +42,31 @@ public final class SpanTranslator {
     renamedLabels.put("http.response.size", "/response/size");
     renamedLabels.put("http.url", "/http/url");
     ATTRIBUTES_EXTRACTOR = new AttributesExtractor(renamedLabels);
+  }
+
+  /**
+   * Convert a Collection of Zipkin Spans into a Collection of Stackdriver Trace Spans.
+   *
+   * @param projectId The Google Cloud Platform projectId that should be used for Stackdriver Trace
+   *     Traces.
+   * @param zipkinSpans The Collection of Zipkin Spans.
+   * @return A Collection of Stackdriver Trace Spans.
+   */
+  public static List<com.google.devtools.cloudtrace.v2.Span> translate(
+      String projectId, List<Span> zipkinSpans) {
+    List<com.google.devtools.cloudtrace.v2.Span> result = new ArrayList<>(zipkinSpans.size());
+    for (int i = 0, len = zipkinSpans.size(); i < len; i++) {
+      Span zipkinSpan = zipkinSpans.get(i);
+      com.google.devtools.cloudtrace.v2.Span.Builder spanBuilder = translate(
+          com.google.devtools.cloudtrace.v2.Span.newBuilder(),
+          zipkinSpan);
+      spanBuilder.setName(
+          "projects/" + projectId
+              + "/traces/" + zipkinSpan.traceId()
+              + "/spans/" + zipkinSpan.id());
+      result.add(spanBuilder.build());
+    }
+    return result;
   }
 
   /**

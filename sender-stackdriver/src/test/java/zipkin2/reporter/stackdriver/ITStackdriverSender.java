@@ -30,6 +30,7 @@ import zipkin2.TestObjects;
 import zipkin2.reporter.AsyncReporter;
 import zipkin2.translation.stackdriver.SpanTranslator;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -80,16 +81,8 @@ public class ITStackdriverSender {
     BatchWriteSpansRequest request = requestCaptor.getValue();
     assertThat(request.getName()).isEqualTo("projects/" + projectId);
 
-    assertThat(request.getSpansList()).containsExactly(translate(TestObjects.CLIENT_SPAN));
-  }
-
-  com.google.devtools.cloudtrace.v2.Span translate(Span span) {
-    com.google.devtools.cloudtrace.v2.Span.Builder translated =
-        SpanTranslator.translate(com.google.devtools.cloudtrace.v2.Span.newBuilder(),
-        span);
-    translated.setName(
-        "projects/" + projectId + "/traces/" + span.traceId() + "/spans/" + span.id());
-    return translated.build();
+    assertThat(request.getSpansList()).containsExactlyElementsOf(
+        SpanTranslator.translate(projectId, asList(TestObjects.CLIENT_SPAN)));
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
