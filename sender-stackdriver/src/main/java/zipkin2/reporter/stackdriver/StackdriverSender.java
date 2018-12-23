@@ -177,6 +177,9 @@ public final class StackdriverSender extends Sender {
     }
 
     int offset = 0;
+
+    // Span name in Stackdriver is the global unique identifier of the span, including project ID,
+    // trace ID, and span ID. It is _not_ the same as the name in Zipkin which is the semantic name.
     byte[] spanName = new byte[spanNameSize];
     traceIdPrefix.copyTo(spanName, offset);
     offset += traceIdPrefix.size();
