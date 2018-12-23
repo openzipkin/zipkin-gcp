@@ -43,7 +43,7 @@ import static zipkin2.reporter.stackdriver.StackdriverEncoderBenchmarks.CLIENT_S
 @Threads(1)
 public class TracesParserBenchmarks {
   static final String PROJECT_ID = "zipkin-demo";
-  static final byte[] ENCODED_CLIENT_SPAN = StackdriverEncoder.V1.encode(CLIENT_SPAN);
+  static final byte[] ENCODED_CLIENT_SPAN = StackdriverEncoder.V2.encode(CLIENT_SPAN);
   static final List<byte[]> HUNDRED_ENCODED_CLIENT_SPANS;
 
   static {
@@ -51,7 +51,7 @@ public class TracesParserBenchmarks {
     for (int i = 0; i < 10; i++) {
       for (int j = 0; j < 10; j++) {
         HUNDRED_ENCODED_CLIENT_SPANS.add(
-            StackdriverEncoder.V1.encode(
+            StackdriverEncoder.V2.encode(
                 CLIENT_SPAN
                     .toBuilder()
                     .traceId(Integer.toHexString(i))

@@ -51,7 +51,7 @@ public class ITStackdriverSender {
         AsyncReporter.builder(
                 StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build())
             .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
-            .build(StackdriverEncoder.V1);
+            .build(StackdriverEncoder.V2);
   }
 
   @Test

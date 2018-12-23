@@ -64,7 +64,7 @@ public class StackdriverEncoderBenchmarks {
 
   @Benchmark
   public int sizeInBytesClientSpan_json_stackdriver_proto3() {
-    return StackdriverEncoder.V1.sizeInBytes(CLIENT_SPAN);
+    return StackdriverEncoder.V2.sizeInBytes(CLIENT_SPAN);
   }
 
   @Benchmark
@@ -74,7 +74,7 @@ public class StackdriverEncoderBenchmarks {
 
   @Benchmark
   public byte[] encodeClientSpan_json_stackdriver_proto3() {
-    return StackdriverEncoder.V1.encode(CLIENT_SPAN);
+    return StackdriverEncoder.V2.encode(CLIENT_SPAN);
   }
 
   // Convenience main entry-point

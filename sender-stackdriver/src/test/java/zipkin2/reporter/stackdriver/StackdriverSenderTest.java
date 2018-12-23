@@ -54,7 +54,7 @@ public class StackdriverSenderTest {
 
   @Test
   public void verifyRequestSent_single() throws IOException {
-    byte[] oneTrace = StackdriverEncoder.V1.encode(span);
+    byte[] oneTrace = StackdriverEncoder.V2.encode(span);
     List<byte[]> encodedSpans = ImmutableList.of(oneTrace);
 
     onClientCall(
@@ -105,7 +105,7 @@ public class StackdriverSenderTest {
         });
 
     List<byte[]> encodedSpans =
-        spans.stream().map(StackdriverEncoder.V1::encode).collect(Collectors.toList());
+        spans.stream().map(StackdriverEncoder.V2::encode).collect(Collectors.toList());
 
     sender.sendSpans(encodedSpans).execute();
 

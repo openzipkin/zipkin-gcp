@@ -21,7 +21,7 @@ import zipkin2.translation.stackdriver.SpanTranslator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StackdriverEncoderTest {
-  StackdriverEncoder encoder = StackdriverEncoder.V1;
+  StackdriverEncoder encoder = StackdriverEncoder.V2;
   Span zipkinSpan = TestObjects.CLIENT_SPAN;
 
   @Test

@@ -23,7 +23,7 @@ import zipkin2.translation.stackdriver.SpanTranslator;
 
 @SuppressWarnings("ImmutableEnumChecker") // because span is immutable
 public enum StackdriverEncoder implements BytesEncoder<Span> {
-  V1 {
+  V2 {
     @Override
     public Encoding encoding() {
       return Encoding.PROTO3;
