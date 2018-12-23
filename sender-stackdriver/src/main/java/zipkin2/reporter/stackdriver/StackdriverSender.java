@@ -141,7 +141,7 @@ public final class StackdriverSender extends Sender {
     BatchWriteSpansRequest.Builder request = BatchWriteSpansRequest.newBuilder()
         .setNameBytes(projectName);
     for (byte[] traceIdPrefixedSpan : traceIdPrefixedSpans) {
-      request.addSpans(parseTraceIdPrefixedSpan(traceIdPrefixedSpan));
+      request.addSpans(parseTraceIdPrefixedSpan(traceIdPrefixedSpan, spanNameSize, traceIdPrefix));
     }
 
     return new BatchWriteSpansCall(request.build()).map(EmptyToVoid.INSTANCE);
@@ -165,7 +165,8 @@ public final class StackdriverSender extends Sender {
     ((ManagedChannel) channel).shutdownNow();
   }
 
-  Span parseTraceIdPrefixedSpan(byte[] traceIdPrefixedSpan) {
+  static Span parseTraceIdPrefixedSpan(
+      byte[] traceIdPrefixedSpan, int spanNameSize, ByteString traceIdPrefix) {
     // start parsing after the trace ID
     int off = 32, len = traceIdPrefixedSpan.length - off;
     Span.Builder span = Span.newBuilder();

@@ -13,7 +13,8 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.Traces;
+import com.google.devtools.cloudtrace.v2.Span;
+import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,7 @@ import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import static zipkin2.reporter.stackdriver.StackdriverEncoderBenchmarks.CLIENT_SPAN;
+import static zipkin2.reporter.stackdriver.StackdriverSender.SPAN_ID_PREFIX;
 
 @Measurement(iterations = 5, time = 1)
 @Warmup(iterations = 10, time = 1)
@@ -43,6 +45,9 @@ import static zipkin2.reporter.stackdriver.StackdriverEncoderBenchmarks.CLIENT_S
 @Threads(1)
 public class TracesParserBenchmarks {
   static final String PROJECT_ID = "zipkin-demo";
+  static final ByteString TRACE_ID_PREFIX =
+      ByteString.copyFromUtf8("projects/" + PROJECT_ID + "/traces/");
+  static final int SPAN_NAME_SIZE = TRACE_ID_PREFIX.size() + 32 + SPAN_ID_PREFIX.size() + 16;
   static final byte[] ENCODED_CLIENT_SPAN = StackdriverEncoder.V2.encode(CLIENT_SPAN);
   static final List<byte[]> HUNDRED_ENCODED_CLIENT_SPANS;
 
@@ -61,18 +66,22 @@ public class TracesParserBenchmarks {
     }
   }
 
-  final TraceCollator collator = new TraceCollator();
-
   @Benchmark
-  public Traces parseClientSpan() {
-    return WriteSpansRequestParser.parse(PROJECT_ID, ENCODED_CLIENT_SPAN);
+  public List<Span> parseClientSpan() {
+    List<Span> spans = new ArrayList<>();
+    spans.add(StackdriverSender.parseTraceIdPrefixedSpan(
+        ENCODED_CLIENT_SPAN, SPAN_NAME_SIZE, TRACE_ID_PREFIX));
+    return spans;
   }
 
   @Benchmark
-  public Traces parse100ClientSpans() {
-    WriteSpansRequestParser parser = new WriteSpansRequestParser(PROJECT_ID);
-    collator.collate(HUNDRED_ENCODED_CLIENT_SPANS, parser);
-    return parser.finish();
+  public List<Span> parse100ClientSpans() {
+    List<Span> spans = new ArrayList<>();
+    for (int i = 0, len = HUNDRED_ENCODED_CLIENT_SPANS.size(); i < len; i++) {
+      spans.add(StackdriverSender.parseTraceIdPrefixedSpan(
+          HUNDRED_ENCODED_CLIENT_SPANS.get(i), SPAN_NAME_SIZE, TRACE_ID_PREFIX));
+    }
+    return spans;
   }
 
   // Convenience main entry-point
