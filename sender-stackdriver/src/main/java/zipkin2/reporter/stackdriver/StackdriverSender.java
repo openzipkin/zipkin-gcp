@@ -95,7 +95,11 @@ public final class StackdriverSender extends Sender {
     traceIdPrefix = projectName.concat(ByteString.copyFromUtf8("/traces/"));
     shutdownChannelOnClose = builder.shutdownChannelOnClose;
     projectNameFieldSize = CodedOutputStream.computeBytesSize(1, projectName);
+
+    // The size of the contents of the Span.name field, used to preallocate the correct sized
+    // buffer when computing Span.name.
     spanNameSize = traceIdPrefix.size() + 32 + SPAN_ID_PREFIX.size() + 16;
+
     spanNameFieldSize = CodedOutputStream.computeTagSize(1)
         + CodedOutputStream.computeUInt32SizeNoTag(spanNameSize) + spanNameSize;
   }
