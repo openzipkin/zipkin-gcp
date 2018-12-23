@@ -62,7 +62,7 @@ public final class SpanTranslator {
           zipkinSpan);
       spanBuilder.setName(
           "projects/" + projectId
-              + "/traces/" + zipkinSpan.traceId()
+              + "/traces/" + paddedTraceId(zipkinSpan.traceId())
               + "/spans/" + zipkinSpan.id());
       result.add(spanBuilder.build());
     }
@@ -133,5 +133,12 @@ public final class SpanTranslator {
     int remainderNanos = remainderMicros * 1000;
 
     return Timestamp.newBuilder().setSeconds(seconds).setNanos(remainderNanos).build();
+  }
+
+  static String paddedTraceId(String traceId) {
+    if (traceId.length() == 32) {
+      return traceId;
+    }
+    return "0000000000000000" + traceId;
   }
 }

@@ -14,6 +14,9 @@
 package zipkin2.translation.stackdriver;
 
 import com.google.protobuf.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import zipkin2.Endpoint;
 import zipkin2.Span;
@@ -85,5 +88,26 @@ public class SpanTranslatorTest {
         com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
 
     assertThat(translated.getDisplayName().getValue()).isEmpty();
+  }
+
+  @Test
+  public void testTranslateSpans() {
+    Span span1 =
+        Span.newBuilder().id("1").traceId("1").name("/a").timestamp(1L).duration(1L).build();
+    Span span2 =
+        Span.newBuilder().id("2").traceId("2").name("/b").timestamp(2L).duration(1L).build();
+    Span span3 =
+        Span.newBuilder().id("3").traceId("1").name("/c").timestamp(3L).duration(1L).build();
+
+    List<Span> spans = Arrays.asList(span1, span2, span3);
+    List<com.google.devtools.cloudtrace.v2.Span> stackdriverSpans =
+        new ArrayList<>(SpanTranslator.translate("test-project", spans));
+
+    assertThat(stackdriverSpans).hasSize(3);
+    assertThat(stackdriverSpans).extracting(com.google.devtools.cloudtrace.v2.Span::getName)
+        .containsExactlyInAnyOrder(
+            "projects/test-project/traces/00000000000000000000000000000001/spans/0000000000000001",
+            "projects/test-project/traces/00000000000000000000000000000002/spans/0000000000000002",
+            "projects/test-project/traces/00000000000000000000000000000001/spans/0000000000000003");
   }
 }
