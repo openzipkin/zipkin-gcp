@@ -94,9 +94,10 @@ public final class StackdriverSender extends Sender {
     projectName = ByteString.copyFromUtf8("projects/" + builder.projectId);
     traceIdPrefix = projectName.concat(ByteString.copyFromUtf8("/traces/"));
     shutdownChannelOnClose = builder.shutdownChannelOnClose;
-    projectNameFieldSize = 1 /* field no */ + CodedOutputStream.computeBytesSizeNoTag(projectName);
+    projectNameFieldSize = CodedOutputStream.computeBytesSize(1, projectName);
     spanNameSize = traceIdPrefix.size() + 32 + SPAN_ID_PREFIX.size() + 16;
-    spanNameFieldSize = 1 /* field no */ + spanNameSize;
+    spanNameFieldSize = CodedOutputStream.computeTagSize(1)
+        + CodedOutputStream.computeUInt32SizeNoTag(spanNameSize) + spanNameSize;
   }
 
   @Override
@@ -116,8 +117,8 @@ public final class StackdriverSender extends Sender {
     if (length == 1) return messageSizeInBytes(traceIdPrefixedSpans.get(0).length);
 
     int size = projectNameFieldSize;
-    for (byte[] traceIdPrefixedSpan : traceIdPrefixedSpans) {
-      size += spanFieldSize(traceIdPrefixedSpan.length);
+    for (int i = 0; i < length; i++) {
+      size += spanFieldSize(traceIdPrefixedSpans.get(i).length);
     }
 
     return size;
@@ -125,7 +126,7 @@ public final class StackdriverSender extends Sender {
 
   @Override
   public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
-    return projectNameFieldSize + spanFieldSize(traceIdPrefixedSpanSize - 32);
+    return projectNameFieldSize + spanFieldSize(traceIdPrefixedSpanSize);
   }
 
   /** close is typically called from a different thread */
@@ -188,9 +189,10 @@ public final class StackdriverSender extends Sender {
     return span.build();
   }
 
-  int spanFieldSize(int spanSize) {
-    int sizeOfSpanMessage = spanSize + spanNameFieldSize;
-    return /* field no */ 1 + computeUInt32SizeNoTag(sizeOfSpanMessage) + sizeOfSpanMessage;
+  int spanFieldSize(int traceIdPrefixedSpanSize) {
+    int sizeOfSpanMessage = traceIdPrefixedSpanSize - 32 + spanNameFieldSize;
+    return CodedOutputStream.computeTagSize(2)
+        + computeUInt32SizeNoTag(sizeOfSpanMessage) + sizeOfSpanMessage;
   }
 
   final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {

@@ -39,7 +39,7 @@ public class AttributesExtractorTest {
             .putTag("tag.key.1", "value")
             .build();
     Map<String, AttributeValue> labels = extractor.extract(zipkinSpan).getAttributeMapMap();
-    assertThat(labels).containsExactly(entry("tag.key.1", toAttributeValue("value")));
+    assertThat(labels).contains(entry("tag.key.1", toAttributeValue("value")));
   }
 
   @Test
@@ -59,9 +59,7 @@ public class AttributesExtractorTest {
             .putTag("known.2", "known.value")
             .build();
     Map<String, AttributeValue> labels = extractor.extract(zipkinSpan).getAttributeMapMap();
-    assertThat(labels).contains(
-        entry("known.1", toAttributeValue("renamed.1")),
-        entry("known.2", toAttributeValue("renamed.2")));
+    assertThat(labels).contains(entry("renamed.2", toAttributeValue("known.value")));
   }
 
   @Test

@@ -43,26 +43,26 @@ public class UnaryClientCallTest {
   @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
   final TestTraceService traceService = spy(new TestTraceService());
 
-  static class PatchTracesCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
+  static class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
     final Channel channel;
 
-    PatchTracesCall(Channel channel, BatchWriteSpansRequest request) {
+    BatchWriteSpansCall(Channel channel, BatchWriteSpansRequest request) {
       super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), DEFAULT, request);
       this.channel = channel;
     }
 
     @Override
-    public PatchTracesCall clone() {
-      return new PatchTracesCall(channel, request());
+    public BatchWriteSpansCall clone() {
+      return new BatchWriteSpansCall(channel, request());
     }
   }
 
-  PatchTracesCall call;
+  BatchWriteSpansCall call;
 
   @Before
   public void setUp() throws Throwable {
     server.getServiceRegistry().addService(traceService);
-    call = new PatchTracesCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build());
+    call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build());
   }
 
   @Test

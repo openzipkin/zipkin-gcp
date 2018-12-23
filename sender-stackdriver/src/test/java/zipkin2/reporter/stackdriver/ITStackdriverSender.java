@@ -80,9 +80,16 @@ public class ITStackdriverSender {
     BatchWriteSpansRequest request = requestCaptor.getValue();
     assertThat(request.getName()).isEqualTo("projects/" + projectId);
 
-    assertThat(request.getSpansList()).containsExactly(
+    assertThat(request.getSpansList()).containsExactly(translate(TestObjects.CLIENT_SPAN));
+  }
+
+  com.google.devtools.cloudtrace.v2.Span translate(Span span) {
+    com.google.devtools.cloudtrace.v2.Span.Builder translated =
         SpanTranslator.translate(com.google.devtools.cloudtrace.v2.Span.newBuilder(),
-            TestObjects.CLIENT_SPAN).build());
+        span);
+    translated.setName(
+        "projects/" + projectId + "/traces/" + span.traceId() + "/spans/" + span.id());
+    return translated.build();
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {

@@ -21,6 +21,7 @@ import zipkin2.Span;
 import static org.assertj.core.api.Assertions.assertThat;
 import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
 import static zipkin2.translation.stackdriver.SpanTranslator.createTimestamp;
+import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableStringProto;
 
 public class SpanTranslatorTest {
   /** This test is intentionally sensitive, so changing other parts makes obvious impact here */
@@ -56,12 +57,13 @@ public class SpanTranslatorTest {
             com.google.devtools.cloudtrace.v2.Span.newBuilder()
                 .setSpanId(zipkinSpan.id())
                 .setParentSpanId(zipkinSpan.parentId())
-                .setName("get")
+                .setDisplayName(toTruncatableStringProto("get"))
                 .setStartTime(Timestamp.newBuilder().setSeconds(1).build())
                 .setEndTime(Timestamp.newBuilder().setSeconds(1).setNanos(123_456_000).build())
                 .setAttributes(com.google.devtools.cloudtrace.v2.Span.Attributes.newBuilder()
                     .putAttributeMap("clnt/finagle.version", toAttributeValue("6.45.0"))
                     .putAttributeMap("http.path", toAttributeValue("/api"))
+                    .putAttributeMap("/kind", toAttributeValue("client"))
                     .putAttributeMap("/component", toAttributeValue("frontend"))
                     .build())
                 .setTimeEvents(com.google.devtools.cloudtrace.v2.Span.TimeEvents.newBuilder()
@@ -69,7 +71,7 @@ public class SpanTranslatorTest {
                         .setTime(createTimestamp(1_123_000L))
                         .setAnnotation(
                             com.google.devtools.cloudtrace.v2.Span.TimeEvent.Annotation.newBuilder()
-                                .setDescription(SpanUtil.toTruncatableStringProto("foo"))
+                                .setDescription(toTruncatableStringProto("foo"))
                                 .build())
                         .build())
                     .build())

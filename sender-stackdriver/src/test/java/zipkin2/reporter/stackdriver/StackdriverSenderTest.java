@@ -13,7 +13,6 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
@@ -106,7 +105,7 @@ public class StackdriverSenderTest {
         });
 
     List<byte[]> encodedSpans =
-        FluentIterable.from(spans).transform(StackdriverEncoder.V1::encode).toList();
+        spans.stream().map(StackdriverEncoder.V1::encode).collect(Collectors.toList());
 
     sender.sendSpans(encodedSpans).execute();
 
@@ -114,8 +113,7 @@ public class StackdriverSenderTest {
 
     List<com.google.devtools.cloudtrace.v2.Span> translated =
         spans.stream()
-            .map(s -> SpanTranslator.translate(
-                com.google.devtools.cloudtrace.v2.Span.newBuilder(), span).build())
+            .map(this::translate)
             .collect(Collectors.toList());
 
     // sanity check the data
@@ -124,6 +122,15 @@ public class StackdriverSenderTest {
     // verify our estimate is correct
     int actualSize = request.getSerializedSize();
     assertThat(sender.messageSizeInBytes(encodedSpans)).isEqualTo(actualSize);
+  }
+
+  com.google.devtools.cloudtrace.v2.Span translate(Span span) {
+    com.google.devtools.cloudtrace.v2.Span.Builder translated =
+        SpanTranslator.translate(com.google.devtools.cloudtrace.v2.Span.newBuilder(),
+            span);
+    translated.setName(
+        "projects/" + projectId + "/traces/" + span.traceId() + "/spans/" + span.id());
+    return translated.build();
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {

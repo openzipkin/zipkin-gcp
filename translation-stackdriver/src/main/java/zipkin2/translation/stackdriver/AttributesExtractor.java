@@ -40,6 +40,7 @@ final class AttributesExtractor {
   private static final String kAgentLabelKey = "/agent";
   private static final String kComponentLabelKey = "/component";
   private static final String kKindLabelKey = "/kind";
+
   private final Map<String, String> renamedLabels;
 
   AttributesExtractor(Map<String, String> renamedLabels) {
@@ -57,10 +58,12 @@ final class AttributesExtractor {
 
     // Add Kind as a tag for now since there is no structured way of sending it with Stackdriver
     // Trace API V2
-    attributes.putAttributeMap(kKindLabelKey, toAttributeValue(kindLabel(zipkinSpan.kind())));
+    if (zipkinSpan.kind() != null) {
+      attributes.putAttributeMap(kKindLabelKey, toAttributeValue(kindLabel(zipkinSpan.kind())));
+    }
 
     for (Map.Entry<String, String> tag : zipkinSpan.tags().entrySet()) {
-      attributes.putAttributeMap(tag.getKey(), toAttributeValue(tag.getValue()));
+      attributes.putAttributeMap(getLabelName(tag.getKey()), toAttributeValue(tag.getValue()));
     }
 
     // Only use server receive spans to extract endpoint data as spans
@@ -110,7 +113,7 @@ final class AttributesExtractor {
       case PRODUCER:
         return "producer";
       case CONSUMER:
-        return "consumner";
+        return "consumer";
       default:
         return kind.name().toLowerCase();
     }
