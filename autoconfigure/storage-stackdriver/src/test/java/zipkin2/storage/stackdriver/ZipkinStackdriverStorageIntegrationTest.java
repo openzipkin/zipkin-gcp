@@ -101,7 +101,10 @@ public class ZipkinStackdriverStorageIntegrationTest {
   @Test
   public void traceConsumerGetsCalled() throws Exception {
     List<String> spanIds =
-        LongStream.of(1, 2, 3).boxed().map(Long::toHexString).collect(Collectors.toList());
+        LongStream.of(1, 2, 3)
+            .mapToObj(Long::toHexString)
+            .map(id -> "000000000000000" + id)
+            .collect(Collectors.toList());
 
     assertThat(mockServer.spanIds()).withFailMessage("Unexpected traces in Stackdriver").isEmpty();
 
@@ -118,8 +121,8 @@ public class ZipkinStackdriverStorageIntegrationTest {
 
     assertThat(spanCountdown.getCount()).isZero();
     assertThat(mockServer.spanIds())
-        .withFailMessage("Not all spans made it to Stackdriver")
-        .containsExactlyElementsOf(spanIds);
+        .as("Not all spans made it to Stackdriver")
+        .containsExactlyInAnyOrderElementsOf(spanIds);
   }
 
   @Configuration
