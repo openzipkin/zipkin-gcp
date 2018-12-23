@@ -18,7 +18,7 @@ import com.google.devtools.cloudtrace.v2.Span.Attributes;
 import java.util.Map;
 import zipkin2.Span;
 
-import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableStringProto;
+import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableString;
 
 /**
  * LabelExtractor extracts the set of Stackdriver Span labels equivalent to the annotations in a
@@ -95,7 +95,7 @@ final class AttributesExtractor {
 
   static AttributeValue toAttributeValue(String text) {
     return AttributeValue.newBuilder()
-        .setStringValue(toTruncatableStringProto(text))
+        .setStringValue(toTruncatableString(text))
         .build();
   }
 

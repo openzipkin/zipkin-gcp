@@ -4,7 +4,7 @@ import com.google.devtools.cloudtrace.v2.TruncatableString;
 
 final class SpanUtil {
 
-  static TruncatableString toTruncatableStringProto(String string) {
+  static TruncatableString toTruncatableString(String string) {
     // NOTE: Java and Go implementations of opencensus seem to differ in their interpretation of
     // whether a "request" Span needs to have truncated strings. We'll assume the simpler
     // implementation of Java is correct and that the truncation semantics are for responses, not

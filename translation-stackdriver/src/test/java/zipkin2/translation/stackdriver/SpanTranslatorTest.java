@@ -21,7 +21,7 @@ import zipkin2.Span;
 import static org.assertj.core.api.Assertions.assertThat;
 import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
 import static zipkin2.translation.stackdriver.SpanTranslator.createTimestamp;
-import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableStringProto;
+import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableString;
 
 public class SpanTranslatorTest {
   /** This test is intentionally sensitive, so changing other parts makes obvious impact here */
@@ -57,7 +57,7 @@ public class SpanTranslatorTest {
             com.google.devtools.cloudtrace.v2.Span.newBuilder()
                 .setSpanId(zipkinSpan.id())
                 .setParentSpanId(zipkinSpan.parentId())
-                .setDisplayName(toTruncatableStringProto("get"))
+                .setDisplayName(toTruncatableString("get"))
                 .setStartTime(Timestamp.newBuilder().setSeconds(1).build())
                 .setEndTime(Timestamp.newBuilder().setSeconds(1).setNanos(123_456_000).build())
                 .setAttributes(com.google.devtools.cloudtrace.v2.Span.Attributes.newBuilder()
@@ -71,7 +71,7 @@ public class SpanTranslatorTest {
                         .setTime(createTimestamp(1_123_000L))
                         .setAnnotation(
                             com.google.devtools.cloudtrace.v2.Span.TimeEvent.Annotation.newBuilder()
-                                .setDescription(toTruncatableStringProto("foo"))
+                                .setDescription(toTruncatableString("foo"))
                                 .build())
                         .build())
                     .build())

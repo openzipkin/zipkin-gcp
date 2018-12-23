@@ -23,7 +23,7 @@ import zipkin2.Annotation;
 import zipkin2.Span;
 
 import static java.util.logging.Level.FINE;
-import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableStringProto;
+import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableString;
 
 /** SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span. */
 public final class SpanTranslator {
@@ -72,7 +72,7 @@ public final class SpanTranslator {
     // NOTE: opencensus prefixes Send. and Recv. based on Kind. For now we reproduce our V1 behavior
     // of using the span name as the display name as is.
     spanBuilder.setDisplayName(
-        toTruncatableStringProto(zipkinSpan.name() != null ? zipkinSpan.name() : ""));
+        toTruncatableString(zipkinSpan.name() != null ? zipkinSpan.name() : ""));
 
     if (zipkinSpan.timestampAsLong() != 0L) {
       spanBuilder.setStartTime(createTimestamp(zipkinSpan.timestampAsLong()));
@@ -90,7 +90,7 @@ public final class SpanTranslator {
         events.addTimeEvent(TimeEvent.newBuilder()
             .setTime(createTimestamp(annotation.timestamp()))
             .setAnnotation(TimeEvent.Annotation.newBuilder()
-                .setDescription(toTruncatableStringProto(annotation.value())))
+                .setDescription(toTruncatableString(annotation.value())))
         );
       }
       spanBuilder.setTimeEvents(events);
