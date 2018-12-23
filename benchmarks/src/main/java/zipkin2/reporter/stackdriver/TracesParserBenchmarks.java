@@ -13,7 +13,6 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v2.Span;
 import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,19 +66,19 @@ public class TracesParserBenchmarks {
   }
 
   @Benchmark
-  public List<Span> parseClientSpan() {
-    List<Span> spans = new ArrayList<>();
+  public List<byte[]> parseClientSpan() {
+    List<byte[]> spans = new ArrayList<>();
     spans.add(StackdriverSender.parseTraceIdPrefixedSpan(
-        ENCODED_CLIENT_SPAN, SPAN_NAME_SIZE, TRACE_ID_PREFIX));
+        ENCODED_CLIENT_SPAN, SPAN_NAME_SIZE, TRACE_ID_PREFIX).toByteArray());
     return spans;
   }
 
   @Benchmark
-  public List<Span> parse100ClientSpans() {
-    List<Span> spans = new ArrayList<>();
+  public List<byte[]> parse100ClientSpans() {
+    List<byte[]> spans = new ArrayList<>();
     for (int i = 0, len = HUNDRED_ENCODED_CLIENT_SPANS.size(); i < len; i++) {
       spans.add(StackdriverSender.parseTraceIdPrefixedSpan(
-          HUNDRED_ENCODED_CLIENT_SPANS.get(i), SPAN_NAME_SIZE, TRACE_ID_PREFIX));
+          HUNDRED_ENCODED_CLIENT_SPANS.get(i), SPAN_NAME_SIZE, TRACE_ID_PREFIX).toByteArray());
     }
     return spans;
   }
