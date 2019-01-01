@@ -13,8 +13,8 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
-import com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceImplBase;
+import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
+import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
@@ -28,7 +28,7 @@ import org.mockito.stubbing.Answer;
 import zipkin2.Span;
 import zipkin2.TestObjects;
 import zipkin2.reporter.AsyncReporter;
-import zipkin2.translation.stackdriver.TraceTranslator;
+import zipkin2.translation.stackdriver.SpanTranslator;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,14 +52,14 @@ public class ITStackdriverSender {
         AsyncReporter.builder(
                 StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build())
             .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
-            .build(StackdriverEncoder.V1);
+            .build(StackdriverEncoder.V2);
   }
 
   @Test
   public void sendSpans_empty() {
     reporter.flush();
 
-    verify(traceService, never()).patchTraces(any(), any());
+    verify(traceService, never()).batchWriteSpans(any(), any());
   }
 
   @Test
@@ -73,15 +73,16 @@ public class ITStackdriverSender {
     reporter.report(TestObjects.CLIENT_SPAN);
     reporter.flush();
 
-    ArgumentCaptor<PatchTracesRequest> requestCaptor =
-        ArgumentCaptor.forClass(PatchTracesRequest.class);
+    ArgumentCaptor<BatchWriteSpansRequest> requestCaptor =
+        ArgumentCaptor.forClass(BatchWriteSpansRequest.class);
 
-    verify(traceService).patchTraces(requestCaptor.capture(), any());
+    verify(traceService).batchWriteSpans(requestCaptor.capture(), any());
 
-    PatchTracesRequest request = requestCaptor.getValue();
-    assertThat(request.getProjectId()).isEqualTo(projectId);
-    assertThat(request.getTraces().getTracesList())
-        .isEqualTo(TraceTranslator.translateSpans(projectId, asList(TestObjects.CLIENT_SPAN)));
+    BatchWriteSpansRequest request = requestCaptor.getValue();
+    assertThat(request.getName()).isEqualTo("projects/" + projectId);
+
+    assertThat(request.getSpansList()).containsExactlyElementsOf(
+        SpanTranslator.translate(projectId, asList(TestObjects.CLIENT_SPAN)));
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
@@ -94,8 +95,8 @@ public class ITStackdriverSender {
                   return null;
                 })
         .when(traceService)
-        .patchTraces(any(PatchTracesRequest.class), any(StreamObserver.class));
+        .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
   }
 
-  static class TestTraceService extends TraceServiceImplBase {}
+  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
 }

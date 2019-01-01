@@ -43,7 +43,7 @@
 
     <slf4j.version>1.7.25</slf4j.version>
     <!-- only used for protos, we could possibly obviate this if a problem -->
-    <grpc-google-devtools-cloudtrace-v1.version>0.1.1</grpc-google-devtools-cloudtrace-v1.version>
+    <grpc-google-cloud-trace-v2.version>0.38.0</grpc-google-cloud-trace-v2.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
     <zipkin.version>2.11.11</zipkin.version>
@@ -56,6 +56,8 @@
     <guava.version>26.0-android</guava.version>
     <netty-tcnative-boringssl-static.version>2.0.17.Final</netty-tcnative-boringssl-static.version>
     <brave.version>5.5.2</brave.version>
+
+    <assertj.version>3.11.1</assertj.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
@@ -186,7 +188,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.11.1</version>
+      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

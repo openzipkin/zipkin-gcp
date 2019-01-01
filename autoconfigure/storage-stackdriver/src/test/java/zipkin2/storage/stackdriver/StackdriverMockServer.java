@@ -16,10 +16,9 @@ package zipkin2.storage.stackdriver;
 import static java.util.Collections.unmodifiableSet;
 
 import com.google.common.collect.Sets;
-import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
-import com.google.devtools.cloudtrace.v1.Trace;
-import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
-import com.google.devtools.cloudtrace.v1.TraceSpan;
+import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
+import com.google.devtools.cloudtrace.v2.Span;
+import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
 import io.grpc.Server;
 import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
@@ -59,7 +58,7 @@ public class StackdriverMockServer extends ExternalResource {
   private final Server server;
 
   private final Set<String> traceIds = Sets.newConcurrentHashSet();
-  private final Set<Long> spanIds = Sets.newConcurrentHashSet();
+  private final Set<String> spanIds = Sets.newConcurrentHashSet();
   private CountDownLatch spanCountdown;
 
   public StackdriverMockServer() {
@@ -95,15 +94,11 @@ public class StackdriverMockServer extends ExternalResource {
 
   class Service extends TraceServiceGrpc.TraceServiceImplBase {
     @Override
-    public void patchTraces(PatchTracesRequest request, StreamObserver<Empty> responseObserver) {
-      final List<Trace> tracesList = request.getTraces().getTracesList();
-      for (Trace trace : tracesList) {
-        for (TraceSpan span : trace.getSpansList()) {
-          spanIds.add(span.getSpanId());
-          if (spanCountdown != null) {
-            spanCountdown.countDown();
-          }
-        }
+    public void batchWriteSpans(BatchWriteSpansRequest request, StreamObserver<Empty> responseObserver) {
+      final List<Span> spansList = request.getSpansList();
+      for (Span span : spansList) {
+        spanIds.add(span.getSpanId());
+        spanCountdown.countDown();
       }
       responseObserver.onNext(Empty.getDefaultInstance());
       responseObserver.onCompleted();
@@ -118,7 +113,7 @@ public class StackdriverMockServer extends ExternalResource {
     return String.format("%s:%s", "localhost", this.port);
   }
 
-  public Set<Long> spanIds() {
+  public Set<String> spanIds() {
     return unmodifiableSet(spanIds);
   }
 

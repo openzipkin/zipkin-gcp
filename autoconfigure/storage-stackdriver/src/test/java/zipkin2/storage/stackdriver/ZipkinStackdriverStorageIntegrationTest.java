@@ -18,9 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static zipkin2.storage.stackdriver.StackdriverMockServer.CLIENT_SSL_CONTEXT;
 
 import com.google.auth.Credentials;
-import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
-import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
-import com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceBlockingStub;
+import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
+import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.shaded.io.netty.handler.ssl.OpenSsl;
@@ -94,23 +93,26 @@ public class ZipkinStackdriverStorageIntegrationTest {
   public void mockGrpcServerServesOverSSL() { // sanity checks the mock server
     NettyChannelBuilder channelBuilder = NettyChannelBuilder.forTarget(mockServer.grpcURI());
 
-    TraceServiceBlockingStub sslTraceService =
+    TraceServiceGrpc.TraceServiceBlockingStub sslTraceService =
         TraceServiceGrpc.newBlockingStub(channelBuilder.sslContext(CLIENT_SSL_CONTEXT).build());
 
-    sslTraceService.patchTraces(PatchTracesRequest.getDefaultInstance());
+    sslTraceService.batchWriteSpans(BatchWriteSpansRequest.getDefaultInstance());
   }
 
   @Test
   public void traceConsumerGetsCalled() throws Exception {
-    List<Long> spanIds = LongStream.of(1, 2, 3).boxed().collect(Collectors.toList());
+    List<String> spanIds =
+        LongStream.of(1, 2, 3)
+            .mapToObj(Long::toHexString)
+            .map(id -> "000000000000000" + id)
+            .collect(Collectors.toList());
 
     assertThat(mockServer.spanIds()).withFailMessage("Unexpected traces in Stackdriver").isEmpty();
 
     CountDownLatch spanCountdown = new CountDownLatch(3);
     mockServer.setSpanCountdown(spanCountdown);
 
-    for (Long i : spanIds) {
-      String id = Long.toHexString(i);
+    for (String id : spanIds) {
       Span span = Span.newBuilder().id(id).traceId(id).name("/a").timestamp(1L).build();
 
       storage.spanConsumer().accept(asList(span)).execute();
@@ -120,8 +122,8 @@ public class ZipkinStackdriverStorageIntegrationTest {
 
     assertThat(spanCountdown.getCount()).isZero();
     assertThat(mockServer.spanIds())
-        .withFailMessage("Not all spans made it to Stackdriver")
-        .containsExactlyElementsOf(spanIds);
+        .as("Not all spans made it to Stackdriver")
+        .containsExactlyInAnyOrderElementsOf(spanIds);
   }
 
   @Configuration

@@ -13,7 +13,6 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.protobuf.CodedOutputStream;
 import java.io.IOException;
 import java.util.List;
@@ -24,7 +23,7 @@ import zipkin2.translation.stackdriver.SpanTranslator;
 
 @SuppressWarnings("ImmutableEnumChecker") // because span is immutable
 public enum StackdriverEncoder implements BytesEncoder<Span> {
-  V1 {
+  V2 {
     @Override
     public Encoding encoding() {
       return Encoding.PROTO3;
@@ -38,7 +37,7 @@ public enum StackdriverEncoder implements BytesEncoder<Span> {
     /** This encodes a TraceSpan message prefixed by a potentially padded 32 character trace ID */
     @Override
     public byte[] encode(Span span) {
-      TraceSpan translated = translate(span);
+      com.google.devtools.cloudtrace.v2.Span translated = translate(span);
       byte[] result = new byte[32 + translated.getSerializedSize()];
 
       // Zipkin trace ID is conditionally 16 or 32 characters, but Stackdriver needs 32
@@ -59,8 +58,9 @@ public enum StackdriverEncoder implements BytesEncoder<Span> {
       return result;
     }
 
-    TraceSpan translate(Span span) {
-      return SpanTranslator.translate(TraceSpan.newBuilder(), span).build();
+    com.google.devtools.cloudtrace.v2.Span translate(Span span) {
+      return SpanTranslator.translate(
+          com.google.devtools.cloudtrace.v2.Span.newBuilder(), span).build();
     }
 
     @Override

@@ -13,8 +13,8 @@
  */
 package zipkin2.reporter.stackdriver.internal;
 
-import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
-import com.google.devtools.cloudtrace.v1.TraceServiceGrpc.TraceServiceImplBase;
+import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
+import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
 import io.grpc.Channel;
 import io.grpc.StatusRuntimeException;
@@ -32,7 +32,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import zipkin2.Callback;
 
-import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.METHOD_PATCH_TRACES;
 import static io.grpc.CallOptions.DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
@@ -44,26 +43,26 @@ public class UnaryClientCallTest {
   @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
   final TestTraceService traceService = spy(new TestTraceService());
 
-  static class PatchTracesCall extends UnaryClientCall<PatchTracesRequest, Empty> {
+  static class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
     final Channel channel;
 
-    PatchTracesCall(Channel channel, PatchTracesRequest request) {
-      super(channel, METHOD_PATCH_TRACES, DEFAULT, request);
+    BatchWriteSpansCall(Channel channel, BatchWriteSpansRequest request) {
+      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), DEFAULT, request);
       this.channel = channel;
     }
 
     @Override
-    public PatchTracesCall clone() {
-      return new PatchTracesCall(channel, request());
+    public BatchWriteSpansCall clone() {
+      return new BatchWriteSpansCall(channel, request());
     }
   }
 
-  PatchTracesCall call;
+  BatchWriteSpansCall call;
 
   @Before
   public void setUp() throws Throwable {
     server.getServiceRegistry().addService(traceService);
-    call = new PatchTracesCall(server.getChannel(), PatchTracesRequest.newBuilder().build());
+    call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build());
   }
 
   @Test
@@ -93,13 +92,13 @@ public class UnaryClientCallTest {
   }
 
   void verifyPatchRequestSent() {
-    ArgumentCaptor<PatchTracesRequest> requestCaptor =
-        ArgumentCaptor.forClass(PatchTracesRequest.class);
+    ArgumentCaptor<BatchWriteSpansRequest> requestCaptor =
+        ArgumentCaptor.forClass(BatchWriteSpansRequest.class);
 
-    verify(traceService).patchTraces(requestCaptor.capture(), any());
+    verify(traceService).batchWriteSpans(requestCaptor.capture(), any());
 
-    PatchTracesRequest request = requestCaptor.getValue();
-    assertThat(request).isEqualTo(PatchTracesRequest.getDefaultInstance());
+    BatchWriteSpansRequest request = requestCaptor.getValue();
+    assertThat(request).isEqualTo(BatchWriteSpansRequest.getDefaultInstance());
   }
 
   @Test(expected = StatusRuntimeException.class)
@@ -132,7 +131,7 @@ public class UnaryClientCallTest {
     call.execute();
   }
 
-  static class TestTraceService extends TraceServiceImplBase {}
+  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
 
   void awaitCallbackResult() throws Throwable {
     AtomicReference<Throwable> ref = new AtomicReference<>();
@@ -164,6 +163,6 @@ public class UnaryClientCallTest {
                   return null;
                 })
         .when(traceService)
-        .patchTraces(any(PatchTracesRequest.class), any(StreamObserver.class));
+        .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
   }
 }

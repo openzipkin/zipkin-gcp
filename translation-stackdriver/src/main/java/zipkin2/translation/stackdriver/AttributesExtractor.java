@@ -13,13 +13,12 @@
  */
 package zipkin2.translation.stackdriver;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.LinkedHashMap;
+import com.google.devtools.cloudtrace.v2.AttributeValue;
+import com.google.devtools.cloudtrace.v2.Span.Attributes;
 import java.util.Map;
-import java.util.TimeZone;
-import zipkin2.Annotation;
 import zipkin2.Span;
+
+import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableString;
 
 /**
  * LabelExtractor extracts the set of Stackdriver Span labels equivalent to the annotations in a
@@ -31,36 +30,40 @@ import zipkin2.Span;
  * <p>Zipkin tags are converted to Stackdriver Span labels by using annotation.key as the key and
  * the String value of annotation.value as the value.
  *
- * <p>Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver Trace
+ * <p>Zipkin annotations with equivalent Stackdriver labels will be renamed to the Stackdriver
+ * Trace
  * name. Any Zipkin annotations without a Stackdriver label equivalent are renamed to
  * zipkin.io/[key_name]
  */
-final class LabelExtractor {
+final class AttributesExtractor {
 
   private static final String kAgentLabelKey = "/agent";
   private static final String kComponentLabelKey = "/component";
-  private final Map<String, String> renamedLabels;
-  // The maximum label value size in Stackdriver is 16 KiB. This should be safe.
-  static final int LABEL_LENGTH_MAX = 8192;
+  private static final String kKindLabelKey = "/kind";
 
-  LabelExtractor(Map<String, String> renamedLabels) {
+  private final Map<String, String> renamedLabels;
+
+  AttributesExtractor(Map<String, String> renamedLabels) {
     this.renamedLabels = renamedLabels;
   }
 
   /**
-   * Extracts the Stackdriver span labels that are equivalent to the Zipkin Span annotations.
+   * Extracts the Stackdriver span labels that are equivalent to the Zipkin Span tags.
    *
    * @param zipkinSpan The Zipkin Span
-   * @return A map of the Stackdriver span labels equivalent to the Zipkin annotations.
+   * @return {@link Attributes} with the Stackdriver span labels equivalent to the Zipkin tags.
    */
-  Map<String, String> extract(Span zipkinSpan) {
-    Map<String, String> result = new LinkedHashMap<>();
+  Attributes extract(Span zipkinSpan) {
+    Attributes.Builder attributes = Attributes.newBuilder();
+
+    // Add Kind as a tag for now since there is no structured way of sending it with Stackdriver
+    // Trace API V2
+    if (zipkinSpan.kind() != null) {
+      attributes.putAttributeMap(kKindLabelKey, toAttributeValue(kindLabel(zipkinSpan.kind())));
+    }
+
     for (Map.Entry<String, String> tag : zipkinSpan.tags().entrySet()) {
-      String value = tag.getValue();
-      if (value.length() > LABEL_LENGTH_MAX) {
-        value = value.substring(0, LABEL_LENGTH_MAX);
-      }
-      result.put(getLabelName(tag.getKey()), value);
+      attributes.putAttributeMap(getLabelName(tag.getKey()), toAttributeValue(tag.getValue()));
     }
 
     // Only use server receive spans to extract endpoint data as spans
@@ -68,27 +71,32 @@ final class LabelExtractor {
     // trace might not show the final destination.
     if (zipkinSpan.localEndpoint() != null && zipkinSpan.kind() == Span.Kind.SERVER) {
       if (zipkinSpan.localEndpoint().ipv4() != null) {
-        result.put(getLabelName("endpoint.ipv4"), zipkinSpan.localEndpoint().ipv4());
+        attributes.putAttributeMap(
+            getLabelName("endpoint.ipv4"), toAttributeValue(zipkinSpan.localEndpoint().ipv4()));
       }
       if (zipkinSpan.localEndpoint().ipv6() != null) {
-        result.put(getLabelName("endpoint.ipv6"), zipkinSpan.localEndpoint().ipv6());
+        attributes.putAttributeMap(
+            getLabelName("endpoint.ipv6"), toAttributeValue(zipkinSpan.localEndpoint().ipv6()));
       }
-    }
-
-    for (Annotation annotation : zipkinSpan.annotations()) {
-      result.put(getLabelName(annotation.value()), formatTimestamp(annotation.timestamp()));
     }
 
     if (zipkinSpan.localEndpoint() != null && !zipkinSpan.localEndpoint().serviceName().isEmpty()) {
-      result.put(kComponentLabelKey, zipkinSpan.localEndpoint().serviceName());
+      attributes.putAttributeMap(
+          kComponentLabelKey, toAttributeValue(zipkinSpan.localEndpoint().serviceName()));
     }
 
     if (zipkinSpan.parentId() == null) {
       String agentName = System.getProperty("stackdriver.trace.zipkin.agent", "zipkin-java");
-      result.put(kAgentLabelKey, agentName);
+      attributes.putAttributeMap(kAgentLabelKey, toAttributeValue(agentName));
     }
 
-    return result;
+    return attributes.build();
+  }
+
+  static AttributeValue toAttributeValue(String text) {
+    return AttributeValue.newBuilder()
+        .setStringValue(toTruncatableString(text))
+        .build();
   }
 
   private String getLabelName(String zipkinName) {
@@ -96,21 +104,18 @@ final class LabelExtractor {
     return renamed != null ? renamed : zipkinName;
   }
 
-  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
-
-  // SimpleDateFormat is not thread safe
-  private static final ThreadLocal<SimpleDateFormat> DATE =
-      new ThreadLocal<SimpleDateFormat>() {
-        @Override
-        protected SimpleDateFormat initialValue() {
-          SimpleDateFormat result = new SimpleDateFormat("yyyy-MM-dd (HH:mm:ss.SSS)");
-          result.setTimeZone(UTC);
-          return result;
-        }
-      };
-
-  static String formatTimestamp(long microseconds) {
-    long milliseconds = microseconds / 1000;
-    return DATE.get().format(new Date(milliseconds));
+  private String kindLabel(Span.Kind kind) {
+    switch (kind) {
+      case CLIENT:
+        return "client";
+      case SERVER:
+        return "server";
+      case PRODUCER:
+        return "producer";
+      case CONSUMER:
+        return "consumer";
+      default:
+        return kind.name().toLowerCase();
+    }
   }
 }

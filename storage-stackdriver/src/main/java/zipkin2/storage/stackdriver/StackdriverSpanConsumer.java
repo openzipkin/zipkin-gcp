@@ -13,64 +13,64 @@
  */
 package zipkin2.storage.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.PatchTracesRequest;
-import com.google.devtools.cloudtrace.v1.Trace;
-import com.google.devtools.cloudtrace.v1.Traces;
+
+import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
+import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
-import java.util.Collection;
 import java.util.List;
 import zipkin2.Call;
 import zipkin2.Span;
 import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 import zipkin2.storage.SpanConsumer;
-import zipkin2.translation.stackdriver.TraceTranslator;
-
-import static com.google.devtools.cloudtrace.v1.TraceServiceGrpc.METHOD_PATCH_TRACES;
+import zipkin2.translation.stackdriver.SpanTranslator;
 
 /**
  * Consumes Zipkin spans, translates them to Stackdriver spans using a provided TraceTranslator, and
- * issues a {@link PatchTracesRequest}.
+ * issues a {@link BatchWriteSpansRequest}.
  */
 final class StackdriverSpanConsumer implements SpanConsumer {
 
   final Channel channel;
   final CallOptions callOptions;
   final String projectId;
+  final String projectName;
 
   StackdriverSpanConsumer(Channel channel, CallOptions callOptions, String projectId) {
     this.channel = channel;
     this.callOptions = callOptions;
     this.projectId = projectId;
+    projectName = "projects/" + projectId;
   }
 
   @Override
   public Call<Void> accept(List<Span> spans) {
     if (spans.isEmpty()) return Call.create(null);
-    Collection<Trace> traces = TraceTranslator.translateSpans(projectId, spans);
-    PatchTracesRequest request =
-        PatchTracesRequest.newBuilder()
-            .setProjectId(projectId)
-            .setTraces(Traces.newBuilder().addAllTraces(traces).build())
+    List<com.google.devtools.cloudtrace.v2.Span> stackdriverSpans =
+        SpanTranslator.translate(projectId, spans);
+    BatchWriteSpansRequest request =
+        BatchWriteSpansRequest.newBuilder()
+            .setName(projectName)
+            .addAllSpans(stackdriverSpans)
             .build();
-    return new PatchTracesCall(request).map(EmptyToVoid.INSTANCE);
+    return new BatchWriteSpansCall(request).map(EmptyToVoid.INSTANCE);
   }
 
-  private final class PatchTracesCall extends UnaryClientCall<PatchTracesRequest, Empty> {
+  private final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
 
-    PatchTracesCall(PatchTracesRequest request) {
-      super(channel, METHOD_PATCH_TRACES, callOptions, request);
+    BatchWriteSpansCall(BatchWriteSpansRequest request) {
+      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request);
     }
 
     @Override
     public String toString() {
-      return "PatchTracesCall{" + request() + "}";
+      return "BatchWriteSpansCall{" + request() + "}";
     }
 
     @Override
-    public PatchTracesCall clone() {
-      return new PatchTracesCall(request());
+    public BatchWriteSpansCall clone() {
+      return new BatchWriteSpansCall(request());
     }
   }
 

@@ -13,13 +13,18 @@
  */
 package zipkin2.translation.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.TraceSpan;
 import com.google.protobuf.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import zipkin2.Endpoint;
 import zipkin2.Span;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
+import static zipkin2.translation.stackdriver.SpanTranslator.createTimestamp;
+import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableString;
 
 public class SpanTranslatorTest {
   /** This test is intentionally sensitive, so changing other parts makes obvious impact here */
@@ -46,48 +51,63 @@ public class SpanTranslatorTest {
             .putTag("clnt/finagle.version", "6.45.0")
             .build();
 
-    TraceSpan translated = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
+    com.google.devtools.cloudtrace.v2.Span
+        translated = SpanTranslator.translate(
+            com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
 
     assertThat(translated)
         .isEqualTo(
-            TraceSpan.newBuilder()
-                .setSpanId(Long.parseUnsignedLong(zipkinSpan.id(), 16))
-                .setParentSpanId(Long.parseUnsignedLong(zipkinSpan.parentId(), 16))
-                .setKind(TraceSpan.SpanKind.RPC_CLIENT)
-                .setName("get")
+            com.google.devtools.cloudtrace.v2.Span.newBuilder()
+                .setSpanId(zipkinSpan.id())
+                .setParentSpanId(zipkinSpan.parentId())
+                .setDisplayName(toTruncatableString("get"))
                 .setStartTime(Timestamp.newBuilder().setSeconds(1).build())
                 .setEndTime(Timestamp.newBuilder().setSeconds(1).setNanos(123_456_000).build())
-                .putLabels("clnt/finagle.version", "6.45.0")
-                .putLabels("http.path", "/api")
-                .putLabels("/component", "frontend")
-                // annotations are written with UTC datestamps
-                .putLabels("foo", "1970-01-01 (00:00:01.123)")
+                .setAttributes(com.google.devtools.cloudtrace.v2.Span.Attributes.newBuilder()
+                    .putAttributeMap("clnt/finagle.version", toAttributeValue("6.45.0"))
+                    .putAttributeMap("http.path", toAttributeValue("/api"))
+                    .putAttributeMap("/kind", toAttributeValue("client"))
+                    .putAttributeMap("/component", toAttributeValue("frontend"))
+                    .build())
+                .setTimeEvents(com.google.devtools.cloudtrace.v2.Span.TimeEvents.newBuilder()
+                    .addTimeEvent(com.google.devtools.cloudtrace.v2.Span.TimeEvent.newBuilder()
+                        .setTime(createTimestamp(1_123_000L))
+                        .setAnnotation(
+                            com.google.devtools.cloudtrace.v2.Span.TimeEvent.Annotation.newBuilder()
+                                .setDescription(toTruncatableString("foo"))
+                                .build())
+                        .build())
+                    .build())
                 .build());
   }
 
   @Test
   public void translate_missingName() {
     Span zipkinSpan = Span.newBuilder().traceId("3").id("2").build();
-    TraceSpan translated = SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build();
+    com.google.devtools.cloudtrace.v2.Span translated = SpanTranslator.translate(
+        com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
 
-    assertThat(translated.getName()).isEqualTo(TraceSpan.getDefaultInstance().getName()).isEmpty();
+    assertThat(translated.getDisplayName().getValue()).isEmpty();
   }
 
   @Test
-  public void translate_consumerProducerSpan() {
-    assertThat(
-            SpanTranslator.translate(
-                    TraceSpan.newBuilder(),
-                    Span.newBuilder().traceId("2").id("3").kind(Span.Kind.CONSUMER).build())
-                .build()
-                .getKind())
-        .isEqualTo(TraceSpan.SpanKind.SPAN_KIND_UNSPECIFIED);
-    assertThat(
-            SpanTranslator.translate(
-                    TraceSpan.newBuilder(),
-                    Span.newBuilder().traceId("2").id("3").kind(Span.Kind.PRODUCER).build())
-                .build()
-                .getKind())
-        .isEqualTo(TraceSpan.SpanKind.SPAN_KIND_UNSPECIFIED);
+  public void testTranslateSpans() {
+    Span span1 =
+        Span.newBuilder().id("1").traceId("1").name("/a").timestamp(1L).duration(1L).build();
+    Span span2 =
+        Span.newBuilder().id("2").traceId("2").name("/b").timestamp(2L).duration(1L).build();
+    Span span3 =
+        Span.newBuilder().id("3").traceId("1").name("/c").timestamp(3L).duration(1L).build();
+
+    List<Span> spans = Arrays.asList(span1, span2, span3);
+    List<com.google.devtools.cloudtrace.v2.Span> stackdriverSpans =
+        new ArrayList<>(SpanTranslator.translate("test-project", spans));
+
+    assertThat(stackdriverSpans).hasSize(3);
+    assertThat(stackdriverSpans).extracting(com.google.devtools.cloudtrace.v2.Span::getName)
+        .containsExactlyInAnyOrder(
+            "projects/test-project/traces/00000000000000000000000000000001/spans/0000000000000001",
+            "projects/test-project/traces/00000000000000000000000000000002/spans/0000000000000002",
+            "projects/test-project/traces/00000000000000000000000000000001/spans/0000000000000003");
   }
 }

@@ -41,12 +41,16 @@
     </dependency>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-devtools-cloudtrace-v1</artifactId>
-      <version>${grpc-google-devtools-cloudtrace-v1.version}</version>
+      <artifactId>grpc-google-cloud-trace-v2</artifactId>
+      <version>${grpc-google-cloud-trace-v2.version}</version>
       <exclusions>
         <exclusion>
           <groupId>io.grpc</groupId>
-          <artifactId>grpc-all</artifactId>
+          <artifactId>grpc-protobuf</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.grpc</groupId>
+          <artifactId>grpc-stub</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -70,6 +74,12 @@
       <groupId>io.grpc</groupId>
       <artifactId>grpc-testing</artifactId>
       <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -13,7 +13,6 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v1.TraceSpan;
 import org.junit.Test;
 import zipkin2.Span;
 import zipkin2.TestObjects;
@@ -22,7 +21,7 @@ import zipkin2.translation.stackdriver.SpanTranslator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StackdriverEncoderTest {
-  StackdriverEncoder encoder = StackdriverEncoder.V1;
+  StackdriverEncoder encoder = StackdriverEncoder.V2;
   Span zipkinSpan = TestObjects.CLIENT_SPAN;
 
   @Test
@@ -57,9 +56,12 @@ public class StackdriverEncoderTest {
 
     assertThat(new String(traceId)).isEqualTo(expectedTraceId);
 
-    TraceSpan deserialized = TraceSpan.parser().parseFrom(serialized, 32, serialized.length - 32);
+    com.google.devtools.cloudtrace.v2.Span
+        deserialized = com.google.devtools.cloudtrace.v2.Span.parser()
+        .parseFrom(serialized, 32, serialized.length - 32);
 
     assertThat(deserialized)
-        .isEqualTo(SpanTranslator.translate(TraceSpan.newBuilder(), zipkinSpan).build());
+        .isEqualTo(SpanTranslator.translate(
+            com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build());
   }
 }
