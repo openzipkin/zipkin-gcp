@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2016-2018 The OpenZipkin Authors
+    Copyright 2016-2019 The OpenZipkin Authors
 
     Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
     in compliance with the License. You may obtain a copy of the License at
@@ -43,19 +43,19 @@
 
     <slf4j.version>1.7.25</slf4j.version>
     <!-- only used for protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace-v2.version>0.38.0</grpc-google-cloud-trace-v2.version>
+    <grpc-google-cloud-trace-v2.version>0.43.0</grpc-google-cloud-trace-v2.version>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <zipkin.version>2.11.11</zipkin.version>
+    <zipkin.version>2.12.0</zipkin.version>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
-    <zipkin-reporter.version>2.7.13</zipkin-reporter.version>
+    <zipkin-reporter.version>2.7.14</zipkin-reporter.version>
 
     <!-- must match https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty -->
-    <grpc.version>1.17.0</grpc.version>
+    <grpc.version>1.18.0</grpc.version>
     <!-- have to choose grpc's guava (NOTE: in current zipkin-server, cassandra claims 19 -->
-    <guava.version>26.0-android</guava.version>
-    <netty-tcnative-boringssl-static.version>2.0.17.Final</netty-tcnative-boringssl-static.version>
-    <brave.version>5.5.2</brave.version>
+    <guava.version>25.1-android</guava.version>
+    <netty-tcnative-boringssl-static.version>2.0.20.Final</netty-tcnative-boringssl-static.version>
+    <brave.version>5.6.1</brave.version>
 
     <assertj.version>3.11.1</assertj.version>
 
@@ -64,7 +64,7 @@
     <errorprone.version>2.3.2</errorprone.version>
 
     <license-maven-plugin.version>2.11</license-maven-plugin.version>
-    <maven-failsafe-plugin.version>3.0.0-M1</maven-failsafe-plugin.version>
+    <maven-failsafe-plugin.version>3.0.0-M3</maven-failsafe-plugin.version>
   </properties>
 
   <name>Zipkin Google Cloud Platform(Parent)</name>
