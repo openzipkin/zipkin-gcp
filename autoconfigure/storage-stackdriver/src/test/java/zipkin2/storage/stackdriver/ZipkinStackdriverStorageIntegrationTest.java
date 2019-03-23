@@ -58,8 +58,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
     TestPropertyValues.of(
         "zipkin.storage.type:stackdriver",
         "zipkin.storage.stackdriver.project-id:test_project",
-        "zipkin.storage.stackdriver.api-host:https://localhost:"
-            + mockServer.getPort()).applyTo(context);
+        "zipkin.storage.stackdriver.api-host:localhost:" + mockServer.getPort()).applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
         TestConfiguration.class,
