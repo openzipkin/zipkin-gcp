@@ -22,7 +22,6 @@ import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
 import java.util.List;
-import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import zipkin2.Call;
 import zipkin2.Callback;
 import zipkin2.Span;
@@ -85,7 +84,7 @@ final class StackdriverSpanConsumer implements SpanConsumer {
     @Override protected void doEnqueue(Callback<Empty> callback) {
       Futures.addCallback(sendRequest(),
           new FutureCallback<Empty>() {
-            @Override public void onSuccess(@NullableDecl Empty empty) {
+            @Override public void onSuccess(Empty empty) {
               callback.onSuccess(empty);
             }
 
