@@ -16,8 +16,11 @@ package zipkin2.storage.stackdriver;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
+import com.linecorp.armeria.common.SessionProtocol;
+import com.linecorp.armeria.server.ServerBuilder;
+import com.linecorp.armeria.server.grpc.GrpcServiceBuilder;
+import com.linecorp.armeria.testing.server.ServerRule;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcServerRule;
 import java.util.Collections;
 import java.util.function.Consumer;
 import org.junit.Before;
@@ -39,16 +42,25 @@ import static org.mockito.Mockito.verify;
 
 /** Same as ITStackdriverSender: tests everything wired together */
 public class ITStackdriverSpanConsumer {
-  @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
-  TestTraceService traceService = spy(new TestTraceService());
+
+  final TestTraceService traceService = spy(new TestTraceService());
+
+  @Rule public final ServerRule server = new ServerRule() {
+    @Override protected void configure(ServerBuilder sb) throws Exception {
+      sb.service(new GrpcServiceBuilder()
+          .addService(traceService)
+          .build());
+    }
+  };
+
   String projectId = "test-project";
   SpanConsumer spanConsumer;
 
   @Before
   public void setUp() {
-    server.getServiceRegistry().addService(traceService);
     spanConsumer =
-        StackdriverStorage.newBuilder(server.getChannel())
+        StackdriverStorage.newBuilder(
+            server.uri(SessionProtocol.HTTP, "/"))
             .projectId(projectId)
             .build()
             .spanConsumer();
@@ -84,16 +96,17 @@ public class ITStackdriverSpanConsumer {
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
     doAnswer(
-            (Answer<Void>)
-                invocationOnMock -> {
-                  StreamObserver<Empty> observer =
-                      ((StreamObserver) invocationOnMock.getArguments()[1]);
-                  onClientCall.accept(observer);
-                  return null;
-                })
+        (Answer<Void>)
+            invocationOnMock -> {
+              StreamObserver<Empty> observer =
+                  ((StreamObserver) invocationOnMock.getArguments()[1]);
+              onClientCall.accept(observer);
+              return null;
+            })
         .when(traceService)
         .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
   }
 
-  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
+  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {
+  }
 }

@@ -45,24 +45,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <!-- actually plumb a transport -->
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-netty-shaded</artifactId>
-      <version>${grpc.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-tcnative-boringssl-static</artifactId>
-      <version>${netty-tcnative-boringssl-static.version}</version>
-    </dependency>
-
-    <!-- for MoreCallCredentials -->
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-auth</artifactId>
-      <version>${grpc.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>io.grpc</groupId>

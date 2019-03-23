@@ -15,8 +15,6 @@ package zipkin2.storage.stackdriver;
 
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.Rule;
@@ -95,11 +93,6 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
     @Bean("googleCredentials")
     public Credentials mockGoogleCredentials() throws IOException {
       return mock(GoogleCredentials.class);
-    }
-
-    @Bean(destroyMethod = "shutdownNow")
-    ManagedChannel managedChannel(ZipkinStackdriverStorageProperties properties) {
-      return ManagedChannelBuilder.forTarget(properties.getApiHost()).usePlaintext().build();
     }
   }
 }

@@ -29,6 +29,18 @@
     <main.basedir>${project.basedir}/..</main.basedir>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.linecorp.armeria</groupId>
+        <artifactId>armeria-bom</artifactId>
+        <version>${armeria.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
@@ -36,9 +48,18 @@
     </dependency>
 
     <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-testing</artifactId>
-      <version>${grpc.version}</version>
+      <groupId>com.linecorp.armeria</groupId>
+      <artifactId>armeria-grpc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.linecorp.armeria</groupId>
+      <artifactId>armeria-testing</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
