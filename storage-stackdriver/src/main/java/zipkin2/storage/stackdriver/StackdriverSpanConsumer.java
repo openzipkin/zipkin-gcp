@@ -13,7 +13,6 @@
  */
 package zipkin2.storage.stackdriver;
 
-
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -82,17 +81,21 @@ final class StackdriverSpanConsumer implements SpanConsumer {
     }
 
     @Override protected void doEnqueue(Callback<Empty> callback) {
-      Futures.addCallback(sendRequest(),
-          new FutureCallback<Empty>() {
-            @Override public void onSuccess(Empty empty) {
-              callback.onSuccess(empty);
-            }
+      try {
+        Futures.addCallback(sendRequest(),
+            new FutureCallback<Empty>() {
+              @Override public void onSuccess(Empty empty) {
+                callback.onSuccess(empty);
+              }
 
-            @Override public void onFailure(Throwable throwable) {
-              callback.onError(throwable);
-            }
-          },
-          MoreExecutors.directExecutor());
+              @Override public void onFailure(Throwable throwable) {
+                callback.onError(throwable);
+              }
+            },
+            MoreExecutors.directExecutor());
+      } catch (RuntimeException | Error e) {
+        callback.onError(e);
+      }
     }
 
     @Override protected void doCancel() {
