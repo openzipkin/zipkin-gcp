@@ -66,11 +66,6 @@ public class UnaryClientCallTest {
     call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build(), DEFAULT_SERVER_TIMEOUT_MS);
   }
 
-  public void setUp(long serverResponseTimeout) {
-    server.getServiceRegistry().addService(traceService);
-    call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build(), serverResponseTimeout);
-  }
-
   @Test
   public void execute_success() throws Throwable {
     onClientCall(
@@ -124,7 +119,7 @@ public class UnaryClientCallTest {
   @Test(expected = IllegalStateException.class)
   public void execute_timeout() throws Throwable {
     long overriddenTimeout = 50;
-    setUp(overriddenTimeout);
+    call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build(), overriddenTimeout);
     onClientCall(
             observer ->
                     Executors.newSingleThreadExecutor().submit(() ->
