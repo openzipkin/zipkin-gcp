@@ -14,53 +14,15 @@
 package zipkin2.reporter.stackdriver.internal;
 
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
-import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
-import io.grpc.Channel;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcServerRule;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.stubbing.Answer;
-import zipkin2.Callback;
 
-import static io.grpc.CallOptions.DEFAULT;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-
-public class UnaryClientCallTest {
-  @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
-  final TestTraceService traceService = spy(new TestTraceService());
-
-  static class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
-    final Channel channel;
-
-    BatchWriteSpansCall(Channel channel, BatchWriteSpansRequest request) {
-      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), DEFAULT, request);
-      this.channel = channel;
-    }
-
-    @Override
-    public BatchWriteSpansCall clone() {
-      return new BatchWriteSpansCall(channel, request());
-    }
-  }
-
-  BatchWriteSpansCall call;
+public class UnaryClientCallTest extends BaseUnaryClientCallTest {
 
   @Before
-  public void setUp() throws Throwable {
+  public void setUp() {
     server.getServiceRegistry().addService(traceService);
     call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build());
   }
@@ -91,16 +53,6 @@ public class UnaryClientCallTest {
     verifyPatchRequestSent();
   }
 
-  void verifyPatchRequestSent() {
-    ArgumentCaptor<BatchWriteSpansRequest> requestCaptor =
-        ArgumentCaptor.forClass(BatchWriteSpansRequest.class);
-
-    verify(traceService).batchWriteSpans(requestCaptor.capture(), any());
-
-    BatchWriteSpansRequest request = requestCaptor.getValue();
-    assertThat(request).isEqualTo(BatchWriteSpansRequest.getDefaultInstance());
-  }
-
   @Test(expected = StatusRuntimeException.class)
   public void accept_execute_serverError() throws Throwable {
     onClientCall(observer -> observer.onError(new IllegalStateException()));
@@ -115,54 +67,4 @@ public class UnaryClientCallTest {
     awaitCallbackResult();
   }
 
-  @Test(expected = IllegalStateException.class)
-  public void execute_timeout() throws Throwable {
-    AwaitableUnaryClientCallListener.TIMEOUT_MS = 50;
-    onClientCall(
-        observer ->
-            Executors.newSingleThreadExecutor().submit(() ->
-            {
-              try {
-                Thread.sleep(100);
-              } catch (InterruptedException e) {}
-              observer.onCompleted();
-            }));
-
-    call.execute();
-  }
-
-  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
-
-  void awaitCallbackResult() throws Throwable {
-    AtomicReference<Throwable> ref = new AtomicReference<>();
-    CountDownLatch latch = new CountDownLatch(1);
-    call.enqueue(
-        new Callback<Empty>() {
-          @Override
-          public void onSuccess(Empty empty) {
-            latch.countDown();
-          }
-
-          @Override
-          public void onError(Throwable throwable) {
-            ref.set(throwable);
-            latch.countDown();
-          }
-        });
-    latch.await(10, TimeUnit.MILLISECONDS);
-    if (ref.get() != null) throw ref.get();
-  }
-
-  void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
-    doAnswer(
-            (Answer<Void>)
-                invocationOnMock -> {
-                  StreamObserver<Empty> observer =
-                      ((StreamObserver) invocationOnMock.getArguments()[1]);
-                  onClientCall.accept(observer);
-                  return null;
-                })
-        .when(traceService)
-        .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
-  }
 }

@@ -23,16 +23,28 @@ import zipkin2.Call;
 import zipkin2.Callback;
 
 public abstract class UnaryClientCall<ReqT, RespT> extends Call.Base<RespT> {
+  public static final int DEFAULT_SERVER_TIMEOUT_MS = 5000;
   final ClientCall<ReqT, RespT> call;
   final ReqT request;
+  final long serverTimeoutMs;
 
   protected UnaryClientCall(
       Channel channel,
       MethodDescriptor<ReqT, RespT> descriptor,
       CallOptions callOptions,
       ReqT request) {
+    this(channel, descriptor, callOptions, request, DEFAULT_SERVER_TIMEOUT_MS);
+  }
+
+  protected UnaryClientCall(
+          Channel channel,
+          MethodDescriptor<ReqT, RespT> descriptor,
+          CallOptions callOptions,
+          ReqT request,
+          long serverTimeoutMs) {
     this.call = channel.newCall(descriptor, callOptions);
     this.request = request;
+    this.serverTimeoutMs = serverTimeoutMs;
   }
 
   protected final ReqT request() {
@@ -41,7 +53,7 @@ public abstract class UnaryClientCall<ReqT, RespT> extends Call.Base<RespT> {
 
   @Override
   protected final RespT doExecute() throws IOException {
-    AwaitableUnaryClientCallListener<RespT> listener = new AwaitableUnaryClientCallListener<>();
+    AwaitableUnaryClientCallListener<RespT> listener = new AwaitableUnaryClientCallListener<>(this.serverTimeoutMs);
     beginUnaryCall(listener);
     return listener.await();
   }
