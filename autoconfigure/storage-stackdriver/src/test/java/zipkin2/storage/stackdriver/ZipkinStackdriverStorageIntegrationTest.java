@@ -13,18 +13,23 @@
  */
 package zipkin2.storage.stackdriver;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static zipkin2.storage.stackdriver.StackdriverMockServer.CLIENT_SSL_CONTEXT;
-
 import com.google.auth.Credentials;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
-import io.grpc.ManagedChannel;
-import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
-import io.grpc.netty.shaded.io.netty.handler.ssl.OpenSsl;
-import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
-import io.grpc.netty.shaded.io.netty.handler.ssl.SslProvider;
+import com.linecorp.armeria.client.ClientBuilder;
+import com.linecorp.armeria.client.ClientFactory;
+import com.linecorp.armeria.client.ClientFactoryBuilder;
+import io.netty.handler.ssl.OpenSsl;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslProvider;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -38,13 +43,8 @@ import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConf
 import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
 import zipkin2.Span;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ZipkinStackdriverStorageIntegrationTest {
   @ClassRule public static final StackdriverMockServer mockServer = new StackdriverMockServer();
@@ -91,10 +91,12 @@ public class ZipkinStackdriverStorageIntegrationTest {
 
   @Test
   public void mockGrpcServerServesOverSSL() { // sanity checks the mock server
-    NettyChannelBuilder channelBuilder = NettyChannelBuilder.forTarget(mockServer.grpcURI());
-
     TraceServiceGrpc.TraceServiceBlockingStub sslTraceService =
-        TraceServiceGrpc.newBlockingStub(channelBuilder.sslContext(CLIENT_SSL_CONTEXT).build());
+        new ClientBuilder("gproto+https://" + mockServer.grpcURI() + "/")
+            .factory(new ClientFactoryBuilder()
+            .sslContextCustomizer(ssl -> ssl.trustManager(InsecureTrustManagerFactory.INSTANCE))
+                .build())
+            .build(TraceServiceGrpc.TraceServiceBlockingStub.class);
 
     sslTraceService.batchWriteSpans(BatchWriteSpansRequest.getDefaultInstance());
   }
@@ -157,10 +159,10 @@ public class ZipkinStackdriverStorageIntegrationTest {
       };
     }
 
-    @Bean(destroyMethod = "shutdownNow")
-    ManagedChannel managedChannel(ZipkinStackdriverStorageProperties properties) {
-      return NettyChannelBuilder.forTarget(properties.getApiHost())
-          .sslContext(CLIENT_SSL_CONTEXT)
+    @Bean
+    ClientFactory managedChannel() {
+      return new ClientFactoryBuilder()
+          .sslContextCustomizer(ssl -> ssl.trustManager(InsecureTrustManagerFactory.INSTANCE))
           .build();
     }
   }
