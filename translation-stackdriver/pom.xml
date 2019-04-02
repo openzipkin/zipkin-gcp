@@ -18,7 +18,7 @@
   <parent>
     <artifactId>zipkin-gcp-parent</artifactId>
     <groupId>io.zipkin.gcp</groupId>
-    <version>0.10.4-SNAPSHOT</version>
+    <version>0.11.1-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -33,17 +33,13 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>grpc-google-cloud-trace-v2</artifactId>
-      <version>${grpc-google-cloud-trace-v2.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>io.grpc</groupId>
-          <artifactId>grpc-protobuf</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>io.grpc</groupId>
-          <artifactId>grpc-stub</artifactId>
-        </exclusion>
-      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>3.6.1</version>
+      <!-- We use provided scope to avoid pinning a protobuf version -->
+      <scope>provided</scope>
     </dependency>
 
     <dependency>

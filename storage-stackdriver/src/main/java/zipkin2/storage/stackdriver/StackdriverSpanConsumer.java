@@ -13,16 +13,17 @@
  */
 package zipkin2.storage.stackdriver;
 
-
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
 import java.util.List;
 import zipkin2.Call;
+import zipkin2.Callback;
 import zipkin2.Span;
-import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 import zipkin2.storage.SpanConsumer;
 import zipkin2.translation.stackdriver.SpanTranslator;
 
@@ -32,14 +33,12 @@ import zipkin2.translation.stackdriver.SpanTranslator;
  */
 final class StackdriverSpanConsumer implements SpanConsumer {
 
-  final Channel channel;
-  final CallOptions callOptions;
+  final TraceServiceGrpc.TraceServiceFutureStub traceService;
   final String projectId;
   final String projectName;
 
-  StackdriverSpanConsumer(Channel channel, CallOptions callOptions, String projectId) {
-    this.channel = channel;
-    this.callOptions = callOptions;
+  StackdriverSpanConsumer(TraceServiceGrpc.TraceServiceFutureStub traceService, String projectId) {
+    this.traceService = traceService;
     this.projectId = projectId;
     projectName = "projects/" + projectId;
   }
@@ -57,20 +56,60 @@ final class StackdriverSpanConsumer implements SpanConsumer {
     return new BatchWriteSpansCall(request).map(EmptyToVoid.INSTANCE);
   }
 
-  private final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
+  private final class BatchWriteSpansCall extends Call.Base<Empty> {
+
+    final BatchWriteSpansRequest request;
+
+    volatile ListenableFuture<Empty> responseFuture;
 
     BatchWriteSpansCall(BatchWriteSpansRequest request) {
-      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request, DEFAULT_SERVER_TIMEOUT_MS);
+      this.request = request;
     }
 
     @Override
     public String toString() {
-      return "BatchWriteSpansCall{" + request() + "}";
+      return "BatchWriteSpansCall{" + request + "}";
     }
 
     @Override
     public BatchWriteSpansCall clone() {
-      return new BatchWriteSpansCall(request());
+      return new BatchWriteSpansCall(request);
+    }
+
+    @Override protected Empty doExecute() {
+      return Futures.getUnchecked(sendRequest());
+    }
+
+    @Override protected void doEnqueue(Callback<Empty> callback) {
+      try {
+        Futures.addCallback(sendRequest(),
+            new FutureCallback<Empty>() {
+              @Override public void onSuccess(Empty empty) {
+                callback.onSuccess(empty);
+              }
+
+              @Override public void onFailure(Throwable throwable) {
+                callback.onError(throwable);
+              }
+            },
+            MoreExecutors.directExecutor());
+      } catch (RuntimeException | Error e) {
+        callback.onError(e);
+        throw e;
+      }
+    }
+
+    @Override protected void doCancel() {
+      ListenableFuture<Empty> responseFuture = this.responseFuture;
+      if (responseFuture != null) {
+        responseFuture.cancel(true);
+      }
+    }
+
+    private ListenableFuture<Empty> sendRequest() {
+      ListenableFuture<Empty> responseFuture = traceService.batchWriteSpans(request);
+      this.responseFuture = responseFuture;
+      return responseFuture;
     }
   }
 

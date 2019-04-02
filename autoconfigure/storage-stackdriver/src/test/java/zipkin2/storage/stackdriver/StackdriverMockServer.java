@@ -13,48 +13,30 @@
  */
 package zipkin2.storage.stackdriver;
 
-import static java.util.Collections.unmodifiableSet;
-
 import com.google.common.collect.Sets;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.Span;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
-import io.grpc.Server;
-import io.grpc.netty.shaded.io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
-import io.grpc.netty.shaded.io.netty.handler.ssl.SslContext;
-import io.grpc.netty.shaded.io.netty.handler.ssl.util.SelfSignedCertificate;
+import com.linecorp.armeria.server.Server;
+import com.linecorp.armeria.server.ServerBuilder;
+import com.linecorp.armeria.server.grpc.GrpcServiceBuilder;
 import io.grpc.stub.StreamObserver;
-import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.util.SocketUtils;
-
 import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import javax.net.ssl.SSLException;
+import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static java.util.Collections.unmodifiableSet;
 
 /** Starts up a local Stackdriver Trace server, listening for GRPC requests on {@link #grpcURI}. */
 public class StackdriverMockServer extends ExternalResource {
   private static final Logger LOG = LoggerFactory.getLogger(StackdriverMockServer.class);
 
-  static final SslContext CLIENT_SSL_CONTEXT;
-  static final SslContext SERVER_SSL_CONTEXT;
-
-  static {
-    try {
-      final SelfSignedCertificate cert = new SelfSignedCertificate("localhost");
-      CLIENT_SSL_CONTEXT = GrpcSslContexts.forClient().trustManager(cert.cert()).build();
-      SERVER_SSL_CONTEXT = GrpcSslContexts.forServer(cert.certificate(), cert.privateKey()).build();
-    } catch (CertificateException | SSLException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  private final int port;
   private final Server server;
 
   private final Set<String> traceIds = Sets.newConcurrentHashSet();
@@ -62,28 +44,32 @@ public class StackdriverMockServer extends ExternalResource {
   private CountDownLatch spanCountdown;
 
   public StackdriverMockServer() {
-    this.port = SocketUtils.findAvailableTcpPort();
-    this.server =
-        NettyServerBuilder.forPort(port)
-            .sslContext(SERVER_SSL_CONTEXT)
-            .addService(new Service())
-            .build();
+    try {
+      this.server = new ServerBuilder()
+          .service(new GrpcServiceBuilder()
+              .addService(new Service())
+              .build())
+          .tlsSelfSigned()
+          .build();
+    } catch (SSLException|CertificateException e) {
+      throw new Error(e);
+    }
   }
 
   public int getPort() {
-    return port;
+    return server.activePort().get().localAddress().getPort();
   }
 
   @Override
   protected void before() throws Throwable {
-    this.server.start();
+    this.server.start().join();
 
-    LOG.info("Started MOCK grpc server on 'localhost:{}'", port);
+    LOG.info("Started MOCK grpc server on 'localhost:{}'", getPort());
   }
 
   @Override
   public void after() {
-    this.server.shutdownNow();
+    this.server.stop().join();
   }
 
   public void reset() {
@@ -110,7 +96,7 @@ public class StackdriverMockServer extends ExternalResource {
   }
 
   public String grpcURI() {
-    return String.format("%s:%s", "localhost", this.port);
+    return String.format("%s:%s", "localhost", this.getPort());
   }
 
   public Set<String> spanIds() {
