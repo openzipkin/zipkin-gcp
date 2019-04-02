@@ -14,26 +14,70 @@
 package zipkin2.reporter.stackdriver.internal;
 
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
+import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
+import io.grpc.Channel;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
+import io.grpc.testing.GrpcServerRule;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.stubbing.Answer;
+import zipkin2.Callback;
 
-public class UnaryClientCallTest extends BaseUnaryClientCallTest {
+import static io.grpc.CallOptions.DEFAULT;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
+
+public class UnaryClientCallTest {
+  @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
+  final TestTraceService traceService = spy(new TestTraceService());
+
+  static class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
+    final Channel channel;
+
+    BatchWriteSpansCall(Channel channel, BatchWriteSpansRequest request, long serverResponseTimeout) {
+      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), DEFAULT, request, serverResponseTimeout);
+      this.channel = channel;
+    }
+
+    @Override
+    public BatchWriteSpansCall clone() {
+      return new BatchWriteSpansCall(channel, request(), DEFAULT_SERVER_TIMEOUT_MS);
+    }
+  }
+
+  BatchWriteSpansCall call;
 
   @Before
   public void setUp() {
     server.getServiceRegistry().addService(traceService);
-    call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build());
+    call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build(), DEFAULT_SERVER_TIMEOUT_MS);
+  }
+
+  public void setUp(long serverResponseTimeout) {
+    server.getServiceRegistry().addService(traceService);
+    call = new BatchWriteSpansCall(server.getChannel(), BatchWriteSpansRequest.newBuilder().build(), serverResponseTimeout);
   }
 
   @Test
   public void execute_success() throws Throwable {
     onClientCall(
-        observer -> {
-          observer.onNext(Empty.getDefaultInstance());
-          observer.onCompleted();
-        });
+            observer -> {
+              observer.onNext(Empty.getDefaultInstance());
+              observer.onCompleted();
+            });
 
     call.execute();
 
@@ -43,14 +87,24 @@ public class UnaryClientCallTest extends BaseUnaryClientCallTest {
   @Test
   public void enqueue_success() throws Throwable {
     onClientCall(
-        observer -> {
-          observer.onNext(Empty.getDefaultInstance());
-          observer.onCompleted();
-        });
+            observer -> {
+              observer.onNext(Empty.getDefaultInstance());
+              observer.onCompleted();
+            });
 
     awaitCallbackResult();
 
     verifyPatchRequestSent();
+  }
+
+  void verifyPatchRequestSent() {
+    ArgumentCaptor<BatchWriteSpansRequest> requestCaptor =
+            ArgumentCaptor.forClass(BatchWriteSpansRequest.class);
+
+    verify(traceService).batchWriteSpans(requestCaptor.capture(), any());
+
+    BatchWriteSpansRequest request = requestCaptor.getValue();
+    assertThat(request).isEqualTo(BatchWriteSpansRequest.getDefaultInstance());
   }
 
   @Test(expected = StatusRuntimeException.class)
@@ -67,4 +121,55 @@ public class UnaryClientCallTest extends BaseUnaryClientCallTest {
     awaitCallbackResult();
   }
 
+  @Test(expected = IllegalStateException.class)
+  public void execute_timeout() throws Throwable {
+    long overriddenTimeout = 50;
+    setUp(overriddenTimeout);
+    onClientCall(
+            observer ->
+                    Executors.newSingleThreadExecutor().submit(() ->
+                    {
+                      try {
+                        Thread.sleep(overriddenTimeout + 10);
+                      } catch (InterruptedException e) {}
+                      observer.onCompleted();
+                    }));
+
+    call.execute();
+  }
+
+  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
+
+  void awaitCallbackResult() throws Throwable {
+    AtomicReference<Throwable> ref = new AtomicReference<>();
+    CountDownLatch latch = new CountDownLatch(1);
+    call.enqueue(
+            new Callback<Empty>() {
+              @Override
+              public void onSuccess(Empty empty) {
+                latch.countDown();
+              }
+
+              @Override
+              public void onError(Throwable throwable) {
+                ref.set(throwable);
+                latch.countDown();
+              }
+            });
+    latch.await(10, TimeUnit.MILLISECONDS);
+    if (ref.get() != null) throw ref.get();
+  }
+
+  void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
+    doAnswer(
+            (Answer<Void>)
+                    invocationOnMock -> {
+                      StreamObserver<Empty> observer =
+                              ((StreamObserver) invocationOnMock.getArguments()[1]);
+                      onClientCall.accept(observer);
+                      return null;
+                    })
+            .when(traceService)
+            .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
+  }
 }
