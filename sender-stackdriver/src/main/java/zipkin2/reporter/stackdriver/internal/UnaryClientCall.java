@@ -29,14 +29,6 @@ public abstract class UnaryClientCall<ReqT, RespT> extends Call.Base<RespT> {
   final long serverTimeoutMs;
 
   protected UnaryClientCall(
-      Channel channel,
-      MethodDescriptor<ReqT, RespT> descriptor,
-      CallOptions callOptions,
-      ReqT request) {
-    this(channel, descriptor, callOptions, request, DEFAULT_SERVER_TIMEOUT_MS);
-  }
-
-  protected UnaryClientCall(
           Channel channel,
           MethodDescriptor<ReqT, RespT> descriptor,
           CallOptions callOptions,

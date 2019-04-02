@@ -60,7 +60,7 @@ final class StackdriverSpanConsumer implements SpanConsumer {
   private final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
 
     BatchWriteSpansCall(BatchWriteSpansRequest request) {
-      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request);
+      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request, DEFAULT_SERVER_TIMEOUT_MS);
     }
 
     @Override
