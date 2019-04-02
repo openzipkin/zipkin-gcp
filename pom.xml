@@ -179,20 +179,22 @@
         <artifactId>grpc-google-cloud-trace-v2</artifactId>
         <version>${grpc-google-cloud-trace-v2.version}</version>
         <exclusions>
+          <!-- let collector (armeria) or sender (grpc) control the protobuf versions -->
           <exclusion>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-stub</artifactId>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
+            <groupId>com.google.api</groupId>
+            <artifactId>api-common</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
+
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
