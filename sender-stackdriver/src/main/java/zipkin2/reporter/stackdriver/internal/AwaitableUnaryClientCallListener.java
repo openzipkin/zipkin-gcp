@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2019 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -29,20 +29,24 @@ final class AwaitableUnaryClientCallListener<V> extends ClientCall.Listener<V> {
 
   Object result; // guarded by this
 
-  // visible for testing
-  static long TIMEOUT_MS = 5000; // how long to wait for server response in milliseconds
+  long serverTimeoutMs; // how long to wait for server response in milliseconds
+
+  AwaitableUnaryClientCallListener(long serverTimeoutMs) {
+    if (serverTimeoutMs <= 0) throw new IllegalArgumentException("Server response timeout must be greater than 0");
+    this.serverTimeoutMs = serverTimeoutMs;
+  }
 
   /**
    * Blocks until {@link #onClose}. Throws if no value was received, multiple
-   * values were received, there was a status error, or waited longer than {@link #TIMEOUT_MS}.
+   * values were received, there was a status error, or waited longer than {@link #serverTimeoutMs}.
    */
   V await() throws IOException {
     boolean interrupted = false;
     try {
       while (true) {
         try {
-          if (!countDown.await(this.TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-            throw new IllegalStateException("timeout waiting for onClose. timeoutMs=" + TIMEOUT_MS
+          if (!countDown.await(serverTimeoutMs, TimeUnit.MILLISECONDS)) {
+            throw new IllegalStateException("timeout waiting for onClose. timeoutMs=" + serverTimeoutMs
                 + ", resultSet=" + resultSet);
           }
           Object result;

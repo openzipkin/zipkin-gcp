@@ -32,6 +32,7 @@ import zipkin2.codec.Encoding;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 
+import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 import static com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag;
 import static io.grpc.CallOptions.DEFAULT;
 
@@ -53,6 +54,7 @@ public final class StackdriverSender extends Sender {
     String projectId;
     CallOptions callOptions = DEFAULT;
     boolean shutdownChannelOnClose;
+    long serverResponseTimeoutMs = DEFAULT_SERVER_TIMEOUT_MS;
 
     Builder(Channel channel) {
       if (channel == null) throw new NullPointerException("channel == null");
@@ -68,6 +70,12 @@ public final class StackdriverSender extends Sender {
     public Builder callOptions(CallOptions callOptions) {
       if (callOptions == null) throw new NullPointerException("callOptions == null");
       this.callOptions = callOptions;
+      return this;
+    }
+
+    public Builder serverResponseTimeoutMs(long serverResponseTimeoutMs) {
+      if (serverResponseTimeoutMs <= 0) throw new IllegalArgumentException("Server response timeout must be greater than 0");
+      this.serverResponseTimeoutMs = serverResponseTimeoutMs;
       return this;
     }
 
@@ -87,11 +95,13 @@ public final class StackdriverSender extends Sender {
   final int projectNameFieldSize;
   final int spanNameSize;
   final int spanNameFieldSize;
+  final long serverResponseTimeoutMs;
 
   StackdriverSender(Builder builder) {
     channel = builder.channel;
     callOptions = builder.callOptions;
     projectName = ByteString.copyFromUtf8("projects/" + builder.projectId);
+    serverResponseTimeoutMs = builder.serverResponseTimeoutMs;
     traceIdPrefix = projectName.concat(ByteString.copyFromUtf8("/traces/"));
     shutdownChannelOnClose = builder.shutdownChannelOnClose;
     projectNameFieldSize = CodedOutputStream.computeBytesSize(1, projectName);
@@ -206,7 +216,7 @@ public final class StackdriverSender extends Sender {
   final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
 
     BatchWriteSpansCall(BatchWriteSpansRequest request) {
-      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request);
+      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request, serverResponseTimeoutMs);
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 The OpenZipkin Authors
+ * Copyright 2016-2019 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -23,16 +23,20 @@ import zipkin2.Call;
 import zipkin2.Callback;
 
 public abstract class UnaryClientCall<ReqT, RespT> extends Call.Base<RespT> {
+  public static final int DEFAULT_SERVER_TIMEOUT_MS = 5000;
   final ClientCall<ReqT, RespT> call;
   final ReqT request;
+  final long serverTimeoutMs;
 
   protected UnaryClientCall(
-      Channel channel,
-      MethodDescriptor<ReqT, RespT> descriptor,
-      CallOptions callOptions,
-      ReqT request) {
+          Channel channel,
+          MethodDescriptor<ReqT, RespT> descriptor,
+          CallOptions callOptions,
+          ReqT request,
+          long serverTimeoutMs) {
     this.call = channel.newCall(descriptor, callOptions);
     this.request = request;
+    this.serverTimeoutMs = serverTimeoutMs;
   }
 
   protected final ReqT request() {
@@ -41,7 +45,7 @@ public abstract class UnaryClientCall<ReqT, RespT> extends Call.Base<RespT> {
 
   @Override
   protected final RespT doExecute() throws IOException {
-    AwaitableUnaryClientCallListener<RespT> listener = new AwaitableUnaryClientCallListener<>();
+    AwaitableUnaryClientCallListener<RespT> listener = new AwaitableUnaryClientCallListener<>(this.serverTimeoutMs);
     beginUnaryCall(listener);
     return listener.await();
   }
