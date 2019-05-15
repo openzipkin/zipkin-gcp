@@ -15,15 +15,14 @@ package zipkin.autoconfigure.storage.stackdriver;
 
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
-import com.google.common.io.ByteStreams;
 import com.linecorp.armeria.client.ClientFactory;
 import com.linecorp.armeria.client.ClientOptionsBuilder;
+import com.linecorp.armeria.client.HttpClient;
+import com.linecorp.armeria.common.HttpMethod;
+import com.linecorp.armeria.common.RequestHeaders;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.util.internal.PlatformDependent;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,8 +34,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import zipkin2.storage.StorageComponent;
 import zipkin2.storage.stackdriver.StackdriverStorage;
-
-import static com.google.common.base.Preconditions.checkState;
 
 @Configuration
 @EnableConfigurationProperties(ZipkinStackdriverStorageProperties.class)
@@ -61,19 +58,19 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     }
     try {
       return getDefaultProjectId();
-    } catch (IOException exception) {
+    } catch (Throwable t) {
       throw new IllegalArgumentException("Missing required property: projectId");
     }
   }
 
-  String getDefaultProjectId() throws IOException {
-    URL url = new URL("http://metadata.google.internal/computeMetadata/v1/project/project-id");
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    connection.setRequestProperty("Metadata-Flavor", "Google");
-    connection.setRequestMethod("GET");
-    try (InputStream responseStream = connection.getInputStream()) {
-      return new String(ByteStreams.toByteArray(responseStream), "UTF-8");
-    }
+  String getDefaultProjectId() {
+    HttpClient client = HttpClient.of("http://metadata.google.internal/");
+    return client.execute(RequestHeaders.of(
+        HttpMethod.GET, "/computeMetadata/v1/project/project-id",
+        "Metadata-Flavor", "Google"))
+        .aggregate()
+        .join()
+        .contentUtf8();
   }
 
   @Bean
@@ -90,8 +87,11 @@ public class ZipkinStackdriverStorageAutoConfiguration {
       ClientFactory clientFactory,
       ZipkinStackdriverStorageProperties properties,
       Credentials credentials) {
-    checkState(OpenSsl.isAvailable() || jettyAlpnAvailable(),
-        "OpenSsl or ALPN is required. This usually requires either JDK9+, jetty-alpn, or netty-tcnative-boringssl-static");
+    if (!OpenSsl.isAvailable() && !jettyAlpnAvailable()) {
+      throw new IllegalStateException(
+          "OpenSsl or ALPN is required. This usually requires either JDK9+, jetty-alpn, or "
+              + "netty-tcnative-boringssl-static");
+    }
     return StackdriverStorage.newBuilder(properties.getApiHost())
         .projectId(projectId)
         .strictTraceId(strictTraceId)

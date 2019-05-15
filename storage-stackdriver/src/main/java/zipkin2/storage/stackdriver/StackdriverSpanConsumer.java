@@ -13,14 +13,11 @@
  */
 package zipkin2.storage.stackdriver;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
-import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
+import com.linecorp.armeria.common.grpc.protocol.UnaryGrpcClient;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import zipkin2.Call;
 import zipkin2.Callback;
 import zipkin2.Span;
@@ -33,12 +30,15 @@ import zipkin2.translation.stackdriver.SpanTranslator;
  */
 final class StackdriverSpanConsumer implements SpanConsumer {
 
-  final TraceServiceGrpc.TraceServiceFutureStub traceService;
+  static final String BATCH_WRITE_SPANS_PATH =
+      "/google.devtools.cloudtrace.v2.TraceService/BatchWriteSpans";
+
+  final UnaryGrpcClient grpcClient;
   final String projectId;
   final String projectName;
 
-  StackdriverSpanConsumer(TraceServiceGrpc.TraceServiceFutureStub traceService, String projectId) {
-    this.traceService = traceService;
+  StackdriverSpanConsumer(UnaryGrpcClient grpcClient, String projectId) {
+    this.grpcClient = grpcClient;
     this.projectId = projectId;
     projectName = "projects/" + projectId;
   }
@@ -60,7 +60,7 @@ final class StackdriverSpanConsumer implements SpanConsumer {
 
     final BatchWriteSpansRequest request;
 
-    volatile ListenableFuture<Empty> responseFuture;
+    volatile CompletableFuture<byte[]> responseFuture;
 
     BatchWriteSpansCall(BatchWriteSpansRequest request) {
       this.request = request;
@@ -77,22 +77,20 @@ final class StackdriverSpanConsumer implements SpanConsumer {
     }
 
     @Override protected Empty doExecute() {
-      return Futures.getUnchecked(sendRequest());
+      sendRequest().join();
+      return Empty.getDefaultInstance();
     }
 
     @Override protected void doEnqueue(Callback<Empty> callback) {
       try {
-        Futures.addCallback(sendRequest(),
-            new FutureCallback<Empty>() {
-              @Override public void onSuccess(Empty empty) {
-                callback.onSuccess(empty);
-              }
-
-              @Override public void onFailure(Throwable throwable) {
-                callback.onError(throwable);
-              }
-            },
-            MoreExecutors.directExecutor());
+        sendRequest().handle((resp, t) -> {
+          if (t != null) {
+            callback.onError(t);
+          } else {
+            callback.onSuccess(Empty.getDefaultInstance());
+          }
+          return null;
+        });
       } catch (RuntimeException | Error e) {
         Call.propagateIfFatal(e);
         callback.onError(e);
@@ -101,14 +99,15 @@ final class StackdriverSpanConsumer implements SpanConsumer {
     }
 
     @Override protected void doCancel() {
-      ListenableFuture<Empty> responseFuture = this.responseFuture;
+      CompletableFuture<byte[]> responseFuture = this.responseFuture;
       if (responseFuture != null) {
         responseFuture.cancel(true);
       }
     }
 
-    private ListenableFuture<Empty> sendRequest() {
-      ListenableFuture<Empty> responseFuture = traceService.batchWriteSpans(request);
+    private CompletableFuture<byte[]> sendRequest() {
+      CompletableFuture<byte[]> responseFuture = grpcClient.execute(
+          BATCH_WRITE_SPANS_PATH, request.toByteArray());
       this.responseFuture = responseFuture;
       return responseFuture;
     }

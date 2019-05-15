@@ -44,22 +44,37 @@
 
     <dependency>
       <groupId>com.linecorp.armeria</groupId>
-      <artifactId>armeria-grpc</artifactId>
-      <!-- Not using armeria BOM as zipkin-server + grpc-google-cloud-trace-v2 disagree on deps -->
-      <version>${armeria.version}</version>
+      <artifactId>armeria-grpc-protocol</artifactId>
     </dependency>
 
     <dependency>
       <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-cloud-trace-v2</artifactId>
+      <artifactId>proto-google-cloud-trace-v2</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.linecorp.armeria</groupId>
+      <artifactId>armeria-grpc</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.linecorp.armeria</groupId>
       <artifactId>armeria-testing-junit4</artifactId>
-      <version>${armeria.version}</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-trace-v2</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
