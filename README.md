@@ -7,13 +7,13 @@ Shared libraries that provide Zipkin integration with the Google Cloud Platform.
 
 # Usage
 These components integrate traced applications and servers through Google Cloud services
-via interfaces defined in [Zipkin](https://github.com/openzipkin/zipkin)
-and [zipkin-reporter-java](https://github.com/openzipkin/zipkin-reporter-java).
+via interfaces defined in [Zipkin](https://github.com/apache/incubator-zipkin)
+and [zipkin-reporter-java](https://github.com/apache/incubator-zipkin-reporter-java).
 
 ## Senders
 The component in an traced application that sends timing data (spans)
 out of process is called a Sender. Senders are called on interval by an
-[async reporter](https://github.com/openzipkin/zipkin-reporter-java#asyncreporter).
+[async reporter](https://github.com/apache/incubator-zipkin-reporter-java#asyncreporter).
 
 NOTE: Applications can be written in any language, while we currently
 only have senders in Java, senders in other languages are welcome.
@@ -53,8 +53,8 @@ Each module will also have different minimum variables that need to be set.
 
 Ex.
 ```
-$ curl -sSL https://zipkin.io/quickstart.sh | bash -s
-$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.java:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
+$ curl -sSL https://zipkin.apache.org/quickstart.sh | bash -s
+$ curl -sSL https://zipkin.apache.org/quickstart.sh | bash -s io.zipkin.java:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
 $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
     java \
     -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \

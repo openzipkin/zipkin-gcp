@@ -34,6 +34,10 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-translation-stackdriver</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.zipkin.zipkin2</groupId>
+      <artifactId>zipkin</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.linecorp.armeria</groupId>
@@ -56,6 +60,11 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.zipkin.zipkin2</groupId>
+      <artifactId>zipkin-tests</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

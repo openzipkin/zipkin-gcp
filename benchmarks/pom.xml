@@ -44,6 +44,13 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-sender-stackdriver</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <!-- TODO remove when reporter is on ASF group ID -->
+        <exclusion>
+          <groupId>io.zipkin.zipkin2</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>

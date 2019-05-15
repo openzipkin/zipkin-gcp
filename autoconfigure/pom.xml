@@ -69,15 +69,25 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
           <!-- https://github.com/spring-projects/spring-boot/issues/3426 transitive exclude doesn't work -->
+          <!--
+          Not excluding guava right now eventhough there is an overlap to avoid the following conflict
+
+          java.lang.NoSuchMethodError: com.google.common.base.Preconditions.checkArgument(ZLjava/lang/String;CLjava/lang/Object;)V
+             at io.grpc.Metadata$Key.validateName(Metadata.java:629) ~[grpc-core-1.20.0.jar!/:1.20.0]
+          -->
           <excludeGroupIds>
-            io.zipkin.zipkin2,io.zipkin.reporter2,org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,com.google.code.gson,com.google.guava,org.reactivestreams,com.google.code.findbugs,javax.annotation,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils
+            org.apache.zipkin.zipkin2,org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,com.google.code.gson,org.reactivestreams,com.google.code.findbugs,javax.annotation,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils
           </excludeGroupIds>
           <!-- currently cannot exclude io.opencensus due to https://github.com/googleapis/google-http-java-client/issues/621 -->
           <excludes>
-            <!-- zipkin-server depends on armeria -->
+            <!-- zipkin-server depends on armeria and its grpc protocol-->
             <exclude>
               <groupId>com.linecorp.armeria</groupId>
               <artifactId>armeria</artifactId>
+            </exclude>
+            <exclude>
+              <groupId>com.linecorp.armeria</groupId>
+              <artifactId>armeria-grpc-protocol</artifactId>
             </exclude>
             <!-- See https://github.com/line/armeria/issues/1679 -->
             <exclude>
