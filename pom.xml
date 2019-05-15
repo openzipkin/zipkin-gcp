@@ -45,15 +45,15 @@
 
     <!-- matching armeria/grpc/zipkin -->
     <spring-boot.version>2.1.4.RELEASE</spring-boot.version>
-    <armeria.version>0.83.0</armeria.version>
-    <zipkin.version>2.12.8</zipkin.version>
+    <armeria.version>0.84.0</armeria.version>
+    <zipkin.version>2.13.0</zipkin.version>
     <zipkin-reporter.version>2.8.2</zipkin-reporter.version>
     <brave.version>5.6.3</brave.version>
-    <grpc.version>1.19.0</grpc.version>
+    <grpc.version>1.20.0</grpc.version>
     <guava.version>26.0-android</guava.version>
 
     <!-- only used for protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace-v2.version>0.50.0</grpc-google-cloud-trace-v2.version>
+    <grpc-google-cloud-trace-v2.version>0.56.0</grpc-google-cloud-trace-v2.version>
 
     <assertj.version>3.12.2</assertj.version>
 
@@ -71,8 +71,8 @@
   <inceptionYear>2016</inceptionYear>
 
   <organization>
-    <name>OpenZipkin</name>
-    <url>http://zipkin.io/</url>
+    <name>Apache (Incubating) Zipkin</name>
+    <url>https://zipkin.apache.org/</url>
   </organization>
 
   <licenses>
@@ -94,7 +94,7 @@
   <developers>
     <developer>
       <id>openzipkin</id>
-      <name>OpenZipkin Gitter</name>
+      <name>Apache (Incubating) Zipkin Gitter</name>
       <url>https://gitter.im/openzipkin/zipkin</url>
     </developer>
   </developers>
@@ -115,28 +115,16 @@
     <url>https://github.com/openzipkin/zipkin-gcp/issues</url>
   </issueManagement>
 
-  <repositories>
-    <repository>
-      <!-- temporary until zipkin 2.12.7 is out fixing guava dep version mismatch with grpc -->
-      <id>jfrog-snapshots</id>
-      <url>http://oss.jfrog.org/artifactory/oss-snapshot-local</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-  </repositories>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.zipkin.zipkin2</groupId>
+        <groupId>org.apache.zipkin.zipkin2</groupId>
         <artifactId>zipkin</artifactId>
         <version>${zipkin.version}</version>
       </dependency>
       <dependency>
-        <groupId>io.zipkin.zipkin2</groupId>
-        <artifactId>zipkin</artifactId>
-        <type>test-jar</type>
+        <groupId>org.apache.zipkin.zipkin2</groupId>
+        <artifactId>zipkin-tests</artifactId>
         <version>${zipkin.version}</version>
       </dependency>
 
@@ -160,6 +148,9 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
+        <!-- Up to v2.27.0 of mockito has a conflict https://github.com/mockito/mockito/issues/1606
+        java.lang.NoSuchMethodError: net.bytebuddy.dynamic.loading.MultipleParentClassLoader$Builder.appendMostSpecific(Ljava/util/Collection;)Lnet/bytebuddy/dynamic/loading/MultipleParentClassLoader$Builder
+        -->
         <version>2.23.4</version>
       </dependency>
       <dependency>
@@ -205,11 +196,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zipkin.zipkin2</groupId>
-      <artifactId>zipkin</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -237,15 +223,15 @@
         <plugin>
           <groupId>io.takari</groupId>
           <artifactId>maven</artifactId>
-          <version>0.7.5</version>
+          <version>0.7.6</version>
           <configuration>
-            <maven>3.6.0</maven>
+            <maven>3.6.1</maven>
           </configuration>
         </plugin>
 
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.8.1</version>
           <inherited>true</inherited>
           <configuration>
             <!-- Retrolambda will rewrite lambdas as Java 6 bytecode -->
@@ -275,9 +261,9 @@
           </configuration>
           <dependencies>
             <dependency>
-              <groupId>io.zipkin.layout</groupId>
+              <groupId>org.apache.zipkin.layout</groupId>
               <artifactId>zipkin-layout-factory</artifactId>
-              <version>0.0.4</version>
+              <version>0.0.5</version>
             </dependency>
           </dependencies>
         </plugin>
@@ -305,7 +291,7 @@
 
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.2</version>
       </plugin>
 
       <plugin>
@@ -533,7 +519,7 @@
 
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.0</version>
             <configuration>
               <failOnError>false</failOnError>
               <!-- hush pedantic warnings: we don't put param and return on everything! -->
