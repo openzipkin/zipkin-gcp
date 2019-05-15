@@ -32,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import zipkin2.Call;
 import zipkin2.storage.StorageComponent;
 import zipkin2.storage.stackdriver.StackdriverStorage;
 
@@ -59,6 +60,7 @@ public class ZipkinStackdriverStorageAutoConfiguration {
     try {
       return getDefaultProjectId();
     } catch (Throwable t) {
+      Call.propagateIfFatal(t);
       throw new IllegalArgumentException("Missing required property: projectId");
     }
   }
