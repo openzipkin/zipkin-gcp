@@ -74,10 +74,14 @@
           </excludeGroupIds>
           <!-- currently cannot exclude io.opencensus due to https://github.com/googleapis/google-http-java-client/issues/621 -->
           <excludes>
-            <!-- zipkin-server depends on armeria -->
+            <!-- zipkin-server depends on armeria and its grpc protocol-->
             <exclude>
               <groupId>com.linecorp.armeria</groupId>
               <artifactId>armeria</artifactId>
+            </exclude>
+            <exclude>
+              <groupId>com.linecorp.armeria</groupId>
+              <artifactId>armeria-grpc-protocol</artifactId>
             </exclude>
             <!-- See https://github.com/line/armeria/issues/1679 -->
             <exclude>
