@@ -111,8 +111,10 @@ public class ZipkinStackdriverStorageAutoConfiguration {
         return true;
       } catch (Throwable ignore) {
         // alpn-boot was not loaded.
+        return false;
       }
     }
-    return false;
+    // Java 9+ don't need ALPN so we don't even check for it.
+    return true;
   }
 }
