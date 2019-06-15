@@ -35,11 +35,7 @@ class CredentialsDecoratingClient extends SimpleDecoratingClient<HttpRequest, Ht
 
   static Function<Client<HttpRequest, HttpResponse>, Client<HttpRequest, HttpResponse>>
   newDecorator(Credentials credentials) {
-    return new Function<Client<HttpRequest, HttpResponse>, Client<HttpRequest, HttpResponse>>() {
-      @Override public CredentialsDecoratingClient apply(Client<HttpRequest, HttpResponse> client) {
-        return new CredentialsDecoratingClient(client, credentials);
-      }
-    };
+    return client -> new CredentialsDecoratingClient(client, credentials);
   }
 
   final Credentials credentials;
@@ -64,13 +60,16 @@ class CredentialsDecoratingClient extends SimpleDecoratingClient<HttpRequest, Ht
 
     credentials.getRequestMetadata(uri, executor, new RequestMetadataCallback() {
       @Override public void onSuccess(Map<String, List<String>> map) {
+        HttpRequest newReq = req;
         if (map != null) {
-          for (Map.Entry<String, List<String>> entry : map.entrySet()) {
-            req.headers().add(HttpHeaderNames.of(entry.getKey()), entry.getValue());
-          }
+          newReq = HttpRequest.of(req, req.headers().withMutations(headers -> {
+            for (Map.Entry<String, List<String>> entry : map.entrySet()) {
+              headers.add(HttpHeaderNames.of(entry.getKey()), entry.getValue());
+            }
+          }));
         }
         try {
-          responseFuture.complete(delegate().execute(ctx, req));
+          responseFuture.complete(delegate().execute(ctx, newReq));
         } catch (Exception e) {
           responseFuture.completeExceptionally(e);
         }

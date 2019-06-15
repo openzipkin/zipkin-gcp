@@ -27,6 +27,9 @@
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
+    <!-- Server is Java 8+ -->
+    <main.java.version>1.8</main.java.version>
+    <main.signature.artifact>java18</main.signature.artifact>
   </properties>
 
   <dependencies>
@@ -35,7 +38,7 @@
       <artifactId>zipkin-translation-stackdriver</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.zipkin.zipkin2</groupId>
+      <groupId>io.zipkin.zipkin2</groupId>
       <artifactId>zipkin</artifactId>
     </dependency>
 
@@ -53,7 +56,7 @@
 
     <dependency>
       <groupId>com.linecorp.armeria</groupId>
-      <artifactId>armeria-testing</artifactId>
+      <artifactId>armeria-testing-junit4</artifactId>
       <version>${armeria.version}</version>
       <scope>test</scope>
     </dependency>
@@ -63,7 +66,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.zipkin.zipkin2</groupId>
+      <groupId>io.zipkin.zipkin2</groupId>
       <artifactId>zipkin-tests</artifactId>
       <scope>test</scope>
     </dependency>
