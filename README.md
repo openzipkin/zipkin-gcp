@@ -1,19 +1,19 @@
 [![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
 [![Build Status](https://circleci.com/gh/openzipkin/zipkin-gcp.svg?style=svg)](https://circleci.com/gh/openzipkin/zipkin-gcp)
-[![Download](https://api.bintray.com/packages/openzipkin/maven/zipkin-gcp/images/download.svg)](https://bintray.com/openzipkin/maven/zipkin-gcp/_latestVersion)
+[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-autoconfigure-storage-stackdriver.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-autoconfigure-storage-stackdriver)
 
 # zipkin-gcp
 Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 6 or later.
 
 # Usage
 These components integrate traced applications and servers through Google Cloud services
-via interfaces defined in [Zipkin](https://github.com/apache/incubator-zipkin)
-and [zipkin-reporter-java](https://github.com/apache/incubator-zipkin-reporter-java).
+via interfaces defined in [Zipkin](https://github.com/openzipkin/zipkin)
+and [zipkin-reporter-java](https://github.com/openzipkin/zipkin-reporter-java).
 
 ## Senders
 The component in an traced application that sends timing data (spans)
 out of process is called a Sender. Senders are called on interval by an
-[async reporter](https://github.com/apache/incubator-zipkin-reporter-java#asyncreporter).
+[async reporter](https://github.com/openzipkin/zipkin-reporter-java#asyncreporter).
 
 NOTE: Applications can be written in any language, while we currently
 only have senders in Java, senders in other languages are welcome.
@@ -53,8 +53,8 @@ Each module will also have different minimum variables that need to be set.
 
 Ex.
 ```
-$ curl -sSL https://zipkin.apache.org/quickstart.sh | bash -s
-$ curl -sSL https://zipkin.apache.org/quickstart.sh | bash -s io.zipkin.java:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
+$ curl -sSL https://zipkin.io/quickstart.sh | bash -s
+$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.gcp:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
 $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
     java \
     -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \

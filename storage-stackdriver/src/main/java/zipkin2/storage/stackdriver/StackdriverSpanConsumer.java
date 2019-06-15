@@ -94,6 +94,7 @@ final class StackdriverSpanConsumer implements SpanConsumer {
             },
             MoreExecutors.directExecutor());
       } catch (RuntimeException | Error e) {
+        Call.propagateIfFatal(e);
         callback.onError(e);
         throw e;
       }
