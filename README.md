@@ -113,3 +113,12 @@ labels {
   value: "frontend"
 }
 ```
+
+## Artifacts
+All artifacts publish to the group ID "io.zipkin.gcp". We use a common
+release version for all components.
+
+### Library Releases
+Releases are uploaded to [Bintray](https://bintray.com/openzipkin/maven/zipkin) and synchronized to [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.zipkin.gcp%22)
+### Library Snapshots
+Snapshots are uploaded to [JFrog](https://oss.jfrog.org/artifactory/oss-snapshot-local) after commits to master.
