@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2013-2019 The OpenZipkin Authors
+# Copyright 2016-2019 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -123,7 +123,7 @@ if is_pull_request; then
 # If we are on master, we will deploy the latest snapshot or release version
 #   - If a release commit fails to deploy for a transient reason, delete the broken version from bintray and click rebuild
 elif is_travis_branch_master; then
-  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests deploy
+  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests -Dlicense.skip=true deploy
 
   # If the deployment succeeded, sync it to Maven Central. Note: this needs to be done once per project, not module, hence -N
   if is_release_commit; then
