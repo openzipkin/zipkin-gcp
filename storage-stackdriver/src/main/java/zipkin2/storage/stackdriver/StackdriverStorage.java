@@ -13,12 +13,20 @@
  */
 package zipkin2.storage.stackdriver;
 
+import com.linecorp.armeria.client.Client;
 import com.linecorp.armeria.client.ClientFactory;
 import com.linecorp.armeria.client.ClientOptions;
+import com.linecorp.armeria.client.ClientRequestContext;
 import com.linecorp.armeria.client.HttpClient;
 import com.linecorp.armeria.client.HttpClientBuilder;
+import com.linecorp.armeria.client.SimpleDecoratingClient;
+import com.linecorp.armeria.common.HttpHeaderNames;
+import com.linecorp.armeria.common.HttpRequest;
+import com.linecorp.armeria.common.HttpResponse;
 import com.linecorp.armeria.common.grpc.protocol.UnaryGrpcClient;
 import zipkin2.CheckResult;
+import zipkin2.storage.AutocompleteTags;
+import zipkin2.storage.ServiceAndSpanNames;
 import zipkin2.storage.SpanConsumer;
 import zipkin2.storage.SpanStore;
 import zipkin2.storage.StorageComponent;
@@ -30,7 +38,6 @@ import zipkin2.storage.StorageComponent;
  * <p>No SpanStore methods are implemented because read operations are not yet supported.
  */
 public final class StackdriverStorage extends StorageComponent {
-
   public static Builder newBuilder() {
     return new Builder("https://cloudtrace.googleapis.com/");
   }
@@ -102,11 +109,11 @@ public final class StackdriverStorage extends StorageComponent {
         url = url + "/";
       }
 
-      HttpClient httpClient =
-          new HttpClientBuilder(url)
-              .factory(clientFactory)
-              .options(clientOptions)
-              .build();
+      HttpClient httpClient = new HttpClientBuilder(url)
+          .decorator(SetGrpcContentType::new)
+          .factory(clientFactory)
+          .options(clientOptions)
+          .build();
 
       return new StackdriverStorage(this, new UnaryGrpcClient(httpClient));
     }
@@ -126,6 +133,16 @@ public final class StackdriverStorage extends StorageComponent {
   }
 
   @Override
+  public AutocompleteTags autocompleteTags() {
+    throw new UnsupportedOperationException("Read operations are not supported");
+  }
+
+  @Override
+  public ServiceAndSpanNames serviceAndSpanNames() {
+    throw new UnsupportedOperationException("Read operations are not supported");
+  }
+
+  @Override
   public SpanConsumer spanConsumer() {
     return new StackdriverSpanConsumer(grpcClient, projectId);
   }
@@ -138,5 +155,20 @@ public final class StackdriverStorage extends StorageComponent {
   @Override
   public final String toString() {
     return "StackdriverSender{" + projectId + "}";
+  }
+
+  // Many Google services do not support the standard application/grpc+proto header.
+  static final class SetGrpcContentType extends SimpleDecoratingClient<HttpRequest, HttpResponse> {
+    SetGrpcContentType(Client<HttpRequest, HttpResponse> client) {
+      super(client);
+    }
+
+    @Override
+    public HttpResponse execute(ClientRequestContext ctx, HttpRequest req) throws Exception {
+      req = HttpRequest.of(req, req.headers().toBuilder()
+          .set(HttpHeaderNames.CONTENT_TYPE, "application/grpc")
+          .build());
+      return delegate().execute(ctx, req);
+    }
   }
 }
