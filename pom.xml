@@ -167,11 +167,18 @@
       </dependency>
 
       <dependency>
+        <groupId>com.linecorp.armeria</groupId>
+        <artifactId>armeria-bom</artifactId>
+        <version>${armeria.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>grpc-google-cloud-trace-v2</artifactId>
         <version>${grpc-google-cloud-trace-v2.version}</version>
         <exclusions>
-          <!-- let collector (armeria) or sender (grpc) control the protobuf versions -->
           <exclusion>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-protobuf</artifactId>
@@ -188,9 +195,32 @@
       </dependency>
 
       <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>proto-google-cloud-trace-v2</artifactId>
+        <version>${grpc-google-cloud-trace-v2.version}</version>
+        <exclusions>
+          <!-- let collector (armeria) or sender (grpc) control the protobuf versions -->
+          <exclusion>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.api</groupId>
+            <artifactId>api-common</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${guava.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.google.protobuf</groupId>
+        <artifactId>protobuf-java</artifactId>
+        <version>${protobuf.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

@@ -38,7 +38,6 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-trace-v2</artifactId>
-      <version>${grpc-google-cloud-trace-v2.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.protobuf</groupId>

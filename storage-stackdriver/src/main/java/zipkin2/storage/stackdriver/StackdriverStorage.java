@@ -13,11 +13,20 @@
  */
 package zipkin2.storage.stackdriver;
 
-import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
-import com.linecorp.armeria.client.ClientBuilder;
+import com.linecorp.armeria.client.Client;
 import com.linecorp.armeria.client.ClientFactory;
 import com.linecorp.armeria.client.ClientOptions;
+import com.linecorp.armeria.client.ClientRequestContext;
+import com.linecorp.armeria.client.HttpClient;
+import com.linecorp.armeria.client.HttpClientBuilder;
+import com.linecorp.armeria.client.SimpleDecoratingClient;
+import com.linecorp.armeria.common.HttpHeaderNames;
+import com.linecorp.armeria.common.HttpRequest;
+import com.linecorp.armeria.common.HttpResponse;
+import com.linecorp.armeria.common.grpc.protocol.UnaryGrpcClient;
 import zipkin2.CheckResult;
+import zipkin2.storage.AutocompleteTags;
+import zipkin2.storage.ServiceAndSpanNames;
 import zipkin2.storage.SpanConsumer;
 import zipkin2.storage.SpanStore;
 import zipkin2.storage.StorageComponent;
@@ -29,7 +38,6 @@ import zipkin2.storage.StorageComponent;
  * <p>No SpanStore methods are implemented because read operations are not yet supported.
  */
 public final class StackdriverStorage extends StorageComponent {
-
   public static Builder newBuilder() {
     return new Builder("https://cloudtrace.googleapis.com/");
   }
@@ -89,36 +97,33 @@ public final class StackdriverStorage extends StorageComponent {
     public StackdriverStorage build() {
       if (projectId == null) throw new NullPointerException("projectId == null");
 
-      // Massage URL into one that armeria-grpc supports, taking into account upstream gRPC
+      // Massage URL into one that armeria supports, taking into account upstream gRPC
       // defaults.
       String url = this.url;
-      if (!url.startsWith("gproto+")) {
-        if (!url.startsWith("https://") && !url.startsWith("http://")) {
-          // Default scheme to https for backwards compatibility with upstream gRPC.
-          url = "https://" + url;
-        }
-        url = "gproto+" + url;
+      if (!url.startsWith("https://") && !url.startsWith("http://")) {
+        // Default scheme to https for backwards compatibility with upstream gRPC.
+        url = "https://" + url;
       }
 
       if (!url.endsWith("/")) {
         url = url + "/";
       }
 
-      TraceServiceGrpc.TraceServiceFutureStub traceService =
-          new ClientBuilder(url)
-              .factory(clientFactory)
-              .options(clientOptions)
-              .build(TraceServiceGrpc.TraceServiceFutureStub.class);
+      HttpClient httpClient = new HttpClientBuilder(url)
+          .decorator(SetGrpcContentType::new)
+          .factory(clientFactory)
+          .options(clientOptions)
+          .build();
 
-      return new StackdriverStorage(this, traceService);
+      return new StackdriverStorage(this, new UnaryGrpcClient(httpClient));
     }
   }
 
-  final TraceServiceGrpc.TraceServiceFutureStub traceService;
+  final UnaryGrpcClient grpcClient;
   final String projectId;
 
-  StackdriverStorage(Builder builder, TraceServiceGrpc.TraceServiceFutureStub traceService) {
-    this.traceService = traceService;
+  StackdriverStorage(Builder builder, UnaryGrpcClient grpcClient) {
+    this.grpcClient = grpcClient;
     projectId = builder.projectId;
   }
 
@@ -128,8 +133,18 @@ public final class StackdriverStorage extends StorageComponent {
   }
 
   @Override
+  public AutocompleteTags autocompleteTags() {
+    throw new UnsupportedOperationException("Read operations are not supported");
+  }
+
+  @Override
+  public ServiceAndSpanNames serviceAndSpanNames() {
+    throw new UnsupportedOperationException("Read operations are not supported");
+  }
+
+  @Override
   public SpanConsumer spanConsumer() {
-    return new StackdriverSpanConsumer(traceService, projectId);
+    return new StackdriverSpanConsumer(grpcClient, projectId);
   }
 
   @Override
@@ -140,5 +155,20 @@ public final class StackdriverStorage extends StorageComponent {
   @Override
   public final String toString() {
     return "StackdriverSender{" + projectId + "}";
+  }
+
+  // Many Google services do not support the standard application/grpc+proto header.
+  static final class SetGrpcContentType extends SimpleDecoratingClient<HttpRequest, HttpResponse> {
+    SetGrpcContentType(Client<HttpRequest, HttpResponse> client) {
+      super(client);
+    }
+
+    @Override
+    public HttpResponse execute(ClientRequestContext ctx, HttpRequest req) throws Exception {
+      req = HttpRequest.of(req, req.headers().toBuilder()
+          .set(HttpHeaderNames.CONTENT_TYPE, "application/grpc")
+          .build());
+      return delegate().execute(ctx, req);
+    }
   }
 }
