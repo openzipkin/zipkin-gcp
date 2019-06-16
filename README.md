@@ -1,5 +1,5 @@
 [![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
-[![Build Status](https://circleci.com/gh/openzipkin/zipkin-gcp.svg?style=svg)](https://circleci.com/gh/openzipkin/zipkin-gcp)
+[![Build Status](https://travis-ci.org/openzipkin/zipkin-gcp.svg?branch=master)](https://travis-ci.org/openzipkin/zipkin-gcp)
 [![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-autoconfigure-storage-stackdriver.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-autoconfigure-storage-stackdriver)
 
 # zipkin-gcp
