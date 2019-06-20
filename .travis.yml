@@ -26,6 +26,14 @@ branches:
   except:
     - /^[0-9]/
 
+notifications:
+  webhooks:
+    urls:
+      - https://webhooks.gitter.im/e/ead3c37d57527214e9f2
+      - https://webhooks.gitter.im/e/e57478303f87ecd7bffc
+    on_success: change
+    on_failure: always
+
 env:
   global:
     # Ex. travis encrypt BINTRAY_USER=your_github_account
