@@ -20,7 +20,7 @@ and exposes configuration options through environment variables.
 JRE 8 is required to run Zipkin server.
 
 Fetch the latest released
-[executable jar for Zipkin server](https://search.maven.org/remote_content?g=io.zipkin.java&a=zipkin-server&v=LATEST&c=exec)
+[executable jar for Zipkin server](https://search.maven.org/remote_content?g=io.zipkin&a=zipkin-server&v=LATEST&c=exec)
 and
 [autoconfigure module jar for stackdriver storage](https://search.maven.org/remote_content?g=io.zipkin.gcp&a=zipkin-autoconfigure-storage-stackdriver&v=LATEST&c=module).
 Run Zipkin server with the StackDriver Storage enabled.
