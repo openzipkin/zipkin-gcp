@@ -4,3 +4,4 @@ zipkin:
     stackdriver:
       api-host: ${STACKDRIVER_API_HOST:cloudtrace.googleapis.com:443}
       project-id: ${STACKDRIVER_PROJECT_ID:}
+      http-logging: ${STACKDRIVER_HTTP_LOGGING:}

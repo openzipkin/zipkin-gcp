@@ -58,6 +58,7 @@ for users that prefer a file based approach.
 |GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials). Not managed by spring boot. |
 |STACKDRIVER_PROJECT_ID         | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource. |
 |STACKDRIVER_API_HOST           | host:port combination of the gRPC endpoint. Default: cloudtrace.googleapis.com:443 |
+|STACKDRIVER_HTTP_LOGGING       | When set, controls the volume of HTTP logging of the Stackdriver Trace Api. Options are BASIC and HEADERS |
 
 ### Running
 
