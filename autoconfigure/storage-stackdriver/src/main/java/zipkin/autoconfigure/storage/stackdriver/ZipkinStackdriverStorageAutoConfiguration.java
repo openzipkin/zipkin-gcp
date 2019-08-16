@@ -18,8 +18,11 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.linecorp.armeria.client.ClientFactory;
 import com.linecorp.armeria.client.ClientOptionsBuilder;
 import com.linecorp.armeria.client.HttpClient;
+import com.linecorp.armeria.client.logging.LoggingClientBuilder;
+import com.linecorp.armeria.common.HttpHeaders;
 import com.linecorp.armeria.common.HttpMethod;
 import com.linecorp.armeria.common.RequestHeaders;
+import com.linecorp.armeria.common.logging.LogLevel;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.util.internal.PlatformDependent;
 import java.io.IOException;
@@ -32,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties.HttpLogging;
 import zipkin2.Call;
 import zipkin2.storage.StorageComponent;
 import zipkin2.storage.stackdriver.StackdriverStorage;
@@ -94,11 +98,33 @@ public class ZipkinStackdriverStorageAutoConfiguration {
           "OpenSsl or ALPN is required. This usually requires either JDK9+, jetty-alpn, or "
               + "netty-tcnative-boringssl-static");
     }
+
+    ClientOptionsBuilder options = new ClientOptionsBuilder();
+
+    HttpLogging httpLogging = properties.getHttpLogging();
+    if (httpLogging != HttpLogging.NONE) {
+      LoggingClientBuilder loggingBuilder = new LoggingClientBuilder()
+          .requestLogLevel(LogLevel.INFO)
+          .successfulResponseLogLevel(LogLevel.INFO);
+      switch (httpLogging) {
+        case HEADERS:
+          loggingBuilder.contentSanitizer(unused -> "");
+          break;
+        case BASIC:
+          loggingBuilder.contentSanitizer(unused -> "");
+          loggingBuilder.headersSanitizer(unused -> HttpHeaders.of());
+          break;
+        default:
+          break;
+      }
+      options.decorator(loggingBuilder.newDecorator());
+    }
+
     return StackdriverStorage.newBuilder(properties.getApiHost())
         .projectId(projectId)
         .strictTraceId(strictTraceId)
         .clientFactory(clientFactory)
-        .clientOptions(new ClientOptionsBuilder()
+        .clientOptions(options
             .decorator(CredentialsDecoratingClient.newDecorator(credentials))
             .build())
         .build();
