@@ -45,8 +45,8 @@
 
     <!-- matching armeria/grpc/zipkin -->
     <spring-boot.version>2.1.7.RELEASE</spring-boot.version>
-    <armeria.version>0.90.0</armeria.version>
-    <zipkin.version>2.16.0</zipkin.version>
+    <armeria.version>0.90.2</armeria.version>
+    <zipkin.version>2.16.1</zipkin.version>
     <zipkin-reporter.version>2.10.2</zipkin-reporter.version>
     <brave.version>5.6.10</brave.version>
     <grpc.version>1.22.1</grpc.version>
