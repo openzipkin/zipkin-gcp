@@ -13,12 +13,15 @@
  */
 package zipkin2.reporter.stackdriver;
 
+import com.google.common.io.BaseEncoding;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.Span;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
+import com.google.devtools.cloudtrace.v2.TruncatableString;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Empty;
+import com.google.protobuf.Timestamp;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -26,6 +29,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 import zipkin2.Call;
 import zipkin2.CheckResult;
 import zipkin2.codec.Encoding;
@@ -96,6 +100,7 @@ public final class StackdriverSender extends Sender {
   final int spanNameSize;
   final int spanNameFieldSize;
   final long serverResponseTimeoutMs;
+  final ExpiringHealthCheck healthCheck;
 
   StackdriverSender(Builder builder) {
     channel = builder.channel;
@@ -112,6 +117,8 @@ public final class StackdriverSender extends Sender {
 
     spanNameFieldSize = CodedOutputStream.computeTagSize(1)
         + CodedOutputStream.computeUInt32SizeNoTag(spanNameSize) + spanNameSize;
+
+    healthCheck = new ExpiringHealthCheck(projectName, request -> new BatchWriteSpansCall(request));
   }
 
   @Override
@@ -163,7 +170,7 @@ public final class StackdriverSender extends Sender {
 
   @Override
   public CheckResult check() {
-    return CheckResult.OK;
+    return this.healthCheck.check();
   }
 
   @Override
