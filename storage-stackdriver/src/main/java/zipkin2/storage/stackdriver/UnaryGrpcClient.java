@@ -14,8 +14,13 @@
  * under the License.
  */
 
-package com.linecorp.armeria.common.grpc.protocol;
+package zipkin2.storage.stackdriver;
 
+import com.linecorp.armeria.common.grpc.protocol.ArmeriaMessageDeframer;
+import com.linecorp.armeria.common.grpc.protocol.ArmeriaMessageFramer;
+import com.linecorp.armeria.common.grpc.protocol.ArmeriaStatusException;
+import com.linecorp.armeria.common.grpc.protocol.GrpcHeaderNames;
+import com.linecorp.armeria.common.grpc.protocol.StatusMessageEscaper;
 import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nullable;
@@ -51,7 +56,9 @@ import io.netty.handler.codec.http.HttpHeaderValues;
  * <p>This client does not support compression. If you need support for compression, please consider using
  * normal gRPC stubs or file a feature request.
  */
-public class UnaryGrpcClient {
+// NOTE: repackaged temporarily https://github.com/openzipkin/zipkin-gcp/pull/135
+class UnaryGrpcClient {
+    static final int INTERNAL = 13; // copy of com.linecorp.armeria.common.grpc.protocol.StatusCodes
 
     private final HttpClient httpClient;
 
@@ -90,7 +97,7 @@ public class UnaryGrpcClient {
                          .thenApply(msg -> {
                              if (!HttpStatus.OK.equals(msg.status())) {
                                  throw new ArmeriaStatusException(
-                                         StatusCodes.INTERNAL,
+                                         INTERNAL,
                                          "Non-successful HTTP response code: " + msg.status());
                              }
 
@@ -148,7 +155,7 @@ public class UnaryGrpcClient {
                                                         .aggregateWithPooledObjects(ctx.eventLoop(),
                                                                                     ctx.alloc());
                                    } catch (Exception e) {
-                                       throw new ArmeriaStatusException(StatusCodes.INTERNAL,
+                                       throw new ArmeriaStatusException(INTERNAL,
                                                                         "Error executing request.");
                                    }
                                })
