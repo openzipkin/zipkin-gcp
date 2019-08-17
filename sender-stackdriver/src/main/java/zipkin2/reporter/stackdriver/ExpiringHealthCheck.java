@@ -14,12 +14,14 @@
 
 package zipkin2.reporter.stackdriver;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.Span;
 import com.google.protobuf.ByteString;
+import java.time.Clock;
 import java.util.function.Function;
+import zipkin2.Call;
 import zipkin2.CheckResult;
-import zipkin2.reporter.stackdriver.StackdriverSender.BatchWriteSpansCall;
 
 /**
  * Stackdriver Trace Health check that throttles server calls to once per minute.
@@ -30,15 +32,18 @@ public class ExpiringHealthCheck {
   // 1 minute default
   private final static int DEFAULT_EXPIRATION_PERIOD_MS = 60000;
 
+  private Clock clock = Clock.systemDefaultZone();
+
   private final ByteString projectName;
 
-  private final Function<BatchWriteSpansRequest, BatchWriteSpansCall> serviceCall;
+  private final Function<BatchWriteSpansRequest, Call> serviceCall;
 
   private CheckResult lastCheckResult;
 
   private long expirationTimestamp;
 
-  public ExpiringHealthCheck(ByteString projectName, Function<BatchWriteSpansRequest,StackdriverSender.BatchWriteSpansCall> serviceCall) {
+  public ExpiringHealthCheck(ByteString projectName,
+      Function<BatchWriteSpansRequest, Call> serviceCall) {
     this.projectName = projectName;
     this.serviceCall = serviceCall;
   }
@@ -49,7 +54,7 @@ public class ExpiringHealthCheck {
    * reported exception otherwise.
    */
   public CheckResult check() {
-    if (System.currentTimeMillis() > expirationTimestamp) {
+    if (clock.millis() > expirationTimestamp) {
       updateCheckResult(sendTestSpan());
     }
     return lastCheckResult;
@@ -65,29 +70,33 @@ public class ExpiringHealthCheck {
 
   private void updateCheckResult(CheckResult newResult) {
     lastCheckResult = newResult;
-    expirationTimestamp = System.currentTimeMillis() + DEFAULT_EXPIRATION_PERIOD_MS;
+    expirationTimestamp = clock.millis() + DEFAULT_EXPIRATION_PERIOD_MS;
   }
 
   private CheckResult sendTestSpan() {
-      long currentTimeSeconds = System.currentTimeMillis() / 1000;
 
-      Span testSpan = Span.newBuilder().build();
+    Span testSpan = Span.newBuilder().build();
 
-      BatchWriteSpansRequest request = BatchWriteSpansRequest.newBuilder()
-          .setNameBytes(projectName)
-          .addSpans(testSpan)
-          .build();
+    BatchWriteSpansRequest request = BatchWriteSpansRequest.newBuilder()
+      .setNameBytes(projectName)
+      .addSpans(testSpan)
+      .build();
 
-      try {
-        serviceCall.apply(request).execute();
-      } catch (Exception e) {
-        if (e.getMessage().contains("Invalid span name")) {
-          return CheckResult.OK;
-        }
-        return CheckResult.failed(e);
+    try {
+      serviceCall.apply(request).execute();
+    } catch (Exception e) {
+      if (e.getMessage().contains("Invalid span name")) {
+        return CheckResult.OK;
       }
-
-      return CheckResult.OK;
+      return CheckResult.failed(e);
     }
+
+    return CheckResult.OK;
+  }
+
+  @VisibleForTesting
+  void setClock(Clock clock) {
+    this.clock = clock;
+  }
 
 }
