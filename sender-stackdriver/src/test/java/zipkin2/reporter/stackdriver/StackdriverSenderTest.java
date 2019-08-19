@@ -126,15 +126,27 @@ public class StackdriverSenderTest {
   }
 
   @Test
-  public void verifyCheckReturnsFailureWhenServiceFails() {
+  public void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
     onClientCall(observer -> {
       observer.onError(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
     });
     CheckResult result = sender.check();
     assertThat(result.ok()).isFalse();
     assertThat(result.error())
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(StatusRuntimeException.class)
         .hasMessageContaining("RESOURCE_EXHAUSTED");
+  }
+
+  @Test
+  public void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
+    onClientCall(observer -> {
+      observer.onError(new RuntimeException("oh no"));
+    });
+    CheckResult result = sender.check();
+    assertThat(result.ok()).isFalse();
+    assertThat(result.error())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("UNKNOWN");
   }
 
   @Test

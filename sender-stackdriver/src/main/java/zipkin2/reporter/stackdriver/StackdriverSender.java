@@ -24,6 +24,8 @@ import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.io.IOException;
 import java.util.List;
 import zipkin2.Call;
@@ -32,9 +34,9 @@ import zipkin2.codec.Encoding;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 
+import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 import static com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag;
 import static io.grpc.CallOptions.DEFAULT;
-import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 
 public final class StackdriverSender extends Sender {
 
@@ -55,7 +57,6 @@ public final class StackdriverSender extends Sender {
     CallOptions callOptions = DEFAULT;
     boolean shutdownChannelOnClose;
     long serverResponseTimeoutMs = DEFAULT_SERVER_TIMEOUT_MS;
-    String expectedHealthcheckError = "INVALID_ARGUMENT";
 
     Builder(Channel channel) {
       if (channel == null) throw new NullPointerException("channel == null");
@@ -80,12 +81,6 @@ public final class StackdriverSender extends Sender {
       return this;
     }
 
-    public Builder expectedHealthcheckError(String expectedHealthcheckError) {
-      if (expectedHealthcheckError == null) throw new NullPointerException("expectedHealthcheckError == null");
-      this.expectedHealthcheckError = expectedHealthcheckError;
-      return this;
-    }
-
     public StackdriverSender build() {
       if (projectId == null) throw new NullPointerException("projectId == null");
       return new StackdriverSender(this);
@@ -104,7 +99,6 @@ public final class StackdriverSender extends Sender {
   final int spanNameFieldSize;
   final long serverResponseTimeoutMs;
 
-  final String expectedHealthcheckError;
   final BatchWriteSpansCall healthcheckCall;
 
   StackdriverSender(Builder builder) {
@@ -128,7 +122,6 @@ public final class StackdriverSender extends Sender {
         .addSpans(Span.newBuilder().build())
         .build();
     healthcheckCall = new BatchWriteSpansCall(healthcheckRequest);
-    expectedHealthcheckError = builder.expectedHealthcheckError;
   }
 
   @Override
@@ -186,18 +179,20 @@ public final class StackdriverSender extends Sender {
    */
   @Override
   public CheckResult check() {
-
     try {
       healthcheckCall.clone().execute();
-    } catch (Exception e) {
-      if (e.getMessage().contains(expectedHealthcheckError)) {
+    } catch (StatusRuntimeException sre) {
+      if (sre.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
         return CheckResult.OK;
       }
+      return CheckResult.failed(sre);
+    } catch (Exception e) {
       return CheckResult.failed(e);
     }
 
-    // Stackdriver should not execute the malformed call successfully, so the code is unlikely to
-    // get here. But it happens, that means the server is responding, and so is minimally healthy.
+    // Currently the rpc throws a validation exception on malformed input, which we handle above.
+    // If we get here despite the known malformed input, the implementation changed and we need to
+    // update this check. It's unlikely enough that we can wait and see.
     return CheckResult.OK;
   }
 
