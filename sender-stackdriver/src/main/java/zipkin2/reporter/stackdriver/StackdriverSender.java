@@ -13,15 +13,12 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.common.io.BaseEncoding;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.Span;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
-import com.google.devtools.cloudtrace.v2.TruncatableString;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.Empty;
-import com.google.protobuf.Timestamp;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
@@ -29,16 +26,15 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.util.List;
-import java.util.Random;
 import zipkin2.Call;
 import zipkin2.CheckResult;
 import zipkin2.codec.Encoding;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 
-import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 import static com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag;
 import static io.grpc.CallOptions.DEFAULT;
+import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 
 public final class StackdriverSender extends Sender {
 
@@ -59,6 +55,7 @@ public final class StackdriverSender extends Sender {
     CallOptions callOptions = DEFAULT;
     boolean shutdownChannelOnClose;
     long serverResponseTimeoutMs = DEFAULT_SERVER_TIMEOUT_MS;
+    String expectedHealthcheckError = "INVALID_ARGUMENT";
 
     Builder(Channel channel) {
       if (channel == null) throw new NullPointerException("channel == null");
@@ -83,6 +80,12 @@ public final class StackdriverSender extends Sender {
       return this;
     }
 
+    public Builder expectedHealthcheckError(String expectedHealthcheckError) {
+      if (expectedHealthcheckError == null) throw new NullPointerException("expectedHealthcheckError == null");
+      this.expectedHealthcheckError = expectedHealthcheckError;
+      return this;
+    }
+
     public StackdriverSender build() {
       if (projectId == null) throw new NullPointerException("projectId == null");
       return new StackdriverSender(this);
@@ -100,7 +103,9 @@ public final class StackdriverSender extends Sender {
   final int spanNameSize;
   final int spanNameFieldSize;
   final long serverResponseTimeoutMs;
-  final ExpiringHealthCheck healthCheck;
+
+  final String expectedHealthcheckError;
+  final BatchWriteSpansCall healthcheckCall;
 
   StackdriverSender(Builder builder) {
     channel = builder.channel;
@@ -118,7 +123,12 @@ public final class StackdriverSender extends Sender {
     spanNameFieldSize = CodedOutputStream.computeTagSize(1)
         + CodedOutputStream.computeUInt32SizeNoTag(spanNameSize) + spanNameSize;
 
-    healthCheck = new ExpiringHealthCheck(projectName, request -> new BatchWriteSpansCall(request));
+    BatchWriteSpansRequest healthcheckRequest = BatchWriteSpansRequest.newBuilder()
+        .setNameBytes(projectName)
+        .addSpans(Span.newBuilder().build())
+        .build();
+    healthcheckCall = new BatchWriteSpansCall(healthcheckRequest);
+    expectedHealthcheckError = builder.expectedHealthcheckError;
   }
 
   @Override
@@ -168,9 +178,27 @@ public final class StackdriverSender extends Sender {
     return new BatchWriteSpansCall(request.build()).map(EmptyToVoid.INSTANCE);
   }
 
+  /**
+   * Sends a malformed call to Stackdriver Trace to validate service health.
+   * @return successful status if Stackdriver Trace API responds with expected validation
+   * error (or happens to respond as success -- unexpected but okay); otherwise returns error status
+   * wrapping the underlying exception.
+   */
   @Override
   public CheckResult check() {
-    return this.healthCheck.check();
+
+    try {
+      healthcheckCall.clone().execute();
+    } catch (Exception e) {
+      if (e.getMessage().contains(expectedHealthcheckError)) {
+        return CheckResult.OK;
+      }
+      return CheckResult.failed(e);
+    }
+
+    // Stackdriver should not execute the malformed call successfully, so the code is unlikely to
+    // get here. But it happens, that means the server is responding, and so is minimally healthy.
+    return CheckResult.OK;
   }
 
   @Override
