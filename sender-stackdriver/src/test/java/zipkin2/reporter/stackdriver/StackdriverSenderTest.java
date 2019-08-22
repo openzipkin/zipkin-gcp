@@ -17,6 +17,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.grpc.testing.GrpcServerRule;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
+import zipkin2.CheckResult;
 import zipkin2.Span;
 import zipkin2.translation.stackdriver.SpanTranslator;
 
@@ -120,6 +123,47 @@ public class StackdriverSenderTest {
     // verify our estimate is correct
     int actualSize = request.getSerializedSize();
     assertThat(sender.messageSizeInBytes(encodedSpans)).isEqualTo(actualSize);
+  }
+
+  @Test
+  public void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
+    onClientCall(observer -> {
+      observer.onError(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
+    });
+    CheckResult result = sender.check();
+    assertThat(result.ok()).isFalse();
+    assertThat(result.error())
+        .isInstanceOf(StatusRuntimeException.class)
+        .hasMessageContaining("RESOURCE_EXHAUSTED");
+  }
+
+  @Test
+  public void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
+    onClientCall(observer -> {
+      observer.onError(new RuntimeException("oh no"));
+    });
+    CheckResult result = sender.check();
+    assertThat(result.ok()).isFalse();
+    assertThat(result.error())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("UNKNOWN");
+  }
+
+  @Test
+  public void verifyCheckReturnsOkWhenExpectedValidationFailure() {
+    onClientCall(observer -> {
+      observer.onError(new StatusRuntimeException(Status.INVALID_ARGUMENT));
+    });
+    assertThat(sender.check()).isSameAs(CheckResult.OK);
+  }
+
+  @Test
+  public void verifyCheckReturnsOkWhenServiceSucceeds() {
+    onClientCall(observer -> {
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+    });
+    assertThat(sender.check()).isSameAs(CheckResult.OK);
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {

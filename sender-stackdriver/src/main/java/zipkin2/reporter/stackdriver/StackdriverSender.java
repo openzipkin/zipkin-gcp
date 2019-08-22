@@ -24,6 +24,8 @@ import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.io.IOException;
 import java.util.List;
 import zipkin2.Call;
@@ -97,6 +99,8 @@ public final class StackdriverSender extends Sender {
   final int spanNameFieldSize;
   final long serverResponseTimeoutMs;
 
+  final BatchWriteSpansCall healthcheckCall;
+
   StackdriverSender(Builder builder) {
     channel = builder.channel;
     callOptions = builder.callOptions;
@@ -112,6 +116,12 @@ public final class StackdriverSender extends Sender {
 
     spanNameFieldSize = CodedOutputStream.computeTagSize(1)
         + CodedOutputStream.computeUInt32SizeNoTag(spanNameSize) + spanNameSize;
+
+    BatchWriteSpansRequest healthcheckRequest = BatchWriteSpansRequest.newBuilder()
+        .setNameBytes(projectName)
+        .addSpans(Span.newBuilder().build())
+        .build();
+    healthcheckCall = new BatchWriteSpansCall(healthcheckRequest);
   }
 
   @Override
@@ -161,8 +171,28 @@ public final class StackdriverSender extends Sender {
     return new BatchWriteSpansCall(request.build()).map(EmptyToVoid.INSTANCE);
   }
 
+  /**
+   * Sends a malformed call to Stackdriver Trace to validate service health.
+   * @return successful status if Stackdriver Trace API responds with expected validation
+   * error (or happens to respond as success -- unexpected but okay); otherwise returns error status
+   * wrapping the underlying exception.
+   */
   @Override
   public CheckResult check() {
+    try {
+      healthcheckCall.clone().execute();
+    } catch (StatusRuntimeException sre) {
+      if (sre.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
+        return CheckResult.OK;
+      }
+      return CheckResult.failed(sre);
+    } catch (Exception e) {
+      return CheckResult.failed(e);
+    }
+
+    // Currently the rpc throws a validation exception on malformed input, which we handle above.
+    // If we get here despite the known malformed input, the implementation changed and we need to
+    // update this check. It's unlikely enough that we can wait and see.
     return CheckResult.OK;
   }
 
