@@ -24,9 +24,11 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.auth.MoreCallCredentials;
 import io.grpc.testing.GrpcServerRule;
 import org.awaitility.Duration;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import zipkin2.CheckResult;
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
 
@@ -83,6 +85,12 @@ public class ITStackdriverSender {
                     .build(StackdriverEncoder.V2);
   }
 
+  @After
+  public void tearDown() {
+    reporter.close();
+    reporterNoPermission.close();
+  }
+
   @Test
   public void healthcheck() {
     assertThat(reporter.check().ok()).isTrue();
@@ -112,6 +120,7 @@ public class ITStackdriverSender {
     Trace trace = await()
             .atLeast(Duration.ONE_SECOND)
             .atMost(Duration.TEN_SECONDS)
+			.pollInterval(Duration.ONE_SECOND)
             .ignoreException(StatusRuntimeException.class)
             .ignoreExceptionsMatching(e ->
                     e instanceof StatusRuntimeException &&
@@ -122,12 +131,17 @@ public class ITStackdriverSender {
                     .setTraceId(span.traceId())
                     .build()), t -> t.getSpansCount() == 1);
 
-    assertThat("0000000000000002").isEqualTo(span.id());
-    assertThat("0000000000000001").isEqualTo(span.parentId());
+    assertThat(span.id()).isEqualTo("0000000000000002");
+    assertThat(span.parentId()).isEqualTo("0000000000000001");
   }
 
   @Test
-  public void healthCheckFail() {
-    assertThat(reporterNoPermission.check().ok()).isFalse();
+  public void healthcheckFailNoPermission() {
+    CheckResult result = reporterNoPermission.check();
+    assertThat(false).isEqualTo(result.ok());
+    assertThat(result.ok()).isFalse();
+    assertThat(result.error()).isNotNull();
+    assertThat(result.error()).isInstanceOf(StatusRuntimeException.class);
+    assertThat(((StatusRuntimeException) result.error()).getStatus().getCode()).isEqualTo(Status.Code.PERMISSION_DENIED);
   }
 }
