@@ -89,11 +89,6 @@ public class ITStackdriverSender {
   }
 
   @Test
-  public void sendSpans_empty() {
-    reporter.flush();
-  }
-
-  @Test
   public void sendSpans() {
     Random random = new Random();
     Span span = Span.newBuilder()
