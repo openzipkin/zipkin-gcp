@@ -138,7 +138,6 @@ public class ITStackdriverSender {
   @Test
   public void healthcheckFailNoPermission() {
     CheckResult result = reporterNoPermission.check();
-    assertThat(false).isEqualTo(result.ok());
     assertThat(result.ok()).isFalse();
     assertThat(result.error()).isNotNull();
     assertThat(result.error()).isInstanceOf(StatusRuntimeException.class);
