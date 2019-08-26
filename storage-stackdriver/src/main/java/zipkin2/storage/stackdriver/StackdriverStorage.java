@@ -13,6 +13,7 @@
  */
 package zipkin2.storage.stackdriver;
 
+import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.linecorp.armeria.client.Client;
 import com.linecorp.armeria.client.ClientFactory;
 import com.linecorp.armeria.client.ClientOptions;
@@ -23,13 +24,16 @@ import com.linecorp.armeria.client.SimpleDecoratingClient;
 import com.linecorp.armeria.common.HttpHeaderNames;
 import com.linecorp.armeria.common.HttpRequest;
 import com.linecorp.armeria.common.HttpResponse;
+import com.linecorp.armeria.common.grpc.protocol.ArmeriaStatusException;
 import com.linecorp.armeria.common.grpc.protocol.UnaryGrpcClient;
+import zipkin2.Call;
 import zipkin2.CheckResult;
 import zipkin2.storage.AutocompleteTags;
 import zipkin2.storage.ServiceAndSpanNames;
 import zipkin2.storage.SpanConsumer;
 import zipkin2.storage.SpanStore;
 import zipkin2.storage.StorageComponent;
+import zipkin2.storage.stackdriver.StackdriverSpanConsumer.BatchWriteSpansCall;
 
 /**
  * StackdriverStorage is a StorageComponent that consumes spans using the Stackdriver
@@ -121,10 +125,15 @@ public final class StackdriverStorage extends StorageComponent {
 
   final UnaryGrpcClient grpcClient;
   final String projectId;
+  final BatchWriteSpansCall healthcheckCall;
 
   StackdriverStorage(Builder builder, UnaryGrpcClient grpcClient) {
     this.grpcClient = grpcClient;
     projectId = builder.projectId;
+    BatchWriteSpansRequest healthcheckRequest = BatchWriteSpansRequest.newBuilder()
+        .setName("projects/" + builder.projectId)
+        .build();
+    healthcheckCall = new BatchWriteSpansCall(grpcClient, healthcheckRequest);
   }
 
   @Override
@@ -147,14 +156,36 @@ public final class StackdriverStorage extends StorageComponent {
     return new StackdriverSpanConsumer(grpcClient, projectId);
   }
 
-  @Override
-  public CheckResult check() {
+  /**
+   * Sends a malformed call to Stackdriver Trace to validate service health.
+   *
+   * @return successful status if Stackdriver Trace API responds with expected validation error (or
+   * happens to respond as success -- unexpected but okay); otherwise returns error status wrapping
+   * the underlying exception.
+   */
+  // Same code as zipkin2.reporter.stackdriver.StackDriverSender.check() ported to armeria
+  @Override public CheckResult check() {
+    try {
+      healthcheckCall.clone().execute();
+    } catch (ArmeriaStatusException ase) {
+      if (ase.getCode() == 3 /* INVALID_ARGUMENT */) {
+        return CheckResult.OK;
+      }
+      return CheckResult.failed(ase);
+    } catch (Throwable t) {
+      Call.propagateIfFatal(t);
+      return CheckResult.failed(t);
+    }
+
+    // Currently the rpc throws a validation exception on malformed input, which we handle above.
+    // If we get here despite the known malformed input, the implementation changed and we need to
+    // update this check. It's unlikely enough that we can wait and see.
     return CheckResult.OK;
   }
 
   @Override
   public final String toString() {
-    return "StackdriverSender{" + projectId + "}";
+    return "StackdriverStorage{" + projectId + "}";
   }
 
   // Many Google services do not support the standard application/grpc+proto header.

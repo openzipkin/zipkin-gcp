@@ -14,10 +14,11 @@
 package zipkin2.storage.stackdriver;
 
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
-import com.google.protobuf.Empty;
 import com.linecorp.armeria.common.grpc.protocol.UnaryGrpcClient;
+import com.linecorp.armeria.common.util.Exceptions;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import zipkin2.Call;
 import zipkin2.Callback;
 import zipkin2.Span;
@@ -53,16 +54,17 @@ final class StackdriverSpanConsumer implements SpanConsumer {
             .setName(projectName)
             .addAllSpans(stackdriverSpans)
             .build();
-    return new BatchWriteSpansCall(request).map(EmptyToVoid.INSTANCE);
+    return new BatchWriteSpansCall(grpcClient, request);
   }
 
-  private final class BatchWriteSpansCall extends Call.Base<Empty> {
-
+  static final class BatchWriteSpansCall extends Call.Base<Void> {
+    final UnaryGrpcClient grpcClient;
     final BatchWriteSpansRequest request;
 
     volatile CompletableFuture<byte[]> responseFuture;
 
-    BatchWriteSpansCall(BatchWriteSpansRequest request) {
+    BatchWriteSpansCall(UnaryGrpcClient grpcClient, BatchWriteSpansRequest request) {
+      this.grpcClient = grpcClient;
       this.request = request;
     }
 
@@ -73,21 +75,29 @@ final class StackdriverSpanConsumer implements SpanConsumer {
 
     @Override
     public BatchWriteSpansCall clone() {
-      return new BatchWriteSpansCall(request);
+      return new BatchWriteSpansCall(grpcClient, request);
     }
 
-    @Override protected Empty doExecute() {
-      sendRequest().join();
-      return Empty.getDefaultInstance();
+    @Override
+    protected Void doExecute() {
+      try {
+        sendRequest().join();
+        return null;
+      } catch (CompletionException e) {
+        propagateIfFatal(e);
+        Exceptions.throwUnsafely(e.getCause());
+        return null;  // Unreachable
+      }
     }
 
-    @Override protected void doEnqueue(Callback<Empty> callback) {
+    @Override
+    protected void doEnqueue(Callback<Void> callback) {
       try {
         sendRequest().handle((resp, t) -> {
           if (t != null) {
             callback.onError(t);
           } else {
-            callback.onSuccess(Empty.getDefaultInstance());
+            callback.onSuccess(null);
           }
           return null;
         });
@@ -111,14 +121,5 @@ final class StackdriverSpanConsumer implements SpanConsumer {
       this.responseFuture = responseFuture;
       return responseFuture;
     }
-  }
-
-  enum EmptyToVoid implements Call.Mapper<Empty, Void> {
-    INSTANCE {
-      @Override
-      public Void map(Empty empty) {
-        return null;
-      }
-    };
   }
 }

@@ -17,9 +17,12 @@ import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
 import com.linecorp.armeria.common.SessionProtocol;
+import com.linecorp.armeria.common.grpc.protocol.ArmeriaStatusException;
 import com.linecorp.armeria.server.ServerBuilder;
 import com.linecorp.armeria.server.grpc.GrpcServiceBuilder;
 import com.linecorp.armeria.testing.junit4.server.ServerRule;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -28,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
+import zipkin2.CheckResult;
 import zipkin2.TestObjects;
 import zipkin2.storage.SpanConsumer;
 import zipkin2.translation.stackdriver.SpanTranslator;
@@ -54,16 +58,16 @@ public class ITStackdriverSpanConsumer {
   };
 
   String projectId = "test-project";
+  StackdriverStorage storage;
   SpanConsumer spanConsumer;
 
   @Before
   public void setUp() {
-    spanConsumer =
-        StackdriverStorage.newBuilder(
+    storage = StackdriverStorage.newBuilder(
             server.uri(SessionProtocol.HTTP, "/"))
             .projectId(projectId)
-            .build()
-            .spanConsumer();
+            .build();
+    spanConsumer = storage.spanConsumer();
   }
 
   @Test
@@ -92,6 +96,52 @@ public class ITStackdriverSpanConsumer {
     assertThat(request.getName()).isEqualTo("projects/" + projectId);
     assertThat(request.getSpansList())
         .isEqualTo(SpanTranslator.translate(projectId, asList(TestObjects.CLIENT_SPAN)));
+  }
+
+  @Test
+  public void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
+    onClientCall(observer -> {
+      observer.onError(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
+    });
+
+    CheckResult result = storage.check();
+    assertThat(result.ok()).isFalse();
+    assertThat(result.error())
+        .isInstanceOf(ArmeriaStatusException.class)
+        // there is null message, so look at the code https://github.com/line/armeria/issues/2028
+        .satisfies(e -> assertThat(((ArmeriaStatusException) e).getCode())
+            .isEqualTo(Status.RESOURCE_EXHAUSTED.getCode().value()));
+  }
+
+  @Test
+  public void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
+    onClientCall(observer -> {
+      observer.onError(new RuntimeException("oh no"));
+    });
+    CheckResult result = storage.check();
+    assertThat(result.ok()).isFalse();
+    assertThat(result.error())
+        .isInstanceOf(ArmeriaStatusException.class)
+        // there is null message, so look at the code https://github.com/line/armeria/issues/2028
+        .satisfies(e -> assertThat(((ArmeriaStatusException) e).getCode())
+            .isEqualTo(Status.UNKNOWN.getCode().value()));
+  }
+
+  @Test
+  public void verifyCheckReturnsOkWhenExpectedValidationFailure() {
+    onClientCall(observer -> {
+      observer.onError(new StatusRuntimeException(Status.INVALID_ARGUMENT));
+    });
+    assertThat(storage.check()).isSameAs(CheckResult.OK);
+  }
+
+  @Test
+  public void verifyCheckReturnsOkWhenServiceSucceeds() {
+    onClientCall(observer -> {
+      observer.onNext(Empty.getDefaultInstance());
+      observer.onCompleted();
+    });
+    assertThat(storage.check()).isSameAs(CheckResult.OK);
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
