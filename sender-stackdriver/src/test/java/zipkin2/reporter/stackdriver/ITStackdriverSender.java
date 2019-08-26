@@ -13,90 +13,126 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
-import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
-import com.google.protobuf.Empty;
-import io.grpc.stub.StreamObserver;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.devtools.cloudtrace.v1.GetTraceRequest;
+import com.google.devtools.cloudtrace.v1.Trace;
+import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.auth.MoreCallCredentials;
 import io.grpc.testing.GrpcServerRule;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import org.awaitility.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.stubbing.Answer;
 import zipkin2.Span;
-import zipkin2.TestObjects;
 import zipkin2.reporter.AsyncReporter;
-import zipkin2.translation.stackdriver.SpanTranslator;
 
-import static java.util.Arrays.asList;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
+import static org.awaitility.Awaitility.await;
+import static zipkin2.TestObjects.FRONTEND;
+import static zipkin2.TestObjects.BACKEND;
+import static zipkin2.TestObjects.TODAY;
 
 /** Same as ITStackdriverSpanConsumer: tests everything wired together */
 public class ITStackdriverSender {
   @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
-  TestTraceService traceService = spy(new TestTraceService());
-  String projectId = "test-project";
+
+  String projectId = "zipkin-gcp-ci";
+  GoogleCredentials credentials;
+  StackdriverSender sender;
+  StackdriverSender senderNoPermission;
   AsyncReporter<Span> reporter;
+  AsyncReporter<Span> reporterNoPermission;
+  TraceServiceGrpc.TraceServiceBlockingStub traceServiceGrpcV1;
+  Channel v1Channel;
 
   @Before
-  public void setUp() {
-    server.getServiceRegistry().addService(traceService);
+  public void setUp() throws IOException {
+    credentials = GoogleCredentials.getApplicationDefault()
+            .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
+
+    // Setup the sender to authenticate the Google Stackdriver service
+    sender = StackdriverSender.newBuilder()
+            .projectId(projectId)
+            .callOptions(CallOptions.DEFAULT.withCallCredentials(MoreCallCredentials.from(credentials)))
+            .build();
+
     reporter =
-        AsyncReporter.builder(
-                StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build())
+        AsyncReporter.builder(sender)
             .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
             .build(StackdriverEncoder.V2);
+
+    traceServiceGrpcV1 = TraceServiceGrpc.newBlockingStub(sender.channel)
+            .withCallCredentials(MoreCallCredentials.from(credentials.createScoped("https://www.googleapis.com/auth/cloud-platform")));
+
+    senderNoPermission = StackdriverSender.newBuilder()
+            .projectId(projectId)
+            .build();
+
+    reporterNoPermission =
+            AsyncReporter.builder(senderNoPermission)
+                    .messageTimeout(0, TimeUnit.MILLISECONDS)
+                    .build(StackdriverEncoder.V2);
+  }
+
+  @Test
+  public void healthcheck() {
+    assertThat(reporter.check().ok()).isTrue();
   }
 
   @Test
   public void sendSpans_empty() {
     reporter.flush();
-
-    verify(traceService, never()).batchWriteSpans(any(), any());
   }
 
   @Test
   public void sendSpans() {
-    onClientCall(
-        observer -> {
-          observer.onNext(Empty.getDefaultInstance());
-          observer.onCompleted();
-        });
+    Random random = new Random();
+    Span span = Span.newBuilder()
+            .traceId(random.nextLong(), random.nextLong())
+            .parentId("1")
+            .id("2")
+            .name("get")
+            .kind(Span.Kind.CLIENT)
+            .localEndpoint(FRONTEND)
+            .remoteEndpoint(BACKEND)
+            .timestamp((TODAY + 50L) * 1000L)
+            .duration(200000L)
+            .addAnnotation((TODAY + 100L) * 1000L, "foo")
+            .putTag("http.path", "/api")
+            .putTag("clnt/finagle.version", "6.45.0")
+            .build();
 
-    reporter.report(TestObjects.CLIENT_SPAN);
+    reporter.report(span);
     reporter.flush();
 
-    ArgumentCaptor<BatchWriteSpansRequest> requestCaptor =
-        ArgumentCaptor.forClass(BatchWriteSpansRequest.class);
+    Trace trace = await()
+            .atLeast(Duration.ONE_SECOND)
+            .atMost(Duration.TEN_SECONDS)
+            .ignoreException(StatusRuntimeException.class)
+            .ignoreExceptionsMatching(e ->
+                    e instanceof StatusRuntimeException &&
+                            ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
+            )
+            .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
+                    .setProjectId(projectId)
+                    .setTraceId(span.traceId())
+                    .build()), t -> t.getSpansCount() == 1);
 
-    verify(traceService).batchWriteSpans(requestCaptor.capture(), any());
-
-    BatchWriteSpansRequest request = requestCaptor.getValue();
-    assertThat(request.getName()).isEqualTo("projects/" + projectId);
-
-    assertThat(request.getSpansList()).containsExactlyElementsOf(
-        SpanTranslator.translate(projectId, asList(TestObjects.CLIENT_SPAN)));
+    assertThat("0000000000000002").isEqualTo(span.id());
+    assertThat("0000000000000001").isEqualTo(span.parentId());
   }
 
-  void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
-    doAnswer(
-            (Answer<Void>)
-                invocationOnMock -> {
-                  StreamObserver<Empty> observer =
-                      ((StreamObserver) invocationOnMock.getArguments()[1]);
-                  onClientCall.accept(observer);
-                  return null;
-                })
-        .when(traceService)
-        .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
+  @Test
+  public void healthCheckFail() {
+    assertThat(reporterNoPermission.check().ok()).isFalse();
   }
-
-  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
 }
