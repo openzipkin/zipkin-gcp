@@ -118,7 +118,7 @@ public class ITStackdriverSender {
     Trace trace = await()
             .atLeast(Duration.ONE_SECOND)
             .atMost(Duration.TEN_SECONDS)
-			.pollInterval(Duration.ONE_SECOND)
+            .pollInterval(Duration.ONE_SECOND)
             .ignoreExceptionsMatching(e ->
                     e instanceof StatusRuntimeException &&
                             ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
