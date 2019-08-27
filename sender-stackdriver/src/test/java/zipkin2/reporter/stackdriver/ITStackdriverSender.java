@@ -45,8 +45,6 @@ import static zipkin2.TestObjects.TODAY;
 
 /** Same as ITStackdriverSpanConsumer: tests everything wired together */
 public class ITStackdriverSender {
-  @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
-
   String projectId = "zipkin-gcp-ci";
   GoogleCredentials credentials;
   StackdriverSender sender;

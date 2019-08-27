@@ -44,8 +44,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-/** Same as ITStackdriverSender: tests everything wired together */
-public class ITStackdriverSpanConsumer {
+/** Same as AsyncReporterStackdriverSenderTest: tests everything wired together */
+public class StackdriverSpanConsumerTest {
 
   final TestTraceService traceService = spy(new TestTraceService());
 

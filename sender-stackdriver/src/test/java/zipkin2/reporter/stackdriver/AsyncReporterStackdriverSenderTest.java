@@ -38,7 +38,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-/** Same as ITStackdriverSpanConsumer: tests everything wired together */
+/** Same as StackdriverSpanConsumerTest: tests everything wired together */
 public class AsyncReporterStackdriverSenderTest {
   @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
   TestTraceService traceService = spy(new TestTraceService());
