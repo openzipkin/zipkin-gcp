@@ -54,6 +54,8 @@ public class ITStackdriverSender {
 
   @Before
   public void setUp() throws IOException {
+  	// Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
+    // See: https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application
     credentials = GoogleCredentials.getApplicationDefault()
             .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
 
