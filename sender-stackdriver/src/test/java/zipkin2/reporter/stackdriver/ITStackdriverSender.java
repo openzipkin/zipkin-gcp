@@ -119,7 +119,6 @@ public class ITStackdriverSender {
             .atLeast(Duration.ONE_SECOND)
             .atMost(Duration.TEN_SECONDS)
 			.pollInterval(Duration.ONE_SECOND)
-            .ignoreException(StatusRuntimeException.class)
             .ignoreExceptionsMatching(e ->
                     e instanceof StatusRuntimeException &&
                             ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
