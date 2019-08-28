@@ -41,7 +41,7 @@ import static zipkin2.TestObjects.FRONTEND;
 import static zipkin2.TestObjects.BACKEND;
 import static zipkin2.TestObjects.TODAY;
 
-/** Same as ITStackdriverSpanConsumer: tests everything wired together */
+/** Integration test against Stackdriver Trace on a real GCP project */
 public class ITStackdriverSender {
   String projectId = "zipkin-gcp-ci";
   GoogleCredentials credentials;
@@ -137,7 +137,7 @@ public class ITStackdriverSender {
     CheckResult result = reporterNoPermission.check();
     assertThat(result.ok()).isFalse();
     assertThat(result.error()).isNotNull();
-    assertThat(result.error()).isInstanceOf(StatusRuntimeException.class);
-    assertThat(((StatusRuntimeException) result.error()).getStatus().getCode()).isEqualTo(Status.Code.PERMISSION_DENIED);
+    assertThat(result.error()).isInstanceOfSatisfying(StatusRuntimeException.class,
+            sre -> sre.getStatus().getCode().equals(Status.Code.PERMISSION_DENIED));
   }
 }
