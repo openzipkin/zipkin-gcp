@@ -1,33 +1,48 @@
+# Run `travis lint` when changing this file to avoid breaking the build.
+
 cache:
   directories:
-  - "$HOME/.m2"
+    - $HOME/.m2
+
 language: java
+
 jdk: openjdk11
+
 before_install:
-- openssl aes-256-cbc -K $encrypted_80d2740393f3_key -iv $encrypted_80d2740393f3_iv
-  -in travis/zipkin-gcp-ci-0d7917f58da7.json.enc -out travis/zipkin-gcp-ci-0d7917f58da7.json -d
-- export GOOGLE_APPLICATION_CREDENTIALS=travis/zipkin-gcp-ci-0d7917f58da7.json
-- git config user.name "zipkinci"
-- git config user.email "zipkinci+zipkin-dev@googlegroups.com"
-- git config credential.helper "store --file=.git/credentials"
-- echo "https://$GH_TOKEN:@github.com" > .git/credentials
-install: "./mvnw install -DskipTests=true -Dlicense.skip=true -Dmaven.javadoc.skip=true
-  -B -V"
-script: "./travis/publish.sh"
+  # allocate commits to CI, not the owner of the deploy key
+  - git config user.name "zipkinci"
+  - git config user.email "zipkinci+zipkin-dev@googlegroups.com"
+  # setup https authentication credentials, used by ./mvnw release:prepare
+  - git config credential.helper "store --file=.git/credentials"
+  - echo "https://$GH_TOKEN:@github.com" > .git/credentials
+
+# Override default travis to use the maven wrapper; skip license on travis due to #1512
+install: ./mvnw install -DskipTests=true -Dlicense.skip=true -Dmaven.javadoc.skip=true -B -V
+script: ./travis/publish.sh
+
+# Don't build release tags. This avoids publish conflicts because the version commit exists both on master and the release tag.
+# See https://github.com/travis-ci/travis-ci/issues/1532
 branches:
   except:
-  - "/^[0-9]/"
+    - /^[0-9]/
+
 notifications:
   webhooks:
     urls:
-    - https://webhooks.gitter.im/e/ead3c37d57527214e9f2
-    - https://webhooks.gitter.im/e/e57478303f87ecd7bffc
+      - https://webhooks.gitter.im/e/ead3c37d57527214e9f2
+      - https://webhooks.gitter.im/e/e57478303f87ecd7bffc
     on_success: change
     on_failure: always
+
 env:
   global:
-  - secure: SynCshiPSsHqaSXVmR3vI6y+V9ttz3ttYJ+lhMUbKEaBOmsnBCRahpY9mGL8zhulGKb+FjflfX9QItcu13l6v4o+43S0Oxyc2OhlfzlR8OHQPXXuSYvIsv2U0z+3uGakUeUsDq2vnSGKBwcfrtSgAIrZG4YiE+gD67C0SKOYCUaP3I/Ibq6b1q8rwL9QTv36skNMRcBafxAVzzNr9hhA2bfnQjH1JbrGA7hp0FPG4fWMJsVjrSn0EgNWAyR/6WQsqrWXcQKu9/12GrHko4B54tj9/L+Za3q4JyBWDarmyBc1f3v+jsuyxmvdRjy8X/1cpZFEomEycvWtR41olAkEHZlhQBb2lYZihn+bKCb0QOeW3phFthp6uphghtJIqyeMfUN70Tf/kOZuhTteWhi7h+hapJwXao4wOwn2EsV7qpEQTQUKAbngD38MyMCHUh//2/cq8k7Id8nha2vvyLW64GotNkFvqkvp2yaOnd84FLcu67NCi2M554YAUkilWiQbcuKr8FlvavlgePQPlN1DR+2/GF2xwEYI3II7tmtGmmFXMVCDfPgZHJi7vmgP5CMuwql0US7rCxtdtbAcKaYPEStTsnfodO8Zrxpz3M324IO+uCR1mXLFWSqQS36C9iZLhQJ47yJI9jl1L2LygPY+VCPhRQtQjDWFq6HWUnC0qjo=
-  - secure: W1xRiaNfHqhIbEC84O3riyiPc1YelqpUsm2yqWv4iAgcoIZNvX7x9CC0VS62SnfQaTzvmIz7yKCG+2DOCTIRJCBeGV5xUtnUxVwOgek4359BhUGw9ALsKZ1kF9gmQVOgYvK/9TzU2uy/tXeC/XYoDqYEUTIcO9dr/ZNG+5rROVlV51MbBuWVFgErLwAnlx7L92EZ+wCZCpR/2kzkB+clVmV+IY6yIfqqmgPNp4e1q2pOF6qT5H4M2jyc1tzfPWIMWYFh/nnEzhy97dmRixCgbaUBnAUtFy7StdEatwNMgHx+T+BuBsd1pmGrzsPVTpuVQkCS3fqI7Y/qAJY3M/QNNajoAeKCmD1mBdYyErAQNa2DBEfJkQZpB1n9QL8IGpSfOBFtsaLFOGfQ5s/2rEAjwqfN9D9HVZnsurbJvQAwbZqGtDpTAiI3eJ1DpaFMbc74FSemMyDX0bf5bGczB8kK/EsIHuXW3UoD40tUyot2PmFvYGcgc+8LZp6ZaKBvAJGnAcGErn76gyGycJ8VPcVqcIEV51CkCNud2DrcPKg2WEi5HiEpW/XQ1TuKZ041t8VaYJYj9YXdRQqdpEt6rasZO0hdZR9dT0c2xBxO9dA0vd6V5DBYBA0z0exuR1PNIOxbV0/+Muh9YjJqClwom60yYjgblI0BBjRZMrOKDpkLx3w=
-  - secure: cjrozW0WLbIqj3p2CncvvGNI/00qk8QkgL68mAr+/wOgo/pcgLoSYzPSv8fC/qIeZz2EHwwNRX9SYghEh24CcetAAJew7bZx1uHfIPz3IXgDe/piXE4/gm3s6n/tryX2TdteDmq7oIzFG2sPvMlo2IfxTL82JMIBGCVmP1PF+MhaW/weqWRGrTf/SE/u07uOzUR3xp8N+RaeKSR9iBv3zqjjjSgOkXEH6x9WfmDMG44I1p0AX7/NwGhrb1Czz/UwX8Vd3MMfQ/b+eRvIS58TfZYy1CCCjp0MP9VoE/hgoeU4XMLpo8upE3Zk2TnUOrqhfIwX4y92jQ6uk5w2AkEvtHNPtkm1WP5f7rMtv+jQjHLis7apfbsbDKfX/+IcVuiz0zZmlRB6umCyGWkvBg6OPeaFKHu2j7QOnMDQ5Fsl7csIYRt//a7+75tYdVPGdINkVZOUJPLouBb30cJibMRrLsaq13WxzY66uo0OtNqBD04NqCxU1itxxVz9gqtkz5Ft2RjLJ4Jsb6IF7Ag7XH3jd5t2Pf+Fer2lv+seT3DSpw91kghNq6te2D8U3vONIHpLYgTWATFDQvmWSa9ARuoSv9+wzKqjenMNf7mpWwEp1hxelGUbyM2cjV1PEbO5MWprN/OCK3CM+oRUOhJcxAHBdALL+T09JJkJKpWWvBw2ptU=
-  - secure: YiZ54F16YXnmdQEs8GjR6uhnSqC0OLSaCyCkYsAN4/sotg7pmZIPuByE06lwqYP6fZbBS4JqpZ73wnI4Oa4rCxfplsiG97D7S70/3W4WmE4b+eDfeZukMtO4Ce2495W2kH1IRYIqENpFBZGZsXZW+vvNxUkRxSiYVsrS4RFW1iK/7u4eQ53yXzbI7l7RW9B62s5m+NJk35eOEx4RXmHLhjS/BrAjY9A55nRjY8NUVofdfuOrLgmdQ/r9+aJaWAO8dt5GlgvDbrydZwyIdCD9xBO6N+3205Zg8pSJxEpPRzX952Qh16IhIT5vHzSOenKCT3XJj58LZN31wPLo4e/xkaLl24aeDHMLUo/idCjNNgXzAe3TFLSDpP2XFWoByI/tmvhac9OTE87OUTYDvyVmmPG9Zxpr07G3I6Bqt/eAozS2pWXsAEO0K171mGOvAdI0wJn8/drtw2oOtuRzi/NbT1kC/mFxJeox/ASXyiHtzMunMX9FWw8Wcc//TdX27MY60AecfPentDCXfGb/t5IrM66zqkm/pEsVBU22te5Ywt510aSRDSkNM8LVaHIrxgjs2seMSdv2NN8fn5wgMnOHdP1qcBDbs2Q483E32f0D97qIer+RKxQgSm+Ykqs7APASGy91XJbDrtBrMhQBtjWiROOAeQn0/L6HJEStUgJesXc=
-  - secure: Ygg5la3KxUfOYeoNxeZdUaVmv95NS456EDNk0Jdia90GuyaClj93CM3vg40EhT5a2a0ZvkSuC/jJpSTZEbhUw4A/Y2Rt8Lx1B1x/D4n/z9uh0p6UaoOk5wfRrNcelKw6spZJhSRgmqD6OVdJRuL80xLtfz6uS4CDNH2r/ZrYqZc+31LKD+olReKGkvkSD+XsvHSUM25cq49K634Vnt31a+voMvTUZQXLdmUIp0Q3rDS5B3pViLZazlUbnvvCBZ5BStFRpTvnxu69mTalkhCVGixF+DP+ddy19xNoq9+0NFBZY+f6dfrKvyrdnZchBUdW2+Yt4zqVRPRxrerAJMDzmhmAvE7ClGsWDaNwEDlZw7O/ntO34FIvKqlYSfBh1R8OM2WZERt8kdw5MwCUy72dbboYZLqjFw9LUrdPniDhqVoG431jRELvjUAyEJ8+tM5fRzvuA4IoyG8IKLmmfxIFk7qg8eenQe024u8oWC8PWVWmDmhn12zBQtUMc/ljTQMViHBhdIsx+Nr2rtXFEnwgkEBkGloh6kARUxSYwoyqpqvZoM77NdZY2kNQU0PHkDqeolBO0LO1qml4FtAbx8ppAr1pm3WuOy8JbLTiDpAKml0bZPYX3/qHkAxezZUODusrMdhUp/qE8zT0UAtnnI6J/UAUX1HgHBIK3iZq/PwJRcs=
+    # Ex. travis encrypt BINTRAY_USER=your_github_account
+    - secure: "SynCshiPSsHqaSXVmR3vI6y+V9ttz3ttYJ+lhMUbKEaBOmsnBCRahpY9mGL8zhulGKb+FjflfX9QItcu13l6v4o+43S0Oxyc2OhlfzlR8OHQPXXuSYvIsv2U0z+3uGakUeUsDq2vnSGKBwcfrtSgAIrZG4YiE+gD67C0SKOYCUaP3I/Ibq6b1q8rwL9QTv36skNMRcBafxAVzzNr9hhA2bfnQjH1JbrGA7hp0FPG4fWMJsVjrSn0EgNWAyR/6WQsqrWXcQKu9/12GrHko4B54tj9/L+Za3q4JyBWDarmyBc1f3v+jsuyxmvdRjy8X/1cpZFEomEycvWtR41olAkEHZlhQBb2lYZihn+bKCb0QOeW3phFthp6uphghtJIqyeMfUN70Tf/kOZuhTteWhi7h+hapJwXao4wOwn2EsV7qpEQTQUKAbngD38MyMCHUh//2/cq8k7Id8nha2vvyLW64GotNkFvqkvp2yaOnd84FLcu67NCi2M554YAUkilWiQbcuKr8FlvavlgePQPlN1DR+2/GF2xwEYI3II7tmtGmmFXMVCDfPgZHJi7vmgP5CMuwql0US7rCxtdtbAcKaYPEStTsnfodO8Zrxpz3M324IO+uCR1mXLFWSqQS36C9iZLhQJ47yJI9jl1L2LygPY+VCPhRQtQjDWFq6HWUnC0qjo="
+    # Ex. travis encrypt BINTRAY_KEY=xxx-https://bintray.com/profile/edit-xxx --add
+    - secure: "W1xRiaNfHqhIbEC84O3riyiPc1YelqpUsm2yqWv4iAgcoIZNvX7x9CC0VS62SnfQaTzvmIz7yKCG+2DOCTIRJCBeGV5xUtnUxVwOgek4359BhUGw9ALsKZ1kF9gmQVOgYvK/9TzU2uy/tXeC/XYoDqYEUTIcO9dr/ZNG+5rROVlV51MbBuWVFgErLwAnlx7L92EZ+wCZCpR/2kzkB+clVmV+IY6yIfqqmgPNp4e1q2pOF6qT5H4M2jyc1tzfPWIMWYFh/nnEzhy97dmRixCgbaUBnAUtFy7StdEatwNMgHx+T+BuBsd1pmGrzsPVTpuVQkCS3fqI7Y/qAJY3M/QNNajoAeKCmD1mBdYyErAQNa2DBEfJkQZpB1n9QL8IGpSfOBFtsaLFOGfQ5s/2rEAjwqfN9D9HVZnsurbJvQAwbZqGtDpTAiI3eJ1DpaFMbc74FSemMyDX0bf5bGczB8kK/EsIHuXW3UoD40tUyot2PmFvYGcgc+8LZp6ZaKBvAJGnAcGErn76gyGycJ8VPcVqcIEV51CkCNud2DrcPKg2WEi5HiEpW/XQ1TuKZ041t8VaYJYj9YXdRQqdpEt6rasZO0hdZR9dT0c2xBxO9dA0vd6V5DBYBA0z0exuR1PNIOxbV0/+Muh9YjJqClwom60yYjgblI0BBjRZMrOKDpkLx3w="
+    # Ex. travis encrypt GH_TOKEN=XXX-https://github.com/settings/tokens-XXX --add
+    - secure: "cjrozW0WLbIqj3p2CncvvGNI/00qk8QkgL68mAr+/wOgo/pcgLoSYzPSv8fC/qIeZz2EHwwNRX9SYghEh24CcetAAJew7bZx1uHfIPz3IXgDe/piXE4/gm3s6n/tryX2TdteDmq7oIzFG2sPvMlo2IfxTL82JMIBGCVmP1PF+MhaW/weqWRGrTf/SE/u07uOzUR3xp8N+RaeKSR9iBv3zqjjjSgOkXEH6x9WfmDMG44I1p0AX7/NwGhrb1Czz/UwX8Vd3MMfQ/b+eRvIS58TfZYy1CCCjp0MP9VoE/hgoeU4XMLpo8upE3Zk2TnUOrqhfIwX4y92jQ6uk5w2AkEvtHNPtkm1WP5f7rMtv+jQjHLis7apfbsbDKfX/+IcVuiz0zZmlRB6umCyGWkvBg6OPeaFKHu2j7QOnMDQ5Fsl7csIYRt//a7+75tYdVPGdINkVZOUJPLouBb30cJibMRrLsaq13WxzY66uo0OtNqBD04NqCxU1itxxVz9gqtkz5Ft2RjLJ4Jsb6IF7Ag7XH3jd5t2Pf+Fer2lv+seT3DSpw91kghNq6te2D8U3vONIHpLYgTWATFDQvmWSa9ARuoSv9+wzKqjenMNf7mpWwEp1hxelGUbyM2cjV1PEbO5MWprN/OCK3CM+oRUOhJcxAHBdALL+T09JJkJKpWWvBw2ptU="
+    # Ex. travis encrypt SONATYPE_USER=your_sonatype_account
+    - secure: "YiZ54F16YXnmdQEs8GjR6uhnSqC0OLSaCyCkYsAN4/sotg7pmZIPuByE06lwqYP6fZbBS4JqpZ73wnI4Oa4rCxfplsiG97D7S70/3W4WmE4b+eDfeZukMtO4Ce2495W2kH1IRYIqENpFBZGZsXZW+vvNxUkRxSiYVsrS4RFW1iK/7u4eQ53yXzbI7l7RW9B62s5m+NJk35eOEx4RXmHLhjS/BrAjY9A55nRjY8NUVofdfuOrLgmdQ/r9+aJaWAO8dt5GlgvDbrydZwyIdCD9xBO6N+3205Zg8pSJxEpPRzX952Qh16IhIT5vHzSOenKCT3XJj58LZN31wPLo4e/xkaLl24aeDHMLUo/idCjNNgXzAe3TFLSDpP2XFWoByI/tmvhac9OTE87OUTYDvyVmmPG9Zxpr07G3I6Bqt/eAozS2pWXsAEO0K171mGOvAdI0wJn8/drtw2oOtuRzi/NbT1kC/mFxJeox/ASXyiHtzMunMX9FWw8Wcc//TdX27MY60AecfPentDCXfGb/t5IrM66zqkm/pEsVBU22te5Ywt510aSRDSkNM8LVaHIrxgjs2seMSdv2NN8fn5wgMnOHdP1qcBDbs2Q483E32f0D97qIer+RKxQgSm+Ykqs7APASGy91XJbDrtBrMhQBtjWiROOAeQn0/L6HJEStUgJesXc="
+    # Ex. travis encrypt SONATYPE_PASSWORD=your_sonatype_password
+    - secure: "Ygg5la3KxUfOYeoNxeZdUaVmv95NS456EDNk0Jdia90GuyaClj93CM3vg40EhT5a2a0ZvkSuC/jJpSTZEbhUw4A/Y2Rt8Lx1B1x/D4n/z9uh0p6UaoOk5wfRrNcelKw6spZJhSRgmqD6OVdJRuL80xLtfz6uS4CDNH2r/ZrYqZc+31LKD+olReKGkvkSD+XsvHSUM25cq49K634Vnt31a+voMvTUZQXLdmUIp0Q3rDS5B3pViLZazlUbnvvCBZ5BStFRpTvnxu69mTalkhCVGixF+DP+ddy19xNoq9+0NFBZY+f6dfrKvyrdnZchBUdW2+Yt4zqVRPRxrerAJMDzmhmAvE7ClGsWDaNwEDlZw7O/ntO34FIvKqlYSfBh1R8OM2WZERt8kdw5MwCUy72dbboYZLqjFw9LUrdPniDhqVoG431jRELvjUAyEJ8+tM5fRzvuA4IoyG8IKLmmfxIFk7qg8eenQe024u8oWC8PWVWmDmhn12zBQtUMc/ljTQMViHBhdIsx+Nr2rtXFEnwgkEBkGloh6kARUxSYwoyqpqvZoM77NdZY2kNQU0PHkDqeolBO0LO1qml4FtAbx8ppAr1pm3WuOy8JbLTiDpAKml0bZPYX3/qHkAxezZUODusrMdhUp/qE8zT0UAtnnI6J/UAUX1HgHBIK3iZq/PwJRcs="
