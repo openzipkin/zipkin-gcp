@@ -13,20 +13,18 @@
  */
 package zipkin2.reporter.stackdriver;
 
-import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.devtools.cloudtrace.v1.GetTraceRequest;
 import com.google.devtools.cloudtrace.v1.Trace;
 import com.google.devtools.cloudtrace.v1.TraceServiceGrpc;
 import io.grpc.CallOptions;
-import io.grpc.Channel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.auth.MoreCallCredentials;
 import org.awaitility.Duration;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import zipkin2.CheckResult;
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
@@ -37,7 +35,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assumptions.assumeThatCode;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.awaitility.Awaitility.await;
 import static zipkin2.TestObjects.FRONTEND;
 import static zipkin2.TestObjects.BACKEND;
@@ -53,15 +51,14 @@ public class ITStackdriverSender {
   AsyncReporter<Span> reporterNoPermission;
   TraceServiceGrpc.TraceServiceBlockingStub traceServiceGrpcV1;
 
-  @Before
+  @BeforeEach
   public void setUp() throws IOException {
     // Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
     // See: https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application
-    assumeThatCode(() -> {
-      credentials = GoogleCredentials.getApplicationDefault()
-              .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
-      credentials.refreshAccessToken();
-    }).doesNotThrowAnyException();
+
+    assumeThat(System.getenv("GOOGLE_APPLICATION_CREDENTIALS")).isNotBlank();
+    credentials = GoogleCredentials.getApplicationDefault()
+            .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
 
     // Setup the sender to authenticate the Google Stackdriver service
     sender = StackdriverSender.newBuilder()
@@ -87,10 +84,14 @@ public class ITStackdriverSender {
                     .build(StackdriverEncoder.V2);
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
-    reporter.close();
-    reporterNoPermission.close();
+    if (reporter != null) {
+      reporter.close();
+    }
+    if (reporterNoPermission != null) {
+      reporterNoPermission.close();
+    }
   }
 
   @Test
