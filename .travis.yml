@@ -38,7 +38,7 @@ notifications:
 env:
   global:
     # GCP Application Default Credentials used for integration tests
-    - GOOGLE_APPLICATION_CREDENTIALS=travis/zipkin-gcp-ci-0d7917f58da7.json
+    - GOOGLE_APPLICATION_CREDENTIALS=$TRAVIS_BUILD_DIR/travis/zipkin-gcp-ci-0d7917f58da7.json
     # Ex. travis encrypt BINTRAY_USER=your_github_account
     - secure: "SynCshiPSsHqaSXVmR3vI6y+V9ttz3ttYJ+lhMUbKEaBOmsnBCRahpY9mGL8zhulGKb+FjflfX9QItcu13l6v4o+43S0Oxyc2OhlfzlR8OHQPXXuSYvIsv2U0z+3uGakUeUsDq2vnSGKBwcfrtSgAIrZG4YiE+gD67C0SKOYCUaP3I/Ibq6b1q8rwL9QTv36skNMRcBafxAVzzNr9hhA2bfnQjH1JbrGA7hp0FPG4fWMJsVjrSn0EgNWAyR/6WQsqrWXcQKu9/12GrHko4B54tj9/L+Za3q4JyBWDarmyBc1f3v+jsuyxmvdRjy8X/1cpZFEomEycvWtR41olAkEHZlhQBb2lYZihn+bKCb0QOeW3phFthp6uphghtJIqyeMfUN70Tf/kOZuhTteWhi7h+hapJwXao4wOwn2EsV7qpEQTQUKAbngD38MyMCHUh//2/cq8k7Id8nha2vvyLW64GotNkFvqkvp2yaOnd84FLcu67NCi2M554YAUkilWiQbcuKr8FlvavlgePQPlN1DR+2/GF2xwEYI3II7tmtGmmFXMVCDfPgZHJi7vmgP5CMuwql0US7rCxtdtbAcKaYPEStTsnfodO8Zrxpz3M324IO+uCR1mXLFWSqQS36C9iZLhQJ47yJI9jl1L2LygPY+VCPhRQtQjDWFq6HWUnC0qjo="
     # Ex. travis encrypt BINTRAY_KEY=xxx-https://bintray.com/profile/edit-xxx --add
