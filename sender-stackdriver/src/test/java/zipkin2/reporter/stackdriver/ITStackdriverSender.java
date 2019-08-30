@@ -52,16 +52,16 @@ public class ITStackdriverSender {
   AsyncReporter<Span> reporter;
   AsyncReporter<Span> reporterNoPermission;
   TraceServiceGrpc.TraceServiceBlockingStub traceServiceGrpcV1;
-  Channel v1Channel;
 
   @Before
   public void setUp() throws IOException {
-  	// Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
+    // Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
     // See: https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application
-    assumeThatCode(() ->
+    assumeThatCode(() -> {
       credentials = GoogleCredentials.getApplicationDefault()
-              .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"))
-    ).doesNotThrowAnyException();
+              .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
+      credentials.refreshAccessToken();
+    }).doesNotThrowAnyException();
 
     // Setup the sender to authenticate the Google Stackdriver service
     sender = StackdriverSender.newBuilder()
