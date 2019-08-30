@@ -1,0 +1,2 @@
+# Ignore any accidental JSON key checkin
+*.json

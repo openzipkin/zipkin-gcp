@@ -54,7 +54,7 @@
     <protobuf.version>3.7.1</protobuf.version>
 
     <!-- only used for protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace-v2.version>0.69.0</grpc-google-cloud-trace-v2.version>
+    <grpc-google-cloud-trace.version>0.69.0</grpc-google-cloud-trace.version>
 
     <assertj.version>3.13.2</assertj.version>
 
@@ -177,7 +177,7 @@
       <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>grpc-google-cloud-trace-v2</artifactId>
-        <version>${grpc-google-cloud-trace-v2.version}</version>
+        <version>${grpc-google-cloud-trace.version}</version>
         <exclusions>
           <exclusion>
             <groupId>io.grpc</groupId>
@@ -197,7 +197,7 @@
       <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>proto-google-cloud-trace-v2</artifactId>
-        <version>${grpc-google-cloud-trace-v2.version}</version>
+        <version>${grpc-google-cloud-trace.version}</version>
         <exclusions>
           <!-- let collector (armeria) or sender (grpc) control the protobuf versions -->
           <exclusion>

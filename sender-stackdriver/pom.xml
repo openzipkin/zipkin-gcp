@@ -64,10 +64,41 @@
       <artifactId>zipkin-tests</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Stackdriver Trace read operations are only available in its v1 API. Use it to validate data was written during integration tests. -->
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-trace-v1</artifactId>
+      <version>${grpc-google-cloud-trace.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-testing</artifactId>
       <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-auth</artifactId>
+      <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+      <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.auth</groupId>
+      <artifactId>google-auth-library-oauth2-http</artifactId>
+      <version>0.16.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>3.1.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
