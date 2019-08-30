@@ -13,6 +13,7 @@
  */
 package zipkin2.reporter.stackdriver;
 
+import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.devtools.cloudtrace.v1.GetTraceRequest;
 import com.google.devtools.cloudtrace.v1.Trace;
@@ -36,6 +37,7 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThatCode;
 import static org.awaitility.Awaitility.await;
 import static zipkin2.TestObjects.FRONTEND;
 import static zipkin2.TestObjects.BACKEND;
@@ -56,8 +58,10 @@ public class ITStackdriverSender {
   public void setUp() throws IOException {
   	// Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
     // See: https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application
-    credentials = GoogleCredentials.getApplicationDefault()
-            .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
+    assumeThatCode(() ->
+      credentials = GoogleCredentials.getApplicationDefault()
+              .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"))
+    ).doesNotThrowAnyException();
 
     // Setup the sender to authenticate the Google Stackdriver service
     sender = StackdriverSender.newBuilder()
