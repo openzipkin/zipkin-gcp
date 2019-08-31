@@ -39,6 +39,28 @@ Please add the following to your .travis.yml file:
   secure: "mQnECL+dXc5l9wCYl/wUz+AaYFGt/1G31NAZcTLf2RbhKo8mUenc4hZNjHCEv+4ZvfYLd/NoTNMhTCxmtBMz1q4CahPKLWCZLoRD1ExeXwRymJPIhxZUPzx9yHPHc5dmgrSYOCJLJKJmHiOl9/bJi123456="
 ```
 
+A Google Cloud Platform service account key file is used for integration tests against a GCP project and
+the Stackdriver Trace service. The service account was generated this way:
+
+```bash
+$ export PROJECT_ID=zipkin-gcp-ci
+$ gcloud --project=$PROJECT_ID iam service-accounts create zipkin-ci
+$ gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member "serviceAccount:zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com" \
+    --role "roles/cloudtrace.admin"
+$ gcloud --project=$PROJECT_ID iam service-accounts keys create travis/zipkin-ci.json \
+    --iam-account zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com
+```
+
+Make sure that the key file (`*.json`) is not checked into the repository. Encrypt the file and add the
+decryption commands manually.
+```
+$ travis encrypt-file travis/zipkin-ci.json
+```
+
+Note: Do not use `travis encrypt-file -a` to automatic append decryption commands. It'll significantly
+reformat the `.travis` file.
+
 ### Troubleshooting invalid credentials
 
 If you receive a '401 unauthorized' failure from jCenter or Bintray, it is
