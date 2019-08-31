@@ -1,0 +1,12 @@
+**/\.*
+!.git
+
+**/target
+**/node_modules
+**/*.iml
+
+*.md
+
+**/Dockerfile
+travis
+mvnw*
