@@ -15,6 +15,10 @@ before_install:
   # setup https authentication credentials, used by ./mvnw release:prepare
   - git config credential.helper "store --file=.git/credentials"
   - echo "https://$GH_TOKEN:@github.com" > .git/credentials
+  # Encrypted service account file for integration testing
+  # This file is referenced via GOOGLE_APPLICATION_CREDENTIALS env var
+  # Ex. travis encrypt-file travis/zipkin-gcp-ci-0d7917f58da7.json
+  - openssl aes-256-cbc -K $encrypted_0d0e64b78c84_key -iv $encrypted_0d0e64b78c84_iv -in travis/zipkin-gcp-ci-0d7917f58da7.json.enc -out travis/zipkin-gcp-ci-0d7917f58da7.json -d
 
 # Override default travis to use the maven wrapper; skip license on travis due to #1512
 install: ./mvnw install -DskipTests=true -Dlicense.skip=true -Dmaven.javadoc.skip=true -B -V
@@ -36,6 +40,8 @@ notifications:
 
 env:
   global:
+    # GCP Application Default Credentials used for integration tests
+    - GOOGLE_APPLICATION_CREDENTIALS=$TRAVIS_BUILD_DIR/travis/zipkin-gcp-ci-0d7917f58da7.json
     # Ex. travis encrypt BINTRAY_USER=your_github_account
     - secure: "SynCshiPSsHqaSXVmR3vI6y+V9ttz3ttYJ+lhMUbKEaBOmsnBCRahpY9mGL8zhulGKb+FjflfX9QItcu13l6v4o+43S0Oxyc2OhlfzlR8OHQPXXuSYvIsv2U0z+3uGakUeUsDq2vnSGKBwcfrtSgAIrZG4YiE+gD67C0SKOYCUaP3I/Ibq6b1q8rwL9QTv36skNMRcBafxAVzzNr9hhA2bfnQjH1JbrGA7hp0FPG4fWMJsVjrSn0EgNWAyR/6WQsqrWXcQKu9/12GrHko4B54tj9/L+Za3q4JyBWDarmyBc1f3v+jsuyxmvdRjy8X/1cpZFEomEycvWtR41olAkEHZlhQBb2lYZihn+bKCb0QOeW3phFthp6uphghtJIqyeMfUN70Tf/kOZuhTteWhi7h+hapJwXao4wOwn2EsV7qpEQTQUKAbngD38MyMCHUh//2/cq8k7Id8nha2vvyLW64GotNkFvqkvp2yaOnd84FLcu67NCi2M554YAUkilWiQbcuKr8FlvavlgePQPlN1DR+2/GF2xwEYI3II7tmtGmmFXMVCDfPgZHJi7vmgP5CMuwql0US7rCxtdtbAcKaYPEStTsnfodO8Zrxpz3M324IO+uCR1mXLFWSqQS36C9iZLhQJ47yJI9jl1L2LygPY+VCPhRQtQjDWFq6HWUnC0qjo="
     # Ex. travis encrypt BINTRAY_KEY=xxx-https://bintray.com/profile/edit-xxx --add

@@ -29,6 +29,7 @@ import zipkin2.CheckResult;
 import zipkin2.Span;
 import zipkin2.reporter.AsyncReporter;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Random;
@@ -56,7 +57,10 @@ public class ITStackdriverSender {
     // Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
     // See: https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application
 
-    assumeThat(System.getenv("GOOGLE_APPLICATION_CREDENTIALS")).isNotBlank();
+    String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+    assumeThat(credentialsPath).isNotBlank();
+    assumeThat(new File(credentialsPath)).exists();
+
     credentials = GoogleCredentials.getApplicationDefault()
             .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
 
