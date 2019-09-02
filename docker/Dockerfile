@@ -12,7 +12,7 @@
 # the License.
 #
 
-FROM maven:3-jdk-11-slim
+FROM openzipkin/zipkin-builder
 
 WORKDIR /code
 COPY . /code
