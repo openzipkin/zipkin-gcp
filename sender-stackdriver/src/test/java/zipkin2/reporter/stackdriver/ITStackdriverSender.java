@@ -139,8 +139,8 @@ public class ITStackdriverSender {
                     .setTraceId(span.traceId())
                     .build()), t -> t.getSpansCount() == 1);
 
-    assertThat(span.id()).isEqualTo("0000000000000002");
-    assertThat(span.parentId()).isEqualTo("0000000000000001");
+    assertThat(trace.getSpans(0).getSpanId()).isEqualTo(2);
+    assertThat(trace.getSpans(0).getParentSpanId()).isEqualTo(1);
   }
 
   @Test
