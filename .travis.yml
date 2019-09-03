@@ -18,7 +18,8 @@ before_install:
   # Encrypted service account file for integration testing
   # This file is referenced via GOOGLE_APPLICATION_CREDENTIALS env var
   # Ex. travis encrypt-file travis/zipkin-gcp-ci-0d7917f58da7.json
-  - openssl aes-256-cbc -K $encrypted_0d0e64b78c84_key -iv $encrypted_0d0e64b78c84_iv -in travis/zipkin-gcp-ci-0d7917f58da7.json.enc -out travis/zipkin-gcp-ci-0d7917f58da7.json -d
+  # Decryption will fail on pull requests. Allow failures to build the PRs.
+  - openssl aes-256-cbc -K $encrypted_0d0e64b78c84_key -iv $encrypted_0d0e64b78c84_iv -in travis/zipkin-gcp-ci-0d7917f58da7.json.enc -out travis/zipkin-gcp-ci-0d7917f58da7.json -d || true
 
 # Override default travis to use the maven wrapper; skip license on travis due to #1512
 install: ./mvnw install -DskipTests=true -Dlicense.skip=true -Dmaven.javadoc.skip=true -B -V
