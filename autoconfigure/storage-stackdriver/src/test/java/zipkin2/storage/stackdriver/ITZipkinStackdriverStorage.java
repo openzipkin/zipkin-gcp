@@ -40,6 +40,7 @@ import java.util.Random;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.assertj.core.api.Assumptions.assumeThatCode;
 import static org.awaitility.Awaitility.await;
 import static zipkin2.TestObjects.*;
 import static zipkin2.TestObjects.TODAY;
@@ -61,6 +62,7 @@ public class ITZipkinStackdriverStorage {
     String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
     assumeThat(credentialsPath).isNotBlank();
     assumeThat(new File(credentialsPath)).exists();
+    assumeThatCode(GoogleCredentials::getApplicationDefault).doesNotThrowAnyException();
 
     TestPropertyValues.of(
         "zipkin.storage.type:stackdriver",

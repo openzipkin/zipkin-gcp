@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
+import static org.assertj.core.api.Assumptions.assumeThatCode;
 import static org.awaitility.Awaitility.await;
 import static zipkin2.TestObjects.FRONTEND;
 import static zipkin2.TestObjects.BACKEND;
@@ -60,6 +61,7 @@ public class ITStackdriverSender {
     String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
     assumeThat(credentialsPath).isNotBlank();
     assumeThat(new File(credentialsPath)).exists();
+    assumeThatCode(GoogleCredentials::getApplicationDefault).doesNotThrowAnyException();
 
     credentials = GoogleCredentials.getApplicationDefault()
             .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
