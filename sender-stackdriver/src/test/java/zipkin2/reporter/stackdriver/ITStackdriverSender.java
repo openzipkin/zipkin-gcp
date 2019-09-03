@@ -144,6 +144,46 @@ public class ITStackdriverSender {
   }
 
   @Test
+  public void sendSpanEmptyName() {
+    Random random = new Random();
+    Span span = Span.newBuilder()
+            .traceId(random.nextLong(), random.nextLong())
+            .parentId("1")
+            .id("2")
+            .kind(Span.Kind.CLIENT)
+            .localEndpoint(FRONTEND)
+            .remoteEndpoint(BACKEND)
+            .timestamp((TODAY + 50L) * 1000L)
+            .duration(200000L)
+            .addAnnotation((TODAY + 100L) * 1000L, "foo")
+            .putTag("http.path", "/api")
+            .putTag("clnt/finagle.version", "6.45.0")
+            .build();
+
+    reporter.report(span);
+    reporter.flush();
+
+    Trace trace = await()
+            .atLeast(Duration.ONE_SECOND)
+            .atMost(Duration.TEN_SECONDS)
+            .pollInterval(Duration.ONE_SECOND)
+            .ignoreExceptionsMatching(e ->
+                    e instanceof StatusRuntimeException &&
+                            ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
+            )
+            .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
+                    .setProjectId(projectId)
+                    .setTraceId(span.traceId())
+                    .build()), t -> t.getSpansCount() == 1);
+
+    // In Stackdriver Trace v2 API, Zipkin Span "name" is sent as Stackdriver Span "displayName"
+    // However, in Stackdriver Trace v1 API, to read this back, it's Stackdriver TraceSpan's "name"
+    assertThat(trace.getSpans(0).getName()).isEqualTo("unknown");
+    assertThat(trace.getSpans(0).getSpanId()).isEqualTo(2);
+    assertThat(trace.getSpans(0).getParentSpanId()).isEqualTo(1);
+  }
+
+  @Test
   public void healthcheckFailNoPermission() {
     CheckResult result = reporterNoPermission.check();
     assertThat(result.ok()).isFalse();

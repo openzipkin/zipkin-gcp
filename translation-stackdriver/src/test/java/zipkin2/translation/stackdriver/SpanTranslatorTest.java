@@ -21,6 +21,7 @@ import org.junit.Test;
 import zipkin2.Endpoint;
 import zipkin2.Span;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
 import static zipkin2.translation.stackdriver.SpanTranslator.createTimestamp;
@@ -87,7 +88,7 @@ public class SpanTranslatorTest {
     com.google.devtools.cloudtrace.v2.Span translated = SpanTranslator.translate(
         com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
 
-    assertThat(translated.getDisplayName().getValue()).isEmpty();
+    assertThat(translated.getDisplayName().getValue()).isNotEmpty();
   }
 
   @Test
@@ -99,7 +100,7 @@ public class SpanTranslatorTest {
     Span span3 =
         Span.newBuilder().id("3").traceId("1").name("/c").timestamp(3L).duration(1L).build();
 
-    List<Span> spans = Arrays.asList(span1, span2, span3);
+    List<Span> spans = asList(span1, span2, span3);
     List<com.google.devtools.cloudtrace.v2.Span> stackdriverSpans =
         new ArrayList<>(SpanTranslator.translate("test-project", spans));
 
@@ -109,5 +110,24 @@ public class SpanTranslatorTest {
             "projects/test-project/traces/00000000000000000000000000000001/spans/0000000000000001",
             "projects/test-project/traces/00000000000000000000000000000002/spans/0000000000000002",
             "projects/test-project/traces/00000000000000000000000000000001/spans/0000000000000003");
+  }
+
+  @Test
+  public void testTranslateSpanEmptyName() {
+    Span spanNullName =
+        Span.newBuilder().id("1").traceId("1").timestamp(1L).duration(1L).build();
+    Span spanEmptyName =
+        Span.newBuilder().id("2").traceId("2").name("").timestamp(2L).duration(1L).build();
+    Span spanNonEmptyName =
+        Span.newBuilder().id("2").traceId("2").name("somename").timestamp(2L).duration(1L).build();
+
+    List<Span> spans = asList(spanNullName, spanEmptyName, spanNonEmptyName);
+    List<com.google.devtools.cloudtrace.v2.Span> stackdriverSpans =
+            new ArrayList<>(SpanTranslator.translate("test-project", spans));
+
+    assertThat(stackdriverSpans).hasSize(3);
+    assertThat(stackdriverSpans.get(0).getDisplayName().getValue()).isEqualTo("unknown");
+    assertThat(stackdriverSpans.get(1).getDisplayName().getValue()).isEqualTo("unknown");
+    assertThat(stackdriverSpans.get(2).getDisplayName().getValue()).isEqualTo("somename");
   }
 }
