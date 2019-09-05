@@ -52,7 +52,7 @@
     <grpc.version>1.22.2</grpc.version>
     <guava.version>28.0-jre</guava.version>
     <protobuf.version>3.7.1</protobuf.version>
-    <awaitability.version>3.1.6</awaitability.version>
+    <awaitility.version>3.1.6</awaitility.version>
 
     <!-- only used for protos, we could possibly obviate this if a problem -->
     <grpc-google-cloud-trace.version>0.69.0</grpc-google-cloud-trace.version>
