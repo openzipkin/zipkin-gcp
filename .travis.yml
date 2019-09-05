@@ -18,8 +18,8 @@ before_install:
   # Encrypted service account file for integration testing
   # This file is referenced via GOOGLE_APPLICATION_CREDENTIALS env var
   # Ex. travis encrypt-file travis/zipkin-gcp-ci-0d7917f58da7.json
-  # Only attempt to decrypt secret when secure env var is accessible (i.e., not on a PR)
-  - if [ "$TRAVIS_SECURE_ENV_VARS" == "true" ]; then
+  # Only attempt to decrypt secret when it's not a PR and has access to secure env var
+  - if [ "$TRAVIS_SECURE_ENV_VARS" == "true" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
       openssl aes-256-cbc -K $encrypted_0d0e64b78c84_key -iv $encrypted_0d0e64b78c84_iv -in travis/zipkin-gcp-ci-0d7917f58da7.json.enc -out travis/zipkin-gcp-ci-0d7917f58da7.json -d;
     fi;
 
