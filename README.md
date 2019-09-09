@@ -120,15 +120,14 @@ labels {
 
 If you are running Zipkin server, `/health` HTTP endpoint can be used to check service health.
 
-## gRPC Headers
+### gRPC Headers
 
 If you suspect an issue between Zipkin server and Stackdriver, inspecting gRPC headers may be useful.
 Set `STACKDRIVER_HTTP_LOGGING` environment variable to `HEADERS` to log gRPC status information.
 
 ### GCP console
 
-If you believe that spans are reaching Stackdriver, verify what happens to them from the GCP side:
-Go to APIs & Services > Dashboard > Stackdriver Trace API > Metrics.
+If you believe that spans are reaching Stackdriver, verify what happens to them from the GCP side by visiting APIs & Services > Dashboard > Stackdriver Trace API > Metrics section.
 
 * Is there any traffic at all? If not, then the requests are likely not reaching Stackdriver at all. Check your applications/proxies to make sure requests go to the right place.
 * Are there errors? If so, narrow down the source of errors by selecting specific Credentials and Methods values from the filter drop-downs on top and seeing the effect in "Errors by API method" chart or "Methods" table.
