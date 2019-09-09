@@ -71,7 +71,9 @@ yourself by downloading a couple jars.
 [Here's an example](autoconfigure/storage-stackdriver#quick-start) of
 integrating Stackdriver storage.
 
-## Troubleshooting translation issues
+## Troubleshooting
+
+### Translation issues
 
 When using a component that sends data to Stackdriver, if you see nothing in the console,
 try enabling DEBUG logging on the translation component. If using Spring Boot (ex normal
@@ -113,6 +115,25 @@ labels {
   value: "frontend"
 }
 ```
+
+### Healthcheck API
+
+If you are running Zipkin server, `/health` HTTP endpoint can be used to check service health.
+
+### gRPC Headers
+
+If you suspect an issue between Zipkin server and Stackdriver, inspecting gRPC headers may be useful.
+Set `STACKDRIVER_HTTP_LOGGING` environment variable to `HEADERS` to log gRPC status information.
+
+### GCP console
+
+If you believe that spans are reaching Stackdriver, verify what happens to them from the GCP side by visiting APIs & Services > Dashboard > Stackdriver Trace API > Metrics section.
+
+* Is there any traffic at all? If not, then the requests are likely not reaching Stackdriver at all. Check your applications/proxies to make sure requests go to the right place.
+* Are there errors? If so, narrow down the source of errors by selecting specific Credentials and Methods values from the filter drop-downs on top and seeing the effect in "Errors by API method" chart or "Methods" table.
+    * If all writes are failing, check that your service account has access to `cloudtrace.agent` role or `cloudtrace.traces.patch` permission.
+    * If reads are failing, check for `cloudtrace.user` role or the specific permission (full permissions list).
+NOTE: read and write permissions are separate; only the admin role has both.
 
 ## Artifacts
 All artifacts publish to the group ID "io.zipkin.gcp". We use a common
