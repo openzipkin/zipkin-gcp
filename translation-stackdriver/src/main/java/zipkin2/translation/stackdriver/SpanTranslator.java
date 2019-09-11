@@ -99,7 +99,7 @@ public final class SpanTranslator {
     // NOTE: opencensus prefixes Send. and Recv. based on Kind. For now we reproduce our V1 behavior
     // of using the span name as the display name as is.
     spanBuilder.setDisplayName(
-        toTruncatableString(zipkinSpan.name() != null ? zipkinSpan.name() : ""));
+        toTruncatableString((zipkinSpan.name() != null && !zipkinSpan.name().isEmpty()) ? zipkinSpan.name() : "unknown"));
 
     if (zipkinSpan.timestampAsLong() != 0L) {
       spanBuilder.setStartTime(createTimestamp(zipkinSpan.timestampAsLong()));
