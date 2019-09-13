@@ -80,7 +80,7 @@ try enabling DEBUG logging on the translation component. If using Spring Boot (e
 app or zipkin server integration), add the following system property:
 
 ```
--Dlogging.level.zipkin2.translation.stackdriver=DEBUG
+-Dlogging.level.zipkin2=DEBUG
 ```
 
 Note: If using our docker image or anything that uses JAVA_OPTS, you can add this there.
