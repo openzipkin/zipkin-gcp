@@ -80,7 +80,9 @@ final class AttributesExtractor {
       }
     }
 
-    if (zipkinSpan.localEndpoint() != null && !zipkinSpan.localEndpoint().serviceName().isEmpty()) {
+    if (zipkinSpan.localEndpoint() != null &&
+        zipkinSpan.localEndpoint().serviceName() != null &&
+        !zipkinSpan.localEndpoint().serviceName().isEmpty()) {
       attributes.putAttributeMap(
           kComponentLabelKey, toAttributeValue(zipkinSpan.localEndpoint().serviceName()));
     }
