@@ -149,6 +149,24 @@ public class AttributesExtractorTest {
   }
 
   @Test
+  public void testEndpointWithNullServiceName() {
+    Endpoint.Builder serverEndpointBuilder = Endpoint.newBuilder().port(80);
+    Endpoint serverEndpoint = serverEndpointBuilder.build();
+    Span serverSpan =
+        Span.newBuilder()
+            .kind(Kind.SERVER)
+            .traceId("4")
+            .name("test-span")
+            .id("5")
+            .localEndpoint(serverEndpoint)
+            .build();
+
+    AttributesExtractor extractor = new AttributesExtractor(Collections.emptyMap());
+    Map<String, AttributeValue> serverLabels = extractor.extract(serverSpan).getAttributeMapMap();
+    assertThat(serverLabels).doesNotContainKey("endpoint.serviceName");
+  }
+
+  @Test
   public void testComponentLabelIsSet() {
     AttributesExtractor extractor = new AttributesExtractor(Collections.emptyMap());
     Span clientSpan =
