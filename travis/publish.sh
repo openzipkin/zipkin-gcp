@@ -112,19 +112,24 @@ test_server() {
   # Download and unpack Zipkin Server
   wget https://jitpack.io/com/github/openzipkin/zipkin/zipkin-server/master-SNAPSHOT/zipkin-server-master-SNAPSHOT-exec.jar
 
-  # Zipkin server JAR is a self-executable with headers that causes unzip to exit with status 1
-  # Fix the archive first.
-  zip -A zipkin-server-master-SNAPSHOT-exec.jar
-  unzip zipkin-server-master-SNAPSHOT-exec.jar -d zipkin
-
-  # Unpack our module
-  unzip -n $TRAVIS_BUILD_DIR/autoconfigure/storage-stackdriver/target/*-module.jar -d zipkin
+  # Copy the Stackdriver storage autoconfigure module over. We assume there is only one -module.jar file
+  # so that we can drop the version from the file name.
+  cp $TRAVIS_BUILD_DIR/autoconfigure/storage-stackdriver/target/*-module.jar zipkin-zipkin-autoconfigure-storage-stackdriver-module.jar
 
   # Start the server. Note that the GOOGLE_APPLICATION_CREDENTIALS is configured from .travis.yml
-  STORAGE_TYPE=stackdriver
-  STACKDRIVER_PROJECT_ID=zipkin-gcp-ci
-  java -Dloader.path=stackdriver -Dspring.profiles.active=stackdriver -cp zipkin/ org.springframework.boot.loader.PropertiesLauncher &
+  # Important to run everything as a single command (i.e., the trailing '\') so that
+  # the server starts w/ Stackdriver storage
+  STORAGE_TYPE=stackdriver \
+  STACKDRIVER_PROJECT_ID=zipkin-gcp-ci \
+  java \
+    -Dloader.path=zipkin-zipkin-autoconfigure-storage-stackdriver-module.jar \
+    -Dspring.profiles.active=stackdriver \
+    -cp zipkin-server-master-SNAPSHOT-exec.jar \
+    org.springframework.boot.loader.PropertiesLauncher &
   ZIPKIN_PID=$!
+
+  # In case something bad happens, kill the server!
+  trap 'kill -9 $ZIPKIN_PID' ERR INT
 
   echo "Waiting for Zipkin server to start..."
   wait-for-it localhost:9411 -t 60
