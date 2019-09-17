@@ -132,7 +132,7 @@ test_server() {
   trap 'kill -9 $ZIPKIN_PID' ERR INT
 
   echo "Waiting for Zipkin server to start..."
-  wait-for-it localhost:9411 -t 60
+  $TRAVIS_BUILD_DIR/travis/wait-for-it.sh localhost:9411 -t 60
   exit_status=$?
   if [ $exit_status -ne 0 ]; then
     exit $exit_status
