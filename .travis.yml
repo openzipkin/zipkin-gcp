@@ -10,6 +10,7 @@ jdk: openjdk11
 
 before_install:
   # Install wait-for-it that's needed for integration test with Zipkin server
+  - sudo apt-get update
   - sudo apt-get install -y wait-for-it
   # allocate commits to CI, not the owner of the deploy key
   - git config user.name "zipkinci"
