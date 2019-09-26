@@ -104,6 +104,61 @@ safe_checkout_master() {
   fi
 }
 
+test_server() {
+  # Test Stackdriver Storage module with the latest version of Zipkin server.
+  temp_dir=$(mktemp -d)
+  pushd $temp_dir
+
+  # Download wait-for-it as it isn't yet available as an Ubuntu Xenial package
+  curl -sSL https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh > wait-for-it.sh
+  chmod 755 wait-for-it.sh
+
+  # Download and unpack Zipkin Server
+  curl -sSL https://jitpack.io/com/github/openzipkin/zipkin/zipkin-server/master-SNAPSHOT/zipkin-server-master-SNAPSHOT-exec.jar > zipkin.jar
+
+  # Copy the Stackdriver storage autoconfigure module over. We assume there is only one -module.jar file
+  # so that we can drop the version from the file name.
+  cp $TRAVIS_BUILD_DIR/autoconfigure/storage-stackdriver/target/*-module.jar stackdriver.jar
+
+  # Start the server. Note that the GOOGLE_APPLICATION_CREDENTIALS is configured from .travis.yml
+  # Important to run everything as a single command (i.e., the trailing '\') so that
+  # the server starts w/ Stackdriver storage
+  STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-gcp-ci \
+    java \
+    -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
+    -Dspring.profiles.active=stackdriver \
+    -cp zipkin.jar \
+    org.springframework.boot.loader.PropertiesLauncher &
+  ZIPKIN_PID=$!
+
+  # In case something bad happens, kill the server!
+  trap 'kill -9 $ZIPKIN_PID' ERR INT
+
+  echo "Waiting for Zipkin server to start..."
+  ./wait-for-it.sh localhost:9411 -t 60
+  exit_status=$?
+  if [ $exit_status -ne 0 ]; then
+    exit $exit_status
+  fi
+
+  echo "Zipkin server started, waiting for OK health result..."
+  curl --silent localhost:9411/info | jq .
+
+  health_check_result=$(curl --silent localhost:9411/health | jq -r .status)
+
+  if [ "$health_check_result" != "UP" ]; then
+    echo "Health check failed!"
+    curl --silent localhost:9411/health | jq .
+    exit 1
+  else
+    echo "Health check status is up!"
+  fi
+
+  kill -9 $ZIPKIN_PID
+
+  popd
+}
+
 #----------------------
 # MAIN
 #----------------------
@@ -128,6 +183,12 @@ if is_pull_request; then
 # If we are on master, we will deploy the latest snapshot or release version
 #   - If a release commit fails to deploy for a transient reason, delete the broken version from bintray and click rebuild
 elif is_travis_branch_master; then
+
+  # Verify that the result of this snapshot will actually work by integrating stackdriver with
+  # Zipkin Server. This only performs a smoke test, but it will catch problems including version
+  # drift.
+  test_server
+
   ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests -Dlicense.skip=true deploy
 
   # If the deployment succeeded, sync it to Maven Central. Note: this needs to be done once per project, not module, hence -N
