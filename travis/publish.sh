@@ -110,7 +110,7 @@ test_server() {
   pushd $temp_dir
 
   # Download wait-for-it as it isn't yet available as an Ubuntu Xenial package
-  wget https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh wait-for-it.sh
+  wget https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh
   chmod 755 wait-for-it.sh
 
   # Download and unpack Zipkin Server
@@ -141,6 +141,9 @@ test_server() {
   if [ $exit_status -ne 0 ]; then
     exit $exit_status
   fi
+
+  echo "Zipkin server started, waiting for OK health result..."
+  curl --silent localhost:9411/info | jq .
 
   health_check_result=$(curl --silent localhost:9411/health | jq -r .status)
 
