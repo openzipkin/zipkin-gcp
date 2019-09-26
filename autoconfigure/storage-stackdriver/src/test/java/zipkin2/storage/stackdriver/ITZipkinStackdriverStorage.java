@@ -22,10 +22,13 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.auth.MoreCallCredentials;
-import org.awaitility.Duration;
-import org.junit.jupiter.api.Test;
+import java.io.File;
+import java.io.IOException;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -33,16 +36,13 @@ import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConf
 import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
 import zipkin2.Span;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Random;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.assertj.core.api.Assumptions.assumeThatCode;
 import static org.awaitility.Awaitility.await;
-import static zipkin2.TestObjects.*;
+import static zipkin2.TestObjects.BACKEND;
+import static zipkin2.TestObjects.FRONTEND;
 import static zipkin2.TestObjects.TODAY;
 
 /** Integration test against Stackdriver Trace on a real GCP project */
@@ -120,9 +120,9 @@ public class ITZipkinStackdriverStorage {
     storage.spanConsumer().accept(asList(span)).execute();
 
     Trace trace = await()
-            .atLeast(Duration.ONE_SECOND)
-            .atMost(Duration.TEN_SECONDS)
-            .pollInterval(Duration.ONE_SECOND)
+            .atLeast(1, TimeUnit.SECONDS)
+            .atMost(10, TimeUnit.SECONDS)
+            .pollInterval(1, TimeUnit.SECONDS)
             .ignoreExceptionsMatching(e ->
                     e instanceof StatusRuntimeException &&
                             ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
