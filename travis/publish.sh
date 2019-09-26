@@ -109,6 +109,10 @@ test_server() {
   temp_dir=$(mktemp -d)
   pushd $temp_dir
 
+  # Download wait-for-it as it isn't yet available as an Ubuntu Xenial package
+  wget https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh wait-for-it.sh
+  chmod 755 wait-for-it.sh
+
   # Download and unpack Zipkin Server
   wget https://jitpack.io/com/github/openzipkin/zipkin/zipkin-server/master-SNAPSHOT/zipkin-server-master-SNAPSHOT-exec.jar
 
@@ -132,7 +136,7 @@ test_server() {
   trap 'kill -9 $ZIPKIN_PID' ERR INT
 
   echo "Waiting for Zipkin server to start..."
-  $TRAVIS_BUILD_DIR/travis/wait-for-it.sh localhost:9411 -t 60
+  ./wait-for-it.sh localhost:9411 -t 60
   exit_status=$?
   if [ $exit_status -ne 0 ]; then
     exit $exit_status
