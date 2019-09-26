@@ -389,6 +389,7 @@
             <java>SLASHSTAR_STYLE</java>
           </mapping>
           <excludes>
+            <exclude>travis/wait-for-it.sh</exclude>
             <exclude>.travis.yml</exclude>
             <exclude>.gitignore</exclude>
             <exclude>.mvn/**</exclude>
