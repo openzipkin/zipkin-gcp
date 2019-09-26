@@ -138,7 +138,7 @@ test_server() {
     exit $exit_status
   fi
 
-  health_check_result=$(curl --silent localhost:9411/health | jq -r .details.zipkin.status)
+  health_check_result=$(curl --silent localhost:9411/health | jq -r .status)
 
   if [ "$health_check_result" != "UP" ]; then
     echo "Health check failed!"
