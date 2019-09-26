@@ -110,25 +110,24 @@ test_server() {
   pushd $temp_dir
 
   # Download wait-for-it as it isn't yet available as an Ubuntu Xenial package
-  wget https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh
+  curl -sSL https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh > wait-for-it.sh
   chmod 755 wait-for-it.sh
 
   # Download and unpack Zipkin Server
-  wget https://jitpack.io/com/github/openzipkin/zipkin/zipkin-server/master-SNAPSHOT/zipkin-server-master-SNAPSHOT-exec.jar
+  curl -sSL https://jitpack.io/com/github/openzipkin/zipkin/zipkin-server/master-SNAPSHOT/zipkin-server-master-SNAPSHOT-exec.jar > zipkin.jar
 
   # Copy the Stackdriver storage autoconfigure module over. We assume there is only one -module.jar file
   # so that we can drop the version from the file name.
-  cp $TRAVIS_BUILD_DIR/autoconfigure/storage-stackdriver/target/*-module.jar zipkin-zipkin-autoconfigure-storage-stackdriver-module.jar
+  cp $TRAVIS_BUILD_DIR/autoconfigure/storage-stackdriver/target/*-module.jar stackdriver.jar
 
   # Start the server. Note that the GOOGLE_APPLICATION_CREDENTIALS is configured from .travis.yml
   # Important to run everything as a single command (i.e., the trailing '\') so that
   # the server starts w/ Stackdriver storage
-  STORAGE_TYPE=stackdriver \
-  STACKDRIVER_PROJECT_ID=zipkin-gcp-ci \
-  java \
-    -Dloader.path=zipkin-zipkin-autoconfigure-storage-stackdriver-module.jar \
+  STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-gcp-ci \
+    java \
+    -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
     -Dspring.profiles.active=stackdriver \
-    -cp zipkin-server-master-SNAPSHOT-exec.jar \
+    -cp zipkin.jar \
     org.springframework.boot.loader.PropertiesLauncher &
   ZIPKIN_PID=$!
 
