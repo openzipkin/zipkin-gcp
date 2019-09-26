@@ -174,9 +174,6 @@ if is_release_commit; then
   true
 else
   ./mvnw verify -nsu -Dlicense.skip=true
-
-  # TODO move to is_travis_branch_master after validating this runs in branch
-  test_server
 fi
 
 # If we are on a pull request, our only job is to run tests, which happened above via ./mvnw install
@@ -186,6 +183,12 @@ if is_pull_request; then
 # If we are on master, we will deploy the latest snapshot or release version
 #   - If a release commit fails to deploy for a transient reason, delete the broken version from bintray and click rebuild
 elif is_travis_branch_master; then
+
+  # Verify that the result of this snapshot will actually work by integrating stackdriver with
+  # Zipkin Server. This only performs a smoke test, but it will catch problems including version
+  # drift.
+  test_server
+
   ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests -Dlicense.skip=true deploy
 
   # If the deployment succeeded, sync it to Maven Central. Note: this needs to be done once per project, not module, hence -N
