@@ -43,8 +43,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.linecorp.armeria</groupId>
+      <groupId>${armeria.groupId}</groupId>
       <artifactId>armeria-grpc-protocol</artifactId>
+      <version>${armeria.version}</version>
     </dependency>
 
     <dependency>
@@ -58,14 +59,16 @@
     </dependency>
 
     <dependency>
-      <groupId>com.linecorp.armeria</groupId>
+      <groupId>${armeria.groupId}</groupId>
       <artifactId>armeria-grpc</artifactId>
+      <version>${armeria.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>com.linecorp.armeria</groupId>
+      <groupId>${armeria.groupId}</groupId>
       <artifactId>armeria-testing-junit4</artifactId>
+      <version>${armeria.version}</version>
       <scope>test</scope>
     </dependency>
 

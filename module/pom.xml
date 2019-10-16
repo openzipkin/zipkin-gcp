@@ -23,8 +23,8 @@
     <version>0.14.2-SNAPSHOT</version>
   </parent>
 
-  <artifactId>zipkin-autoconfigure</artifactId>
-  <name>Auto Configuration</name>
+  <artifactId>zipkin-module</artifactId>
+  <name>Zipkin Server Module</name>
   <packaging>pom</packaging>
 
   <properties>
@@ -82,11 +82,11 @@
           <excludes>
             <!-- zipkin-server depends on armeria and its grpc protocol-->
             <exclude>
-              <groupId>com.linecorp.armeria</groupId>
+              <groupId>${armeria.groupId}</groupId>
               <artifactId>armeria</artifactId>
             </exclude>
             <exclude>
-              <groupId>com.linecorp.armeria</groupId>
+              <groupId>${armeria.groupId}</groupId>
               <artifactId>armeria-grpc-protocol</artifactId>
             </exclude>
             <!-- See https://github.com/line/armeria/issues/1679 -->

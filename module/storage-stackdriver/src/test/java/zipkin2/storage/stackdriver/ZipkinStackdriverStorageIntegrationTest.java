@@ -39,8 +39,8 @@ import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConfiguration;
-import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
+import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageModule;
+import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageProperties;
 import zipkin2.Span;
 
 import static java.util.Arrays.asList;
@@ -62,7 +62,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
         TestConfiguration.class,
-        ZipkinStackdriverStorageAutoConfiguration.class);
+        ZipkinStackdriverStorageModule.class);
     context.refresh();
     storage = context.getBean(StackdriverStorage.class);
     storageProperties = context.getBean(ZipkinStackdriverStorageProperties.class);

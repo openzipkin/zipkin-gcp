@@ -1,9 +1,8 @@
-# autoconfigure-storage-stackdriver
+# module-storage-stackdriver
 
 ## Overview
 
-This is a Spring Boot [AutoConfiguration](http://docs.spring.io/spring-boot/docs/current/reference/html/using-boot-auto-configuration.html)
-module that can be added to a [Zipkin Server](https://github.com/openzipkin/zipkin/tree/master/zipkin-server) 
+This is a module that can be added to a [Zipkin Server](https://github.com/openzipkin/zipkin/tree/master/zipkin-server)
 deployment to send Spans to Google Stackdriver Trace over gRPC transport.
 
 This currently only supports sending to Stackdriver, not reading back spans from the service.
@@ -22,14 +21,14 @@ JRE 8 is required to run Zipkin server.
 Fetch the latest released
 [executable jar for Zipkin server](https://search.maven.org/remote_content?g=io.zipkin&a=zipkin-server&v=LATEST&c=exec)
 and
-[autoconfigure module jar for stackdriver storage](https://search.maven.org/remote_content?g=io.zipkin.gcp&a=zipkin-autoconfigure-storage-stackdriver&v=LATEST&c=module).
+[module jar for stackdriver storage](https://search.maven.org/remote_content?g=io.zipkin.gcp&a=zipkin-module-storage-stackdriver&v=LATEST&c=module).
 Run Zipkin server with the StackDriver Storage enabled.
 
 For example:
 
 ```bash
 $ curl -sSL https://zipkin.io/quickstart.sh | bash -s
-$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.java:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
+$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.gcp:zipkin-module-storage-stackdriver:LATEST:module stackdriver.jar
 $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
     java \
     -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
@@ -63,8 +62,12 @@ for users that prefer a file based approach.
 ### Running
 
 ```bash
-STORAGE_TYPE=stackdriver
-java -Dloader.path=stackdriver -Dspring.profiles.active=stackdriver -cp zipkin.jar org.springframework.boot.loader.PropertiesLauncher
+$ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo STACKDRIVER_HTTP_LOGGING=basic\
+    java \
+    -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
+    -Dspring.profiles.active=stackdriver \
+    -cp zipkin.jar \
+    org.springframework.boot.loader.PropertiesLauncher
 ```
 
 ### Testing

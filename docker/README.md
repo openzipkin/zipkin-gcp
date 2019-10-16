@@ -4,7 +4,7 @@ To build a zipkin-gcp Docker image, in the top level of the repository, run some
 like
 
 ```bash
-$ docker build -t openzipkin/zipkin-gcp:test
+$ docker build -t openzipkin/zipkin-gcp:test -f docker/Dockerfile .
 ```
 
 ### Dockerfile migration

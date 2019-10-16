@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin.autoconfigure.storage.stackdriver;
+package zipkin.module.storage.stackdriver;
 
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -35,7 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties.HttpLogging;
+import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageProperties.HttpLogging;
 import zipkin2.Call;
 import zipkin2.storage.StorageComponent;
 import zipkin2.storage.stackdriver.StackdriverStorage;
@@ -44,7 +44,7 @@ import zipkin2.storage.stackdriver.StackdriverStorage;
 @EnableConfigurationProperties(ZipkinStackdriverStorageProperties.class)
 @ConditionalOnProperty(name = "zipkin.storage.type", havingValue = "stackdriver")
 @ConditionalOnMissingBean(StorageComponent.class)
-public class ZipkinStackdriverStorageAutoConfiguration {
+public class ZipkinStackdriverStorageModule {
 
   @Autowired ZipkinStackdriverStorageProperties storageProperties;
 
