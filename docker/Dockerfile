@@ -33,4 +33,4 @@ COPY --from=0 /zipkin-gcp/ /zipkin/
 # Readback is currently not supported
 ENV QUERY_ENABLED false
 
-env MODULE_OPTS="-Dloader.path=stackdriver -Dspring.profiles.active=stackdriver"
+ENV MODULE_OPTS="-Dloader.path=stackdriver -Dspring.profiles.active=stackdriver"
