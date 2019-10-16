@@ -32,7 +32,7 @@ RUN cp ~/.m2/repository/io/zipkin/gcp/zipkin-module-storage-stackdriver/${versio
   (mkdir stackdriver && cd stackdriver && jar -xf ../zipkin-module-storage-stackdriver-${version}-module.jar) && \
   rm zipkin-module-storage-stackdriver-${version}-module.jar
 
-FROM openzipkin/zipkin:master
+FROM openzipkin/zipkin:2.18.0
 MAINTAINER Zipkin "https://zipkin.io/"
 
 COPY --from=0 /zipkin-gcp/ /zipkin/
