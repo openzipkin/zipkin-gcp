@@ -18,14 +18,19 @@ WORKDIR /code
 COPY . /code
 RUN mvn -B --no-transfer-progress package -DskipTests=true -pl module/storage-stackdriver -am
 
-RUN \
-  cd /code && mkdir -p /zipkin-gcp/stackdriver && cp module/storage-stackdriver/target/zipkin-module-storage-stackdriver-*-module.jar /zipkin-gcp/stackdriver && cd /zipkin-gcp/stackdriver && jar xf *.jar && rm *.jar
+WORKDIR /zipkin-gcp
+
+RUN cp /code/module/storage-stackdriver/target/zipkin-module-storage-stackdriver-*-module.jar stackdriver.jar && \
+  echo > .stackdriver_profile && \
+  (mkdir stackdriver && cd stackdriver && jar -xf ../stackdriver.jar) && \
+  rm stackdriver.jar
 
 FROM openzipkin/zipkin:master
 MAINTAINER Zipkin "https://zipkin.io/"
 
-COPY --from=0 /zipkin-gcp/ /zipkin/lib/
+COPY --from=0 /zipkin-gcp/ /zipkin/
 
-RUN echo > .stackdriver_profile
+# Readback is currently not supported
+ENV QUERY_ENABLED false
 
-ENV MODULE_OPTS="-Dloader.path=lib/stackdriver -Dspring.profiles.active=stackdriver"
+env MODULE_OPTS="-Dloader.path=stackdriver -Dspring.profiles.active=stackdriver"
