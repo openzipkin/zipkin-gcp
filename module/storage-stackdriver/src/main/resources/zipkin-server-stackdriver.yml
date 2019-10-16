@@ -1,5 +1,8 @@
 # When enabled, this allows shorter env properties (ex -Dspring.profiles.active=stackdriver)
 zipkin:
+  internal:
+    module:
+      stackdriver: zipkin.module.storage.stackdriver.ZipkinStackdriverStorageModule
   storage:
     stackdriver:
       api-host: ${STACKDRIVER_API_HOST:cloudtrace.googleapis.com:443}

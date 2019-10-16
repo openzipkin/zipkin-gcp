@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConfiguration;
-import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
+import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageModule;
+import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageProperties;
 import zipkin2.Span;
 
 import static java.util.Arrays.asList;
@@ -69,7 +69,7 @@ public class ITZipkinStackdriverStorage {
         "zipkin.storage.stackdriver.project-id:" + projectId).applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
-        ZipkinStackdriverStorageAutoConfiguration.class);
+        ZipkinStackdriverStorageModule.class);
     context.refresh();
     storage = context.getBean(StackdriverStorage.class);
     storageProperties = context.getBean(ZipkinStackdriverStorageProperties.class);

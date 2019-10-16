@@ -16,16 +16,16 @@ FROM openzipkin/zipkin-builder
 
 WORKDIR /code
 COPY . /code
-RUN mvn -B --no-transfer-progress package -DskipTests=true -pl autoconfigure/storage-stackdriver -am
+RUN mvn -B --no-transfer-progress package -DskipTests=true -pl module/storage-stackdriver -am
 
 RUN \
-  cd /code && mkdir -p /zipkin-gcp/stackdriver && cp autoconfigure/storage-stackdriver/target/zipkin-autoconfigure-storage-stackdriver-*-module.jar /zipkin-gcp/stackdriver && cd /zipkin-gcp/stackdriver && jar xf *.jar && rm *.jar
+  cd /code && mkdir -p /zipkin-gcp/stackdriver && cp module/storage-stackdriver/target/zipkin-module-storage-stackdriver-*-module.jar /zipkin-gcp/stackdriver && cd /zipkin-gcp/stackdriver && jar xf *.jar && rm *.jar
 
 FROM openzipkin/zipkin:master
 MAINTAINER Zipkin "https://zipkin.io/"
 
 COPY --from=0 /zipkin-gcp/ /zipkin/lib/
 
-RUN echo > .xray_profile
+RUN echo > .stackdriver_profile
 
 ENV MODULE_OPTS="-Dloader.path=lib/stackdriver -Dspring.profiles.active=stackdriver"

@@ -26,13 +26,13 @@ import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageAutoConfiguration;
-import zipkin.autoconfigure.storage.stackdriver.ZipkinStackdriverStorageProperties;
+import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageModule;
+import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class ZipkinStackdriverStorageAutoConfigurationTest {
+public class ZipkinStackdriverStorageModuleTest {
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -49,7 +49,7 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
         ZipkinStackdriverStorageProperties.class,
-        ZipkinStackdriverStorageAutoConfiguration.class,
+        ZipkinStackdriverStorageModule.class,
         TestConfiguration.class);
     context.refresh();
 
@@ -65,7 +65,7 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
         "zipkin.storage.type:stackdriver").applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
-        ZipkinStackdriverStorageAutoConfiguration.class,
+        ZipkinStackdriverStorageModule.class,
         TestConfiguration.class);
     context.refresh();
 
@@ -80,7 +80,7 @@ public class ZipkinStackdriverStorageAutoConfigurationTest {
         "zipkin.storage.stackdriver.api-host:localhost").applyTo(context);
     context.register(
         PropertyPlaceholderAutoConfiguration.class,
-        ZipkinStackdriverStorageAutoConfiguration.class,
+        ZipkinStackdriverStorageModule.class,
         TestConfiguration.class);
     context.refresh();
 

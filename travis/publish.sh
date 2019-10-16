@@ -116,9 +116,9 @@ test_server() {
   # Download and unpack Zipkin Server
   curl -sSL https://jitpack.io/com/github/openzipkin/zipkin/zipkin-server/master-SNAPSHOT/zipkin-server-master-SNAPSHOT-exec.jar > zipkin.jar
 
-  # Copy the Stackdriver storage autoconfigure module over. We assume there is only one -module.jar file
+  # Copy the Stackdriver storage module over. We assume there is only one -module.jar file
   # so that we can drop the version from the file name.
-  cp $TRAVIS_BUILD_DIR/autoconfigure/storage-stackdriver/target/*-module.jar stackdriver.jar
+  cp $TRAVIS_BUILD_DIR/module/storage-stackdriver/target/*-module.jar stackdriver.jar
 
   # Start the server. Note that the GOOGLE_APPLICATION_CREDENTIALS is configured from .travis.yml
   # Important to run everything as a single command (i.e., the trailing '\') so that

@@ -23,7 +23,7 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>autoconfigure</module>
+    <module>module</module>
     <module>benchmarks</module>
     <module>translation-stackdriver</module>
     <module>sender-stackdriver</module>
@@ -44,16 +44,18 @@
     <slf4j.version>1.7.26</slf4j.version>
 
     <!-- matching armeria/grpc/zipkin -->
-    <spring-boot.version>2.1.8.RELEASE</spring-boot.version>
-    <armeria.version>0.92.0</armeria.version>
-    <zipkin.version>2.17.0</zipkin.version>
+    <spring-boot.version>2.1.9.RELEASE</spring-boot.version>
+    <!-- This allows you to test feature branches with jitpack -->
+    <armeria.groupId>com.linecorp.armeria</armeria.groupId>
+    <armeria.version>0.94.0</armeria.version>
+    <zipkin.version>2.18.0</zipkin.version>
     <zipkin-reporter.version>2.10.2</zipkin-reporter.version>
-    <brave.version>5.7.0</brave.version>
+    <brave.version>5.8.0</brave.version>
 
     <!-- from grpc-proto -->
-    <grpc.version>1.23.0</grpc.version>
+    <grpc.version>1.24.0</grpc.version>
     <guava.version>26.0-android</guava.version>
-    <protobuf.version>3.9.0</protobuf.version>
+    <protobuf.version>3.9.1</protobuf.version>
     <awaitility.version>4.0.1</awaitility.version>
 
     <!-- only used for protos, we could possibly obviate this if a problem -->
@@ -167,14 +169,6 @@
         <groupId>io.zipkin.brave</groupId>
         <artifactId>brave</artifactId>
         <version>${brave.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.linecorp.armeria</groupId>
-        <artifactId>armeria-bom</artifactId>
-        <version>${armeria.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <dependency>

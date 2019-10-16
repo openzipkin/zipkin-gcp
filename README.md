@@ -1,6 +1,6 @@
 [![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
 [![Build Status](https://travis-ci.org/openzipkin/zipkin-gcp.svg?branch=master)](https://travis-ci.org/openzipkin/zipkin-gcp)
-[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-autoconfigure-storage-stackdriver.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-autoconfigure-storage-stackdriver)
+[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-module-storage-stackdriver.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-module-storage-stackdriver)
 
 # zipkin-gcp
 Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 6 or later.
@@ -54,7 +54,7 @@ Each module will also have different minimum variables that need to be set.
 Ex.
 ```
 $ curl -sSL https://zipkin.io/quickstart.sh | bash -s
-$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.gcp:zipkin-autoconfigure-storage-stackdriver:LATEST:module stackdriver.jar
+$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.gcp:zipkin-module-storage-stackdriver:LATEST:module stackdriver.jar
 $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
     java \
     -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \

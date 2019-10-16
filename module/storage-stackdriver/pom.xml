@@ -16,14 +16,14 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>zipkin-autoconfigure</artifactId>
+    <artifactId>zipkin-module</artifactId>
     <groupId>io.zipkin.gcp</groupId>
     <version>0.14.2-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>zipkin-autoconfigure-storage-stackdriver</artifactId>
-  <name>Auto Configuration: Stackdriver Storage</name>
+  <artifactId>zipkin-module-storage-stackdriver</artifactId>
+  <name>Zipkin Server Module: Stackdriver Storage</name>
 
   <properties>
     <main.basedir>${project.basedir}/../..</main.basedir>
@@ -63,8 +63,9 @@
     </dependency>
 
     <dependency>
-      <groupId>com.linecorp.armeria</groupId>
+      <groupId>${armeria.groupId}</groupId>
       <artifactId>armeria-grpc</artifactId>
+      <version>${armeria.version}</version>
       <scope>test</scope>
     </dependency>
 
