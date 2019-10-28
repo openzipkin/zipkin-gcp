@@ -15,7 +15,7 @@ docker run -d -p 9411:9411 \
   -e STORAGE_TYPE=stackdriver \
   -e GOOGLE_APPLICATION_CREDENTIALS=/service-account-key.json \
   -e STACKDRIVER_PROJECT_ID=zipkin-gcp-ci \
-  -v /tmp/service-account-key.json:/service-account-key.json
+  -v /tmp/service-account-key.json:/service-account-key.json \
   $IMAGE_NAME
 
 # In case something bad happens, kill the server!
