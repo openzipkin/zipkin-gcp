@@ -19,14 +19,13 @@ docker run -d -p 9411:9411 \
   $IMAGE_NAME
 
 # In case something bad happens, kill the server!
-trap 'docker kill zipkin-gcp' ERR INT
+trap 'docker logs zipkin-gcp && docker kill zipkin-gcp' ERR INT
 
 echo "Waiting for Zipkin server to start..."
 ./wait-for-it.sh localhost:9411 -t 60
 exit_status=$?
 if [ $exit_status -ne 0 ]; then
   exit $exit_status
-fi
 
 echo "Zipkin server started, waiting for OK health result..."
 curl --silent localhost:9411/info | jq .
