@@ -4,11 +4,8 @@ set -v
 
 # Export service account key from environmental variable to a file,
 # so that it can be consumed by the Docker container
-echo $GOOGLE_APPLICATION_CREDENTIALS_BASE64 | base64 -d > /tmp/service-account-key.json
-
-ls -lh /tmp/service-account-key.json
-
-echo $DOCKER_HOST
+mkdir -p $HOME/.gcp
+echo $GOOGLE_APPLICATION_CREDENTIALS_BASE64 | base64 -d > $HOME/.gcp/service-account-key.json
 
 # Download wait-for-it as it isn't yet available as an Ubuntu Xenial package
 curl -sSL https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh > wait-for-it.sh
@@ -17,9 +14,9 @@ chmod 755 wait-for-it.sh
 docker run -d -p 9411:9411 \
   --name zipkin-gcp \
   -e STORAGE_TYPE=stackdriver \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/service-account-key.json \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/gcp/service-account-key.json \
   -e STACKDRIVER_PROJECT_ID=zipkin-gcp-ci \
-  -v /tmp/service-account-key.json:/service-account-key.json \
+  -v $HOME/.gcp:/gcp \
   $IMAGE_NAME
 
 # In case something bad happens, kill the server!
