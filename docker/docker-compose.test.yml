@@ -27,6 +27,9 @@ services:
     image: busybox
     volumes:
       - gcp-service-account:/credentials:ro
+    # Show that the file exists as a sanity check in logs.
+    # Normally the sut service (for test) does not depend on this.
+    # This block is kept in case we need to use it for debugging in the future.
     command: sh -c 'ls -lh /credentials/service-account-key.json'
     depends_on:
       - extract-service-account
