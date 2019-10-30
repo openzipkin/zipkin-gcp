@@ -19,7 +19,7 @@ FROM scratch as scratch
 
 COPY . /code/
 
-FROM openzipkin/zipkin-builder
+FROM openzipkin/zipkin-builder as built
 
 COPY --from=scratch /code /code
 
@@ -37,7 +37,7 @@ RUN cp /code/module/storage-stackdriver/target/zipkin-module-storage-stackdriver
 FROM openzipkin/zipkin:master
 MAINTAINER Zipkin "https://zipkin.io/"
 
-COPY --from=0 /zipkin-gcp/ /zipkin/
+COPY --from=built /zipkin-gcp/ /zipkin/
 
 # Readback is currently not supported
 ENV QUERY_ENABLED false
