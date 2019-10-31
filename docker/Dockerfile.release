@@ -15,27 +15,34 @@
 
 FROM openzipkin/zipkin-builder as built
 
-ARG version
+ARG source_branch
 
-# Download jars using Maven. It will try to resolve the artifact from Maven Central, which might
-# not work right away if the sync is taking time, followed by bintray, which should always work
-# since it's where we publish to.
-
-RUN mvn org.apache.maven.plugins:maven-dependency-plugin:get \
-  -DremoteRepositories=bintray::::https://dl.bintray.com/openzipkin/maven -Dtransitive=false \
-  -Dartifact=io.zipkin.gcp:zipkin-module-storage-stackdriver:${version}:jar:module
+# source_branch is something like
+#
+#   master       - Building the master branch. This cut command will return 'master', and Dockerfiles will ignore it
+#   1.0.1        - Building a release image along with a new Zipkin server version. This cut command will return
+#                  '1.0.1' and Dockerfiles will use it to fetch the correct version of Zipkin.
+#   docker-1.0.1 - Building a release image, but not a new Zipkin server. This cut command will return
+#                  '1.0.1' and Dockerfiles will use it to fetch the correct version of Zipkin.
 
 WORKDIR /zipkin-gcp
 
-RUN cp ~/.m2/repository/io/zipkin/gcp/zipkin-module-storage-stackdriver/${version}/zipkin-module-storage-stackdriver-${version}-module.jar . && \
+RUN export version=$(echo "${source_branch}" | cut -d '-' -f 2) && \
+# Download jars using Maven. It will try to resolve the artifact from Maven Central, which might
+# not work right away if the sync is taking time, followed by bintray, which should always work
+# since it's where we publish to.
+  mvn org.apache.maven.plugins:maven-dependency-plugin:get \
+    -DremoteRepositories=bintray::::https://dl.bintray.com/openzipkin/maven -Dtransitive=false \
+    -Dartifact=io.zipkin.gcp:zipkin-module-storage-stackdriver:${version}:jar:module && \
+  cp ~/.m2/repository/io/zipkin/gcp/zipkin-module-storage-stackdriver/${version}/zipkin-module-storage-stackdriver-${version}-module.jar . && \
   echo > .stackdriver_profile && \
   (mkdir stackdriver && cd stackdriver && jar -xf ../zipkin-module-storage-stackdriver-${version}-module.jar) && \
   rm zipkin-module-storage-stackdriver-${version}-module.jar
 
-FROM openzipkin/zipkin:2.18.0
+FROM openzipkin/zipkin:2.18.3
 MAINTAINER Zipkin "https://zipkin.io/"
 
-COPY --from=0 /zipkin-gcp/ /zipkin/
+COPY --from=built /zipkin-gcp/ /zipkin/
 
 # Readback is currently not supported
 ENV QUERY_ENABLED false
