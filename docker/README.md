@@ -32,7 +32,7 @@ In docker, the following can also be set:
 
 ### Stackdriver
 
-Stackdriver Configuration variables are detailed [here](../autoconfigure/storage-stackdriver#configuration).
+Stackdriver Configuration variables are detailed [here](../module/storage-stackdriver#configuration).
 
 ## Building
 
