@@ -27,11 +27,14 @@ before_install:
 install: ./mvnw install -DskipTests=true -Dlicense.skip=true -Dmaven.javadoc.skip=true -B -V
 script: ./travis/publish.sh
 
-# Don't build release tags. This avoids publish conflicts because the version commit exists both on master and the release tag.
-# See https://github.com/travis-ci/travis-ci/issues/1532
 branches:
   except:
+    # Don't build release tags. This avoids publish conflicts because the version commit exists both on master and the release tag.
+    # See https://github.com/travis-ci/travis-ci/issues/1532
     - /^[0-9]/
+    # Don't build docker- tags with Travis. Docker Hub will pick up and run the build. docker- tags are used to recreate
+    # docker images without rebuilding Zipkin so we don't need to run here.
+    - /^docker-/
 
 notifications:
   webhooks:
@@ -55,3 +58,11 @@ env:
     - secure: "YiZ54F16YXnmdQEs8GjR6uhnSqC0OLSaCyCkYsAN4/sotg7pmZIPuByE06lwqYP6fZbBS4JqpZ73wnI4Oa4rCxfplsiG97D7S70/3W4WmE4b+eDfeZukMtO4Ce2495W2kH1IRYIqENpFBZGZsXZW+vvNxUkRxSiYVsrS4RFW1iK/7u4eQ53yXzbI7l7RW9B62s5m+NJk35eOEx4RXmHLhjS/BrAjY9A55nRjY8NUVofdfuOrLgmdQ/r9+aJaWAO8dt5GlgvDbrydZwyIdCD9xBO6N+3205Zg8pSJxEpPRzX952Qh16IhIT5vHzSOenKCT3XJj58LZN31wPLo4e/xkaLl24aeDHMLUo/idCjNNgXzAe3TFLSDpP2XFWoByI/tmvhac9OTE87OUTYDvyVmmPG9Zxpr07G3I6Bqt/eAozS2pWXsAEO0K171mGOvAdI0wJn8/drtw2oOtuRzi/NbT1kC/mFxJeox/ASXyiHtzMunMX9FWw8Wcc//TdX27MY60AecfPentDCXfGb/t5IrM66zqkm/pEsVBU22te5Ywt510aSRDSkNM8LVaHIrxgjs2seMSdv2NN8fn5wgMnOHdP1qcBDbs2Q483E32f0D97qIer+RKxQgSm+Ykqs7APASGy91XJbDrtBrMhQBtjWiROOAeQn0/L6HJEStUgJesXc="
     # Ex. travis encrypt SONATYPE_PASSWORD=your_sonatype_password
     - secure: "Ygg5la3KxUfOYeoNxeZdUaVmv95NS456EDNk0Jdia90GuyaClj93CM3vg40EhT5a2a0ZvkSuC/jJpSTZEbhUw4A/Y2Rt8Lx1B1x/D4n/z9uh0p6UaoOk5wfRrNcelKw6spZJhSRgmqD6OVdJRuL80xLtfz6uS4CDNH2r/ZrYqZc+31LKD+olReKGkvkSD+XsvHSUM25cq49K634Vnt31a+voMvTUZQXLdmUIp0Q3rDS5B3pViLZazlUbnvvCBZ5BStFRpTvnxu69mTalkhCVGixF+DP+ddy19xNoq9+0NFBZY+f6dfrKvyrdnZchBUdW2+Yt4zqVRPRxrerAJMDzmhmAvE7ClGsWDaNwEDlZw7O/ntO34FIvKqlYSfBh1R8OM2WZERt8kdw5MwCUy72dbboYZLqjFw9LUrdPniDhqVoG431jRELvjUAyEJ8+tM5fRzvuA4IoyG8IKLmmfxIFk7qg8eenQe024u8oWC8PWVWmDmhn12zBQtUMc/ljTQMViHBhdIsx+Nr2rtXFEnwgkEBkGloh6kARUxSYwoyqpqvZoM77NdZY2kNQU0PHkDqeolBO0LO1qml4FtAbx8ppAr1pm3WuOy8JbLTiDpAKml0bZPYX3/qHkAxezZUODusrMdhUp/qE8zT0UAtnnI6J/UAUX1HgHBIK3iZq/PwJRcs="
+
+    # To trigger Docker image publication, we need the Trigger Url from https://cloud.docker.com/u/openzipkin/repository/docker/openzipkin/zipkin/builds/edit
+    # However, this is too big for travis encrypt. Instead, we decompose it into
+    # two variables: https://cloud.docker.com/api/build/v1/source/${DOCKER_HUB_SERVICE_UUID}/trigger/${DOCKER_HUB_TRIGGER_UUID}/call/
+    # Ex. travis encrypt DOCKER_HUB_SERVICE_UUID=https://cloud.docker.com/api/build/v1/source/XXX/trigger/...
+    - secure: "lEl9FW++oLyEUbRusW1VNJgFKI788D5ElG2feQkWVgUwqKdcBlNNzMswuHO9vOJIlLV7TzNeplG8InLgFPGIjpf/+B6JeJewIBvr20GNKMQnhzRrjLrbrQkLC3HGWH7ZQYTC3H2CxiO7fu3vX4g/R9xdNrdK3uPLkhvVfNu+tqMPShuPpR2KhqS7qMK9iWOaB1svy858P59KbjC1e6eiGnVJpa7cAGNgr7GrtpkLKdQi6ocSpTxXfmiPioha8CPzY1AanTJklPWU5Jot06XFSjsLUdsn8pYrz/6SIMQG0DeZDSU1YTc5nbXoSxuuQncZDt5K946tNaB3SoBp6m3GDgWmxtsEuf6a3r/PMl8U8pSjRjL4lVCIZTwP9J55jCv307rEu29hXzkltf63Dmzp+oiYPiPET+glde58yndrDpQNOAIlwrVMw0ZpdeJ6qerdl0W/umvd9XE1hMOu6ZkV14ee5ZCSsBqFyZa53k0GPm/wWkjM8B5P0+emzBlR7DlxILWOPGqUcA4m/PqrxmdVZ9z7GsQ8p0WsJyzMQwp77mDI6wEulkVdAlNRUDIdBmqYvBv1Mbq2wUXqu4WFFgjca5AhxytSLrnX/WvqfDcwOmuP9Ul1qjjFsx4aa30VcMeXkkvqTIv1BCJhuv+lkaUPurhKqGQN2dfKJM9SqKqGvuQ="
+    # Ex. travis encrypt DOCKER_HUB_TRIGGER_UUID=https://cloud.docker.com/api/build/v1/source/.../trigger/XXX
+    - secure: "pKpiLKEn4A2Zd491b/A6rV8c5TAZ/ot3p59y2j7T9fVv7GLFGYIARTZdjKjbWfHwaK7K+AovF5EUv2+GvI9QzJk460RbZMuxs4oXBCsewk+K4sKDwHaJHBcUYeY6f3KrRnU/UqpwWpojZLDjvYlwWIfRoMtOaVYYd5yRMgOx2H0GZZGfnF07YbRRRSfqzJYY7TlCaj9ZukvFiJsYm67i/mfDvZ8kqNM+E8nBwQ9CBX0/uJ4o9QG8zL6P9YGtb1UjyGXWvg92mKwADBfFsqoU4hNs255UgPjUbxzVTQXAwyGr7ZOcsADKZ0g9IGX/4TdwQMeABIdb6JSIdZbxadPzLEy4NN45t6YeEm73XjXpkrA1DxohEKFzWpEGK5uXnTO09tEOH4YiifvEx7w6IUqVSDon2UulH1Bash44uiGGloD3dfdtPUCUIws+QcItm3kWVxHYNsuCqwmYuBuAYKVe6SZvBSFHM8Hj1WjO/O/+N/cIVTSIQJUaIqfd584yI7/VcI+7h3vEzvKlxUVakc3QVGfz7ANERdAm8hLwuJe52EHnln5MR3BBqkhexv+7jl8rPrfbzN/1xqzxrk1S1y12D2VBNWkWEWxBsl98IWlQECrjvTtUGAYIc/7gaa76xWxld1eCD0yjWB47m056OnJ/w3Y785Stf80NPZ2MykC0jYA="
