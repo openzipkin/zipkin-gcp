@@ -65,7 +65,7 @@ $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
 
 ## Example integrating Stackdriver Storage
 
-If you cannot use our [Docker image](https://github.com/openzipkin/docker-zipkin-gcp), you can still integrate
+If you cannot use our [Docker image](./docker), you can still integrate
 yourself by downloading a couple jars.
 
 [Here's an example](autoconfigure/storage-stackdriver#quick-start) of
