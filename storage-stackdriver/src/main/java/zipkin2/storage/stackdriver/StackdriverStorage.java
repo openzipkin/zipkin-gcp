@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,13 +14,12 @@
 package zipkin2.storage.stackdriver;
 
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
-import com.linecorp.armeria.client.Client;
 import com.linecorp.armeria.client.ClientFactory;
 import com.linecorp.armeria.client.ClientOptions;
 import com.linecorp.armeria.client.ClientRequestContext;
 import com.linecorp.armeria.client.HttpClient;
-import com.linecorp.armeria.client.HttpClientBuilder;
-import com.linecorp.armeria.client.SimpleDecoratingClient;
+import com.linecorp.armeria.client.SimpleDecoratingHttpClient;
+import com.linecorp.armeria.client.WebClient;
 import com.linecorp.armeria.common.HttpHeaderNames;
 import com.linecorp.armeria.common.HttpRequest;
 import com.linecorp.armeria.common.HttpResponse;
@@ -53,8 +52,8 @@ public final class StackdriverStorage extends StorageComponent {
   public static final class Builder extends StorageComponent.Builder {
     final String url;
     String projectId;
-    ClientFactory clientFactory = ClientFactory.DEFAULT;
-    ClientOptions clientOptions = ClientOptions.DEFAULT;
+    ClientFactory clientFactory = ClientFactory.ofDefault();
+    ClientOptions clientOptions = ClientOptions.of();
 
     public Builder(String url) {
       if (url == null) throw new NullPointerException("url == null");
@@ -113,13 +112,13 @@ public final class StackdriverStorage extends StorageComponent {
         url = url + "/";
       }
 
-      HttpClient httpClient = new HttpClientBuilder(url)
+      WebClient webClient = WebClient.builder(url)
           .decorator(SetGrpcContentType::new)
           .factory(clientFactory)
           .options(clientOptions)
           .build();
 
-      return new StackdriverStorage(this, new UnaryGrpcClient(httpClient));
+      return new StackdriverStorage(this, new UnaryGrpcClient(webClient));
     }
   }
 
@@ -189,16 +188,14 @@ public final class StackdriverStorage extends StorageComponent {
   }
 
   // Many Google services do not support the standard application/grpc+proto header.
-  static final class SetGrpcContentType extends SimpleDecoratingClient<HttpRequest, HttpResponse> {
-    SetGrpcContentType(Client<HttpRequest, HttpResponse> client) {
+  static final class SetGrpcContentType extends SimpleDecoratingHttpClient {
+    SetGrpcContentType(HttpClient client) {
       super(client);
     }
 
     @Override
     public HttpResponse execute(ClientRequestContext ctx, HttpRequest req) throws Exception {
-      req = HttpRequest.of(req, req.headers().toBuilder()
-          .set(HttpHeaderNames.CONTENT_TYPE, "application/grpc")
-          .build());
+      ctx.addAdditionalRequestHeader(HttpHeaderNames.CONTENT_TYPE, "application/grpc");
       return delegate().execute(ctx, req);
     }
   }

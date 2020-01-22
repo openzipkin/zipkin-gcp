@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,7 +19,7 @@ import com.google.protobuf.Empty;
 import com.linecorp.armeria.common.SessionProtocol;
 import com.linecorp.armeria.common.grpc.protocol.ArmeriaStatusException;
 import com.linecorp.armeria.server.ServerBuilder;
-import com.linecorp.armeria.server.grpc.GrpcServiceBuilder;
+import com.linecorp.armeria.server.grpc.GrpcService;
 import com.linecorp.armeria.testing.junit4.server.ServerRule;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -51,7 +51,7 @@ public class StackdriverSpanConsumerTest {
 
   @Rule public final ServerRule server = new ServerRule() {
     @Override protected void configure(ServerBuilder sb) throws Exception {
-      sb.service(new GrpcServiceBuilder()
+      sb.service(GrpcService.builder()
           .addService(traceService)
           .build());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -17,9 +17,7 @@ import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
@@ -34,8 +32,6 @@ import static org.mockito.Mockito.mock;
 
 public class ZipkinStackdriverStorageModuleTest {
 
-  @Rule public ExpectedException thrown = ExpectedException.none();
-
   AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 
   @After
@@ -43,7 +39,7 @@ public class ZipkinStackdriverStorageModuleTest {
     context.close();
   }
 
-  @Test
+  @Test(expected = NoSuchBeanDefinitionException.class)
   public void doesntProvideStorageComponent_whenStorageTypeNotStackdriver() {
     TestPropertyValues.of("zipkin.storage.type:elasticsearch").applyTo(context);
     context.register(
@@ -53,14 +49,13 @@ public class ZipkinStackdriverStorageModuleTest {
         TestConfiguration.class);
     context.refresh();
 
-    thrown.expect(NoSuchBeanDefinitionException.class);
     context.getBean(StackdriverStorage.class);
   }
 
   @Test
   public void providesStorageComponent_whenStorageTypeStackdriverAndProjectIdSet() {
     TestPropertyValues.of(
-       "zipkin.storage.type:stackdriver",
+        "zipkin.storage.type:stackdriver",
         "zipkin.storage.stackdriver.project-id:zipkin",
         "zipkin.storage.type:stackdriver").applyTo(context);
     context.register(

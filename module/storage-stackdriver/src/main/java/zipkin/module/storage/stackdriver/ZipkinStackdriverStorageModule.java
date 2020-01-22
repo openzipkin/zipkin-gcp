@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,8 +16,10 @@ package zipkin.module.storage.stackdriver;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.linecorp.armeria.client.ClientFactory;
+import com.linecorp.armeria.client.ClientOptions;
 import com.linecorp.armeria.client.ClientOptionsBuilder;
-import com.linecorp.armeria.client.HttpClient;
+import com.linecorp.armeria.client.WebClient;
+import com.linecorp.armeria.client.logging.LoggingClient;
 import com.linecorp.armeria.client.logging.LoggingClientBuilder;
 import com.linecorp.armeria.common.HttpHeaders;
 import com.linecorp.armeria.common.HttpMethod;
@@ -70,7 +72,7 @@ public class ZipkinStackdriverStorageModule {
   }
 
   String getDefaultProjectId() {
-    HttpClient client = HttpClient.of("http://metadata.google.internal/");
+    WebClient client = WebClient.of("http://metadata.google.internal/");
     return client.execute(RequestHeaders.of(
         HttpMethod.GET, "/computeMetadata/v1/project/project-id",
         "Metadata-Flavor", "Google"))
@@ -82,7 +84,7 @@ public class ZipkinStackdriverStorageModule {
   @Bean
   @ConditionalOnMissingBean
   ClientFactory clientFactory() {
-    return ClientFactory.DEFAULT;
+    return ClientFactory.ofDefault();
   }
 
   @Bean
@@ -99,11 +101,11 @@ public class ZipkinStackdriverStorageModule {
               + "netty-tcnative-boringssl-static");
     }
 
-    ClientOptionsBuilder options = new ClientOptionsBuilder();
+    ClientOptionsBuilder options = ClientOptions.builder();
 
     HttpLogging httpLogging = properties.getHttpLogging();
     if (httpLogging != HttpLogging.NONE) {
-      LoggingClientBuilder loggingBuilder = new LoggingClientBuilder()
+      LoggingClientBuilder loggingBuilder = LoggingClient.builder()
           .requestLogLevel(LogLevel.INFO)
           .successfulResponseLogLevel(LogLevel.INFO);
       switch (httpLogging) {
