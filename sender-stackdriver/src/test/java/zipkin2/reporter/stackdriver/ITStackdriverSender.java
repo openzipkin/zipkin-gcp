@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -187,6 +187,6 @@ public class ITStackdriverSender {
     assertThat(result.ok()).isFalse();
     assertThat(result.error()).isNotNull();
     assertThat(result.error()).isInstanceOfSatisfying(StatusRuntimeException.class,
-            sre -> sre.getStatus().getCode().equals(Status.Code.PERMISSION_DENIED));
+            sre -> assertThat(sre.getStatus().getCode()).isEqualTo(Status.Code.PERMISSION_DENIED));
   }
 }
