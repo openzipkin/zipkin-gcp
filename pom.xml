@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2016-2019 The OpenZipkin Authors
+    Copyright 2016-2020 The OpenZipkin Authors
 
     Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
     in compliance with the License. You may obtain a copy of the License at
@@ -41,34 +41,35 @@
 
     <main.basedir>${project.basedir}</main.basedir>
 
-    <slf4j.version>1.7.26</slf4j.version>
+    <slf4j.version>1.7.30</slf4j.version>
 
     <!-- matching armeria/grpc/zipkin -->
-    <spring-boot.version>2.1.9.RELEASE</spring-boot.version>
-    <!-- This allows you to test feature branches with jitpack -->
+    <spring-boot.version>2.2.4.RELEASE</spring-boot.version>
+    <zipkin.version>2.19.3</zipkin.version>
+    <zipkin-reporter.version>2.12.1</zipkin-reporter.version>
+    <brave.version>5.9.1</brave.version>
+    <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
-    <armeria.version>0.95.0</armeria.version>
-    <zipkin.version>2.19.1</zipkin.version>
-    <zipkin-reporter.version>2.11.0</zipkin-reporter.version>
-    <brave.version>5.9.0</brave.version>
+    <armeria.version>0.97.0</armeria.version>
+    <!-- from armeria-grpc -->
+    <grpc.version>1.25.0</grpc.version>
 
-    <!-- from grpc-proto -->
-    <grpc.version>1.24.1</grpc.version>
-    <guava.version>26.0-android</guava.version>
-    <protobuf.version>3.9.1</protobuf.version>
-    <awaitility.version>4.0.1</awaitility.version>
+    <!-- from grpc-protobuf -->
+    <protobuf.version>3.10.0</protobuf.version>
+    <guava.version>28.1-android</guava.version>
 
-    <!-- only used for protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace.version>0.73.0</grpc-google-cloud-trace.version>
+    <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
+    <grpc-google-cloud-trace.version>0.74.3</grpc-google-cloud-trace.version>
 
-    <assertj.version>3.13.2</assertj.version>
+    <assertj.version>3.14.0</assertj.version>
+    <awaitility.version>4.0.2</awaitility.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
-    <errorprone.version>2.3.3</errorprone.version>
+    <errorprone.version>2.3.4</errorprone.version>
 
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
-    <maven-failsafe-plugin.version>3.0.0-M3</maven-failsafe-plugin.version>
+    <maven-failsafe-plugin.version>3.0.0-M4</maven-failsafe-plugin.version>
   </properties>
 
   <name>Zipkin Google Cloud Platform(Parent)</name>
@@ -219,6 +220,12 @@
         <artifactId>protobuf-java</artifactId>
         <version>${protobuf.version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>com.google.api.grpc</groupId>
+        <artifactId>proto-google-common-protos</artifactId>
+        <version>1.17.0</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -227,7 +234,7 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
-      <version>4.12</version>
+      <version>4.13</version>
     </dependency>
     <dependency>
       <groupId>org.assertj</groupId>
@@ -251,9 +258,9 @@
         <plugin>
           <groupId>io.takari</groupId>
           <artifactId>maven</artifactId>
-          <version>0.7.6</version>
+          <version>0.7.7</version>
           <configuration>
-            <maven>3.6.2</maven>
+            <maven>3.6.3</maven>
           </configuration>
         </plugin>
 
@@ -319,7 +326,7 @@
 
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.2</version>
+        <version>3.2.0</version>
       </plugin>
 
       <plugin>
@@ -417,7 +424,7 @@
 
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>3.0.0-M2</version>
+        <version>3.0.0-M3</version>
         <executions>
           <execution>
             <id>enforce-java</id>
@@ -437,7 +444,7 @@
 
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.5.3</version>
+        <version>3.0.0-M1</version>
         <configuration>
           <useReleaseProfile>false</useReleaseProfile>
           <releaseProfiles>release</releaseProfiles>
@@ -503,7 +510,7 @@
           <!-- Creates source jar -->
           <plugin>
             <artifactId>maven-source-plugin</artifactId>
-            <version>3.1.0</version>
+            <version>3.2.1</version>
             <executions>
               <execution>
                 <id>attach-sources</id>

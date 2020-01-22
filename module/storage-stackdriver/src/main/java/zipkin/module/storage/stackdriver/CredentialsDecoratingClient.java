@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -15,9 +15,9 @@ package zipkin.module.storage.stackdriver;
 
 import com.google.auth.Credentials;
 import com.google.auth.RequestMetadataCallback;
-import com.linecorp.armeria.client.Client;
 import com.linecorp.armeria.client.ClientRequestContext;
-import com.linecorp.armeria.client.SimpleDecoratingClient;
+import com.linecorp.armeria.client.HttpClient;
+import com.linecorp.armeria.client.SimpleDecoratingHttpClient;
 import com.linecorp.armeria.common.HttpHeaderNames;
 import com.linecorp.armeria.common.HttpRequest;
 import com.linecorp.armeria.common.HttpResponse;
@@ -30,19 +30,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
-class CredentialsDecoratingClient extends SimpleDecoratingClient<HttpRequest, HttpResponse>
-    implements AutoCloseable {
+class CredentialsDecoratingClient extends SimpleDecoratingHttpClient implements AutoCloseable {
 
-  static Function<Client<HttpRequest, HttpResponse>, Client<HttpRequest, HttpResponse>>
-  newDecorator(Credentials credentials) {
+  static Function<HttpClient, HttpClient> newDecorator(Credentials credentials) {
     return client -> new CredentialsDecoratingClient(client, credentials);
   }
 
   final Credentials credentials;
   final ExecutorService executor;
 
-  private CredentialsDecoratingClient(
-      Client<HttpRequest, HttpResponse> delegate, Credentials credentials) {
+  private CredentialsDecoratingClient(HttpClient delegate, Credentials credentials) {
     super(delegate);
     this.credentials = credentials;
     executor = Executors.newSingleThreadExecutor();
@@ -62,7 +59,7 @@ class CredentialsDecoratingClient extends SimpleDecoratingClient<HttpRequest, Ht
       @Override public void onSuccess(Map<String, List<String>> map) {
         HttpRequest newReq = req;
         if (map != null) {
-          newReq = HttpRequest.of(req, req.headers().withMutations(headers -> {
+          newReq = req.withHeaders(req.headers().withMutations(headers -> {
             for (Map.Entry<String, List<String>> entry : map.entrySet()) {
               headers.add(HttpHeaderNames.of(entry.getKey()), entry.getValue());
             }

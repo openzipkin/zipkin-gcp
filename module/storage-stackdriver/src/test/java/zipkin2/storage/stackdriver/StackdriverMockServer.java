@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,14 +19,11 @@ import com.google.devtools.cloudtrace.v2.Span;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
 import com.linecorp.armeria.server.Server;
-import com.linecorp.armeria.server.ServerBuilder;
-import com.linecorp.armeria.server.grpc.GrpcServiceBuilder;
+import com.linecorp.armeria.server.grpc.GrpcService;
 import io.grpc.stub.StreamObserver;
-import java.security.cert.CertificateException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import javax.net.ssl.SSLException;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,16 +41,12 @@ public class StackdriverMockServer extends ExternalResource {
   private CountDownLatch spanCountdown;
 
   public StackdriverMockServer() {
-    try {
-      this.server = new ServerBuilder()
-          .service(new GrpcServiceBuilder()
-              .addService(new Service())
-              .build())
-          .tlsSelfSigned()
-          .build();
-    } catch (SSLException|CertificateException e) {
-      throw new Error(e);
-    }
+    this.server = Server.builder()
+        .service(GrpcService.builder()
+            .addService(new Service())
+            .build())
+        .tlsSelfSigned()
+        .build();
   }
 
   public int getPort() {
@@ -61,7 +54,7 @@ public class StackdriverMockServer extends ExternalResource {
   }
 
   @Override
-  protected void before() throws Throwable {
+  protected void before() {
     this.server.start().join();
 
     LOG.info("Started MOCK grpc server on 'localhost:{}'", getPort());
@@ -80,7 +73,8 @@ public class StackdriverMockServer extends ExternalResource {
 
   class Service extends TraceServiceGrpc.TraceServiceImplBase {
     @Override
-    public void batchWriteSpans(BatchWriteSpansRequest request, StreamObserver<Empty> responseObserver) {
+    public void batchWriteSpans(BatchWriteSpansRequest request,
+        StreamObserver<Empty> responseObserver) {
       final List<Span> spansList = request.getSpansList();
       for (Span span : spansList) {
         spanIds.add(span.getSpanId());

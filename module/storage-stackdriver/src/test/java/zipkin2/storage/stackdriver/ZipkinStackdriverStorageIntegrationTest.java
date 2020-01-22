@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2020 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,7 +18,6 @@ import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.linecorp.armeria.client.ClientBuilder;
 import com.linecorp.armeria.client.ClientFactory;
-import com.linecorp.armeria.client.ClientFactoryBuilder;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
@@ -93,7 +92,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
   public void mockGrpcServerServesOverSSL() { // sanity checks the mock server
     TraceServiceGrpc.TraceServiceBlockingStub sslTraceService =
         new ClientBuilder("gproto+https://" + mockServer.grpcURI() + "/")
-            .factory(new ClientFactoryBuilder()
+            .factory(ClientFactory.builder()
             .sslContextCustomizer(ssl -> ssl.trustManager(InsecureTrustManagerFactory.INSTANCE))
                 .build())
             .build(TraceServiceGrpc.TraceServiceBlockingStub.class);
@@ -161,7 +160,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
 
     @Bean
     ClientFactory managedChannel() {
-      return new ClientFactoryBuilder()
+      return ClientFactory.builder()
           .sslContextCustomizer(ssl -> ssl.trustManager(InsecureTrustManagerFactory.INSTANCE))
           .build();
     }
