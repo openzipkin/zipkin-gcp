@@ -187,6 +187,6 @@ public class ITStackdriverSender {
     assertThat(result.ok()).isFalse();
     assertThat(result.error()).isNotNull();
     assertThat(result.error()).isInstanceOfSatisfying(StatusRuntimeException.class,
-            sre -> sre.getStatus().getCode().equals(Status.Code.PERMISSION_DENIED));
+            sre -> assertThat(sre.getStatus().getCode()).isEqualTo(Status.Code.PERMISSION_DENIED));
   }
 }
