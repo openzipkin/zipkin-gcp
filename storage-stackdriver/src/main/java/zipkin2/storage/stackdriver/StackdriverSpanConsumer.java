@@ -14,7 +14,7 @@
 package zipkin2.storage.stackdriver;
 
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
-import com.linecorp.armeria.common.grpc.protocol.UnaryGrpcClient;
+import com.linecorp.armeria.client.grpc.protocol.UnaryGrpcClient;
 import com.linecorp.armeria.common.util.Exceptions;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
