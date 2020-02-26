@@ -45,7 +45,7 @@
 
     <!-- matching armeria/grpc/zipkin -->
     <spring-boot.version>2.2.4.RELEASE</spring-boot.version>
-    <zipkin.version>2.20</zipkin.version>
+    <zipkin.version>2.20.0</zipkin.version>
     <zipkin-reporter.version>2.12.1</zipkin-reporter.version>
     <brave.version>5.9.1</brave.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
