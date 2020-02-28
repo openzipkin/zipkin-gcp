@@ -50,7 +50,7 @@ public class StackdriverMockServer extends ExternalResource {
   }
 
   public int getPort() {
-    return server.activePort().get().localAddress().getPort();
+    return server.activeLocalPort();
   }
 
   @Override
