@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2016-2019 The OpenZipkin Authors
+# Copyright 2016-2020 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -179,7 +179,7 @@ fi
 if is_release_commit; then
   true
 else
-  ./mvnw verify -nsu -Dlicense.skip=true
+  ./mvnw verify -nsu
 fi
 
 # If we are on a pull request, our only job is to run tests, which happened above via ./mvnw install
