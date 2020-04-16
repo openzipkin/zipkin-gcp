@@ -16,7 +16,6 @@ package zipkin2.storage.stackdriver;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
-import com.linecorp.armeria.common.SessionProtocol;
 import com.linecorp.armeria.common.grpc.protocol.ArmeriaStatusException;
 import com.linecorp.armeria.server.ServerBuilder;
 import com.linecorp.armeria.server.grpc.GrpcService;
@@ -50,7 +49,7 @@ public class StackdriverSpanConsumerTest {
   final TestTraceService traceService = spy(new TestTraceService());
 
   @Rule public final ServerRule server = new ServerRule() {
-    @Override protected void configure(ServerBuilder sb) throws Exception {
+    @Override protected void configure(ServerBuilder sb) {
       sb.service(GrpcService.builder()
           .addService(traceService)
           .build());
@@ -63,10 +62,9 @@ public class StackdriverSpanConsumerTest {
 
   @Before
   public void setUp() {
-    storage = StackdriverStorage.newBuilder(
-            server.uri(SessionProtocol.HTTP, "/"))
-            .projectId(projectId)
-            .build();
+    storage = StackdriverStorage.newBuilder("http://localhost:" + server.httpPort())
+        .projectId(projectId)
+        .build();
     spanConsumer = storage.spanConsumer();
   }
 

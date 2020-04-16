@@ -16,8 +16,8 @@ package zipkin2.storage.stackdriver;
 import com.google.auth.Credentials;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
-import com.linecorp.armeria.client.ClientBuilder;
 import com.linecorp.armeria.client.ClientFactory;
+import com.linecorp.armeria.client.Clients;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
@@ -74,7 +74,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
   }
 
   @Test
-  public void openSSLAvailable() throws InterruptedException {
+  public void openSSLAvailable() {
     assertThat(OpenSsl.isAvailable())
         .withFailMessage("OpenSsl unavailable:" + OpenSsl.unavailabilityCause())
         .isTrue();
@@ -91,9 +91,9 @@ public class ZipkinStackdriverStorageIntegrationTest {
   @Test
   public void mockGrpcServerServesOverSSL() { // sanity checks the mock server
     TraceServiceGrpc.TraceServiceBlockingStub sslTraceService =
-        new ClientBuilder("gproto+https://" + mockServer.grpcURI() + "/")
+        Clients.builder("gproto+https://" + mockServer.grpcURI() + "/")
             .factory(ClientFactory.builder()
-            .sslContextCustomizer(ssl -> ssl.trustManager(InsecureTrustManagerFactory.INSTANCE))
+                .tlsCustomizer(tls -> tls.trustManager(InsecureTrustManagerFactory.INSTANCE))
                 .build())
             .build(TraceServiceGrpc.TraceServiceBlockingStub.class);
 
@@ -154,14 +154,15 @@ public class ZipkinStackdriverStorageIntegrationTest {
         }
 
         @Override
-        public void refresh() {}
+        public void refresh() {
+        }
       };
     }
 
     @Bean
     ClientFactory managedChannel() {
       return ClientFactory.builder()
-          .sslContextCustomizer(ssl -> ssl.trustManager(InsecureTrustManagerFactory.INSTANCE))
+          .tlsCustomizer(tls -> tls.trustManager(InsecureTrustManagerFactory.INSTANCE))
           .build();
     }
   }

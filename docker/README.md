@@ -14,11 +14,11 @@ If you want to try Zipkin against Stackdriver, the easiest start is to share
 your credentials with Zipkin's docker image.
 
 ```bash
-$ docker run -d -p 9411:9411 \
+$ docker run -d -p 9411:9411 --name zipkin-gcp \
   -e STORAGE_TYPE=stackdriver \
-  -e GOOGLE_APPLICATION_CREDENTIALS=/root/.gcp/credentials.json \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/zipkin/.gcp/credentials.json \
   -e STACKDRIVER_PROJECT_ID=your_project \
-  -v $HOME/.gcp:/root/.gcp:ro \
+  -v $HOME/.gcp:/zipkin/.gcp:ro \
   openzipkin/zipkin-gcp
 ```
 
