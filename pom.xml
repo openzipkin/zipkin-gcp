@@ -44,24 +44,24 @@
     <slf4j.version>1.7.30</slf4j.version>
 
     <!-- matching armeria/grpc/zipkin -->
-    <spring-boot.version>2.2.4.RELEASE</spring-boot.version>
-    <zipkin.version>2.20.0</zipkin.version>
-    <zipkin-reporter.version>2.12.1</zipkin-reporter.version>
-    <brave.version>5.10.1</brave.version>
+    <spring-boot.version>2.2.6.RELEASE</spring-boot.version>
+    <zipkin.version>2.21.1</zipkin.version>
+    <zipkin-reporter.version>2.12.3</zipkin-reporter.version>
+    <brave.version>5.11.2</brave.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
-    <armeria.version>0.98.3</armeria.version>
+    <armeria.version>0.99.3</armeria.version>
     <!-- from armeria-grpc -->
-    <grpc.version>1.27.1</grpc.version>
+    <grpc.version>1.28.0</grpc.version>
 
     <!-- from grpc-protobuf -->
-    <protobuf.version>3.10.0</protobuf.version>
+    <protobuf.version>3.11.0</protobuf.version>
     <guava.version>28.1-android</guava.version>
 
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace.version>0.74.3</grpc-google-cloud-trace.version>
+    <grpc-google-cloud-trace.version>1.0.3</grpc-google-cloud-trace.version>
 
-    <assertj.version>3.14.0</assertj.version>
+    <assertj.version>3.15.0</assertj.version>
     <awaitility.version>4.0.2</awaitility.version>
 
     <!-- override to set exclusions per-project -->
@@ -155,10 +155,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <!-- Up to v2.27.0 of mockito has a conflict https://github.com/mockito/mockito/issues/1606
-        java.lang.NoSuchMethodError: net.bytebuddy.dynamic.loading.MultipleParentClassLoader$Builder.appendMostSpecific(Ljava/util/Collection;)Lnet/bytebuddy/dynamic/loading/MultipleParentClassLoader$Builder
-        -->
-        <version>2.23.4</version>
+        <version>2.28.2</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -388,20 +385,34 @@
           <mapping>
             <!-- Don't use javadoc style as this makes code formatters break it by adding tags! -->
             <java>SLASHSTAR_STYLE</java>
+            <kt>SLASHSTAR_STYLE</kt>
+            <bnd>SCRIPT_STYLE</bnd>
+            <Dockerfile.release>SCRIPT_STYLE</Dockerfile.release>
+            <post_push>SCRIPT_STYLE</post_push>
+            <build>SCRIPT_STYLE</build>
           </mapping>
           <excludes>
             <exclude>.travis.yml</exclude>
+            <exclude>**/*.dockerignore</exclude>
+            <exclude>.editorconfig</exclude>
+            <exclude>.gitattributes</exclude>
             <exclude>.gitignore</exclude>
+            <exclude>.github/**</exclude>
             <exclude>.mvn/**</exclude>
             <exclude>mvnw*</exclude>
             <exclude>etc/header.txt</exclude>
+            <exclude>docker/**/*_profile</exclude>
+            <exclude>hooks/**</exclude>
+            <exclude>**/nginx.conf</exclude>
             <exclude>**/.idea/**</exclude>
-            <exclude>LICENSE</exclude>
+            <exclude>**/.editorconfig</exclude>
+            <exclude>LICENSE</exclude>&gt;
             <exclude>**/*.md</exclude>
-            <!-- temporary patch until Armera 0.91 -->
-            <exclude>**/UnaryGrpcClient.java</exclude>
+            <exclude>**/*.bnd</exclude>
+            <exclude>**/src/main/resources/zipkin.txt</exclude>
+            <exclude>**/src/main/resources/*.yml</exclude>
+            <exclude>**/spring.factories</exclude>
             <exclude>src/test/resources/**</exclude>
-            <exclude>src/main/resources/**</exclude>
           </excludes>
           <strictCheck>true</strictCheck>
         </configuration>

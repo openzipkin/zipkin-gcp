@@ -1,5 +1,5 @@
 #
-# Copyright 2016-2019 The OpenZipkin Authors
+# Copyright 2016-2020 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -11,7 +11,6 @@
 # or implied. See the License for the specific language governing permissions and limitations under
 # the License.
 #
-# Download artifact from bintray, where the artifact should have been published by now.
 
 FROM openzipkin/zipkin-builder as built
 
@@ -39,7 +38,7 @@ RUN export version=$(echo "${source_branch}" | cut -d '-' -f 2) && \
   (mkdir stackdriver && cd stackdriver && jar -xf ../zipkin-module-storage-stackdriver-${version}-module.jar) && \
   rm zipkin-module-storage-stackdriver-${version}-module.jar
 
-FROM openzipkin/zipkin:2.20.0
+FROM openzipkin/zipkin:2.21.1
 MAINTAINER Zipkin "https://zipkin.io/"
 
 COPY --from=built /zipkin-gcp/ /zipkin/
