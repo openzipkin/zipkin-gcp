@@ -11,8 +11,9 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.propagation.stackdriver;
+package brave.propagation.stackdriver;
 
+import brave.propagation.B3Propagation;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContextOrSamplingFlags;
 import org.junit.Test;
@@ -27,9 +28,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=1";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation)
-                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
-            (carrier, key) -> xCloudTraceContext);
+            B3Propagation.FACTORY.get(),
+            (request, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
@@ -43,9 +43,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/0;o=1";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation)
-                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
-            (carrier, key) -> xCloudTraceContext);
+            B3Propagation.FACTORY.get(),
+            (request, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.traceIdContext().traceId()).isEqualTo(-7348336952112078057L);
@@ -58,9 +57,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=0";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation)
-                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
-            (carrier, key) -> xCloudTraceContext);
+            B3Propagation.FACTORY.get(),
+            (request, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().sampled()).isFalse();
@@ -71,9 +69,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation)
-                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
-            (carrier, key) -> xCloudTraceContext);
+            B3Propagation.FACTORY.get(),
+            (request, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
@@ -87,9 +84,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation)
-                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
-            (carrier, key) -> xCloudTraceContext);
+            B3Propagation.FACTORY.get(),
+            (request, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);
@@ -103,9 +99,8 @@ public class XCloudTraceContextExtractorTest {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
-            (StackdriverTracePropagation)
-                StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
-            (carrier, key) -> xCloudTraceContext);
+            B3Propagation.FACTORY.get(),
+            (request, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.traceIdContext().traceId()).isEqualTo(-7348336952112078057L);
@@ -116,11 +111,8 @@ public class XCloudTraceContextExtractorTest {
   @Test
   public void testExtractXCloudTraceContext_unsignedLong() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/13804021222261907717";
-    XCloudTraceContextExtractor extractor =
-            new XCloudTraceContextExtractor<>(
-                    (StackdriverTracePropagation)
-                            StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING),
-                    (carrier, key) -> xCloudTraceContext);
+    XCloudTraceContextExtractor extractor = new XCloudTraceContextExtractor<>(
+                B3Propagation.FACTORY.get(), (request, key) -> xCloudTraceContext);
 
     TraceContextOrSamplingFlags context = extractor.extract(new Object());
     assertThat(context.context().traceId()).isEqualTo(-7348336952112078057L);

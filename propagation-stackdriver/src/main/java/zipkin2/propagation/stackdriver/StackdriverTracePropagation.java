@@ -16,34 +16,44 @@ package zipkin2.propagation.stackdriver;
 import brave.propagation.B3Propagation;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
-import java.util.Collections;
+import brave.propagation.TraceContext.Extractor;
+import brave.propagation.TraceContext.Injector;
 import java.util.List;
 
+import static brave.propagation.stackdriver.StackdriverTracePropagation.TRACE_ID_NAME;
+
 /**
- * Stackdriver Trace propagation.
- *
- * <p>Tries to extract a trace ID and span ID using the B3 key set, such as {@code X-B3-TraceId}, {@code X-B3-SpanId},
- * etc. If not present, tries the {@code x-cloud-trace-context} key.
- *
- * <p>Uses {@link B3Propagation} injection, to inject the tracing context using B3 headers.
+ * @deprecated use {@link brave.propagation.stackdriver.StackdriverTracePropagation}
  */
+@Deprecated
 public final class StackdriverTracePropagation<K> implements Propagation<K> {
+  static final Propagation.Factory DELEGATE =
+      brave.propagation.stackdriver.StackdriverTracePropagation.newFactory(B3Propagation.FACTORY);
 
   public static final Propagation.Factory FACTORY =
       new Propagation.Factory() {
+
+        @Override public Propagation<String> get() {
+          return new StackdriverTracePropagation<>(DELEGATE.get(), KeyFactory.STRING);
+        }
+
         @Override
         public <K> Propagation<K> create(KeyFactory<K> keyFactory) {
-          return new StackdriverTracePropagation<>(keyFactory);
+          return new StackdriverTracePropagation<>(DELEGATE.create(keyFactory), keyFactory);
         }
 
         @Override
         public boolean supportsJoin() {
-          return false;
+          return DELEGATE.supportsJoin();
         }
 
         @Override
         public boolean requires128BitTraceId() {
-          return true;
+          return DELEGATE.requires128BitTraceId();
+        }
+
+        @Override public TraceContext decorate(TraceContext context) {
+          return DELEGATE.decorate(context);
         }
 
         @Override
@@ -52,37 +62,30 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
         }
       };
 
-  /** 128 trace ID lower-hex encoded into 32 characters (required) */
-  static final String TRACE_ID_NAME = "x-cloud-trace-context";
-
-  final Propagation<K> b3Propagation;
+  final Propagation<K> delegate;
   final K traceIdKey;
-  final List<K> fields;
 
-  StackdriverTracePropagation(KeyFactory<K> keyFactory) {
+  StackdriverTracePropagation(Propagation<K> delegate, KeyFactory<K> keyFactory) {
+    this.delegate = delegate;
     this.traceIdKey = keyFactory.create(TRACE_ID_NAME);
-    this.fields = Collections.singletonList(traceIdKey);
-    this.b3Propagation = B3Propagation.FACTORY.create(keyFactory);
   }
 
   /**
-   * Return the "x-cloud-trace-context" key.
+   * @deprecated Use {@link brave.propagation.stackdriver.StackdriverTracePropagation#TRACE_ID_NAME}
    */
-  public K getTraceIdKey() {
+  @Deprecated public K getTraceIdKey() {
     return traceIdKey;
   }
 
   @Override public List<K> keys() {
-    return fields;
+    return delegate.keys();
   }
 
-  @Override public <C> TraceContext.Injector<C> injector(Setter<C, K> setter) {
-    return b3Propagation.injector(setter);
+  @Override public <C> Injector<C> injector(Setter<C, K> setter) {
+    return delegate.injector(setter);
   }
 
-  @Override public <C> TraceContext.Extractor<C> extractor(Getter<C, K> getter) {
-    if (getter == null) throw new NullPointerException("getter == null");
-    return CompositeExtractor.create(
-            b3Propagation.extractor(getter), new XCloudTraceContextExtractor<>(this, getter));
+  @Override public <C> Extractor<C> extractor(Getter<C, K> getter) {
+    return delegate.extractor(getter);
   }
 }

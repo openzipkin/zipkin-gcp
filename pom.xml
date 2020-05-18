@@ -47,7 +47,13 @@
     <spring-boot.version>2.2.6.RELEASE</spring-boot.version>
     <zipkin.version>2.21.1</zipkin.version>
     <zipkin-reporter.version>2.15.0</zipkin-reporter.version>
+
+    <!-- This allows you to test feature branches with jitpack -->
+    <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
+    <!--    <brave.version>master-SNAPSHOT</brave.version>-->
+    <brave.groupId>io.zipkin.brave</brave.groupId>
     <brave.version>5.12.3</brave.version>
+
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
     <armeria.version>0.99.3</armeria.version>
@@ -69,6 +75,7 @@
     <errorprone.version>2.3.4</errorprone.version>
 
     <license-maven-plugin.version>3.0</license-maven-plugin.version>
+    <maven-shade-plugin.version>3.2.3</maven-shade-plugin.version>
     <maven-failsafe-plugin.version>3.0.0-M4</maven-failsafe-plugin.version>
   </properties>
 
@@ -164,7 +171,7 @@
       </dependency>
 
       <dependency>
-        <groupId>io.zipkin.brave</groupId>
+        <groupId>${brave.groupId}</groupId>
         <artifactId>brave</artifactId>
         <version>${brave.version}</version>
       </dependency>

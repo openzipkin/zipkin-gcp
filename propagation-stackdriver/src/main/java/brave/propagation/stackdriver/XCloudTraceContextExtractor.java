@@ -11,28 +11,28 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.propagation.stackdriver;
+package brave.propagation.stackdriver;
 
+import brave.propagation.Propagation;
+import brave.propagation.Propagation.Getter;
+import brave.propagation.TraceContext;
+import brave.propagation.TraceContext.Extractor;
+import brave.propagation.TraceContextOrSamplingFlags;
 import brave.propagation.TraceIdContext;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import brave.propagation.Propagation;
-import brave.propagation.TraceContext;
-import brave.propagation.TraceContextOrSamplingFlags;
-
 import static brave.internal.codec.HexCodec.lenientLowerHexToUnsignedLong;
 
-final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<C> {
+final class XCloudTraceContextExtractor<R> implements Extractor<R> {
 
   static final Logger LOG = Logger.getLogger(XCloudTraceContextExtractor.class.getName());
 
-  final StackdriverTracePropagation<K> propagation;
-  final Propagation.Getter<C, K> getter;
+  final Extractor<R> primary;
+  final Getter<R, String> getter;
 
-  XCloudTraceContextExtractor(StackdriverTracePropagation<K> propagation,
-      Propagation.Getter<C, K> getter) {
-    this.propagation = propagation;
+  XCloudTraceContextExtractor(Propagation<String> primary, Getter<R, String> getter) {
+    this.primary = primary.extractor(getter);
     this.getter = getter;
   }
 
@@ -41,12 +41,14 @@ final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<
    * or "x-cloud-trace-context: TRACE_ID/SPAN_ID" format; or the "x-cloud-trace-context:
    * TRACE_ID/SPAN_ID;o=TRACE_TRUE" format and {@code TRACE_TRUE}'s value is {@code 1}.
    */
-  @Override public TraceContextOrSamplingFlags extract(C carrier) {
-    if (carrier == null) throw new NullPointerException("carrier == null");
+  @Override public TraceContextOrSamplingFlags extract(R request) {
+    if (request == null) throw new NullPointerException("request == null");
+    TraceContextOrSamplingFlags context = primary.extract(request);
+    if (context != TraceContextOrSamplingFlags.EMPTY) return context;
 
     TraceContextOrSamplingFlags result = TraceContextOrSamplingFlags.EMPTY;
 
-    String xCloudTraceContext = getter.get(carrier, propagation.getTraceIdKey());
+    String xCloudTraceContext = getter.get(request, StackdriverTracePropagation.TRACE_ID_NAME);
 
     if (xCloudTraceContext != null) {
       String[] tokens = xCloudTraceContext.split("/");
