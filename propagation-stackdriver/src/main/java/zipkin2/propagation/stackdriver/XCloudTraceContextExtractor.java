@@ -21,7 +21,7 @@ import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 
-import static brave.internal.HexCodec.lenientLowerHexToUnsignedLong;
+import static brave.internal.codec.HexCodec.lenientLowerHexToUnsignedLong;
 
 final class XCloudTraceContextExtractor<C, K> implements TraceContext.Extractor<C> {
 
