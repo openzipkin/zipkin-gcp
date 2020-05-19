@@ -25,13 +25,63 @@
   <artifactId>brave-propagation-stackdriver</artifactId>
 
   <properties>
+    <module.name>brave.propagation.stackdriver</module.name>
+
     <main.basedir>${project.basedir}/..</main.basedir>
   </properties>
 
   <dependencies>
     <dependency>
-      <groupId>io.zipkin.brave</groupId>
+      <groupId>${brave.groupId}</groupId>
       <artifactId>brave</artifactId>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!-- Shade internal types -->
+      <plugin>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven-shade-plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <artifactSet>
+                <includes>
+                  <include>${brave.groupId}:brave</include>
+                </includes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>${brave.groupId}:brave</artifact>
+                  <includes>
+                    <include>brave/internal/propagation/StringPropagationAdapter*.class</include>
+                    <include>brave/internal/codec/HexCodec*.class</include>
+                  </includes>
+                </filter>
+              </filters>
+              <relocations>
+                <relocation>
+                  <pattern>brave.internal</pattern>
+                  <shadedPattern>brave.propagation.stackdriver.internal</shadedPattern>
+                </relocation>
+              </relocations>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <Automatic-Module-Name>${module.name}</Automatic-Module-Name>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

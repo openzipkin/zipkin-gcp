@@ -4,19 +4,19 @@ This is a propagation that behaves like `B3Propagation`, but falls back on traci
 
 To use it, you can feed it into your tracing system in the following way:
 
-`Tracing.newBuilder().propagationFactory(StackdriverTracePropagation.FACTORY).build();`
+```java
+tracingBuilder.propagationFactory(StackdriverTracePropagation.newFactory(B3Propagation.FACTORY));
+```
 
 If using Spring Boot auto-configuration, you can also add a dependency to `org.springframework.cloud:spring-cloud-gcp-starter-trace` and this propagation will be automatically set up.
 
 # Extractor
+This component prefers the `Propagation.Factory` passed to `StackdriverTracePropagation.newFactory`,
+typically, but not always set to `B3Propagation.FACTORY`. For example, this may be set to a
+different configuration using `B3Propagation.factoryBuilder()`.
 
-This propagation makes use of the `CompositeExtractor` concept, which attempts to extract the tracing context from multiple extractors.
-At the moment, it doesn't support partial extraction, meaning that if one extractor returns a context that is not empty, that context is returned and the following ones are not ran.
-
-The first attempted extractor is the `B3Propagation` one, using the `X-B3-TraceId`, `X-B3-SpanId`, etc. keys.
-
-If `B3Propagation` can't find a context, the next extractor is the `XCloudTraceContextExtractor`.
-It checks the `x-cloud-trace-context` key, which is structured in the following way:
+For example, if the "b3" header exists, it is used and any "x-cloud-trace-context" will be ignored.
+When absent, the following applies:
 
 `x-cloud-trace-context: TRACE_ID/SPAN_ID;o=TRACE_TRUE`
 
@@ -34,5 +34,7 @@ It checks the `x-cloud-trace-context` key, which is structured in the following 
 
 # Injector
 
-After the trace context has been extracted from an incoming request, or a new one has been built, the remaining trace context is injected using `B3Propagation`'s injector.
-This means that the trace context will now be managed through the B3 keys, `X-B3-TraceId`, `X-B3-SpanId`, etc.
+The "x-cloud-trace-context" is never sent. Whatever the primary format dictates for the request will
+be used. For example, `B3Propagation` implements single format "b3" for messaging requests, while
+multiple headers (ex "X-B3-TraceID") are default for HTTP and RPC. In other words, `B3Propagation`
+is used as-is, depending on its configuration, and "x-cloud-trace-context" is never sent.

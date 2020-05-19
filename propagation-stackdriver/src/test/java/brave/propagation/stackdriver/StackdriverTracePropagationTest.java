@@ -11,14 +11,14 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.propagation.stackdriver;
+package brave.propagation.stackdriver;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import brave.propagation.B3Propagation;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +32,7 @@ public class StackdriverTracePropagationTest {
   static final String B3_VALUE =  B3_TRACE_ID + "-00f067aa0ba902b7-1";
 
   Propagation<String> propagation =
-      StackdriverTracePropagation.FACTORY.create(Propagation.KeyFactory.STRING);
+      StackdriverTracePropagation.newFactory(B3Propagation.FACTORY).get();
   TraceContext.Extractor<Map<String,String>> extractor = propagation.extractor(Map::get);
 
   @Test
