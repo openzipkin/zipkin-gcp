@@ -44,8 +44,8 @@
     <slf4j.version>1.7.30</slf4j.version>
 
     <!-- matching armeria/grpc/zipkin -->
-    <spring-boot.version>2.2.6.RELEASE</spring-boot.version>
-    <zipkin.version>2.21.1</zipkin.version>
+    <spring-boot.version>2.3.0.RELEASE</spring-boot.version>
+    <zipkin.version>2.21.2</zipkin.version>
     <zipkin-reporter.version>2.15.0</zipkin-reporter.version>
 
     <!-- This allows you to test feature branches with jitpack -->
@@ -56,19 +56,19 @@
 
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
-    <armeria.version>0.99.3</armeria.version>
+    <armeria.version>0.99.6</armeria.version>
     <!-- from armeria-grpc -->
-    <grpc.version>1.28.0</grpc.version>
+    <grpc.version>1.29.0</grpc.version>
 
     <!-- from grpc-protobuf -->
-    <protobuf.version>3.11.0</protobuf.version>
-    <guava.version>28.1-android</guava.version>
+    <protobuf.version>3.11.4</protobuf.version>
+    <guava.version>28.2-android</guava.version>
 
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
     <grpc-google-cloud-trace.version>1.0.3</grpc-google-cloud-trace.version>
 
-    <assertj.version>3.15.0</assertj.version>
-    <awaitility.version>4.0.2</awaitility.version>
+    <assertj.version>3.16.1</assertj.version>
+    <awaitility.version>4.0.3</awaitility.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
