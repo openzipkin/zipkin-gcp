@@ -196,7 +196,7 @@ public final class StackdriverStorage extends StorageComponent {
     @Override
     public HttpResponse execute(ClientRequestContext ctx, HttpRequest req) throws Exception {
       ctx.addAdditionalRequestHeader(HttpHeaderNames.CONTENT_TYPE, "application/grpc");
-      return delegate().execute(ctx, req);
+      return unwrap().execute(ctx, req);
     }
   }
 }

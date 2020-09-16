@@ -38,7 +38,7 @@ RUN export version=$(echo "${source_branch}" | cut -d '-' -f 2) && \
   (mkdir stackdriver && cd stackdriver && jar -xf ../zipkin-module-storage-stackdriver-${version}-module.jar) && \
   rm zipkin-module-storage-stackdriver-${version}-module.jar
 
-FROM openzipkin/zipkin:2.21.1
+FROM openzipkin/zipkin:2.21.7
 MAINTAINER Zipkin "https://zipkin.io/"
 
 COPY --from=built /zipkin-gcp/ /zipkin/

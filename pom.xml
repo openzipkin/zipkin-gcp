@@ -44,38 +44,40 @@
     <slf4j.version>1.7.30</slf4j.version>
 
     <!-- matching armeria/grpc/zipkin -->
-    <spring-boot.version>2.3.0.RELEASE</spring-boot.version>
-    <zipkin.version>2.21.2</zipkin.version>
-    <zipkin-reporter.version>2.15.0</zipkin-reporter.version>
+    <spring-boot.version>2.3.3.RELEASE</spring-boot.version>
+    <zipkin.version>2.21.7</zipkin.version>
+    <zipkin-reporter.version>2.15.2</zipkin-reporter.version>
 
     <!-- This allows you to test feature branches with jitpack -->
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
     <!--    <brave.version>master-SNAPSHOT</brave.version>-->
     <brave.groupId>io.zipkin.brave</brave.groupId>
-    <brave.version>5.12.3</brave.version>
+    <brave.version>5.12.6</brave.version>
 
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
-    <armeria.version>0.99.6</armeria.version>
+    <armeria.version>0.99.9</armeria.version>
     <!-- from armeria-grpc -->
-    <grpc.version>1.29.0</grpc.version>
+    <grpc.version>1.31.0</grpc.version>
 
     <!-- from grpc-protobuf -->
-    <protobuf.version>3.11.4</protobuf.version>
-    <guava.version>28.2-android</guava.version>
+    <protobuf.version>3.12.0</protobuf.version>
+    <guava.version>29.0-android</guava.version>
 
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace.version>1.0.3</grpc-google-cloud-trace.version>
+    <grpc-google-cloud-trace.version>1.2.0</grpc-google-cloud-trace.version>
 
-    <assertj.version>3.16.1</assertj.version>
+    <assertj.version>3.17.2</assertj.version>
     <awaitility.version>4.0.3</awaitility.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
-    <errorprone.version>2.3.4</errorprone.version>
+    <errorprone.version>2.4.0</errorprone.version>
 
-    <license-maven-plugin.version>3.0</license-maven-plugin.version>
-    <maven-shade-plugin.version>3.2.3</maven-shade-plugin.version>
+    <!-- TODO: cleanup any redundant ignores now also in the 4.0 release (once final) -->
+    <license-maven-plugin.version>4.0.rc2</license-maven-plugin.version>
+    <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+    <!-- 3.0.0-M5 breaks the build: https://github.com/openzipkin/zipkin/issues/3159 -->
     <maven-failsafe-plugin.version>3.0.0-M4</maven-failsafe-plugin.version>
   </properties>
 
@@ -162,7 +164,7 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>2.28.2</version>
+        <version>3.5.10</version>
       </dependency>
       <dependency>
         <groupId>org.hamcrest</groupId>
@@ -228,7 +230,7 @@
       <dependency>
         <groupId>com.google.api.grpc</groupId>
         <artifactId>proto-google-common-protos</artifactId>
-        <version>1.17.0</version>
+        <version>1.18.1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -355,13 +357,14 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.18</version>
+        <version>1.19</version>
         <configuration>
           <signature>
             <groupId>org.codehaus.mojo.signature</groupId>
             <artifactId>${main.signature.artifact}</artifactId>
             <version>1.0</version>
           </signature>
+          <checkTestClasses>false</checkTestClasses>
         </configuration>
         <executions>
           <execution>
@@ -452,7 +455,7 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[11,14)</version>
+                  <version>[11,15)</version>
                 </requireJavaVersion>
               </rules>
             </configuration>
@@ -541,7 +544,7 @@
 
           <plugin>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.1.1</version>
+            <version>3.2.0</version>
             <configuration>
               <failOnError>false</failOnError>
               <!-- hush pedantic warnings: we don't put param and return on everything! -->

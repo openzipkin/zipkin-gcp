@@ -66,7 +66,7 @@ class CredentialsDecoratingClient extends SimpleDecoratingHttpClient implements 
           }));
         }
         try {
-          responseFuture.complete(delegate().execute(ctx, newReq));
+          responseFuture.complete(unwrap().execute(ctx, newReq));
         } catch (Exception e) {
           responseFuture.completeExceptionally(e);
         }

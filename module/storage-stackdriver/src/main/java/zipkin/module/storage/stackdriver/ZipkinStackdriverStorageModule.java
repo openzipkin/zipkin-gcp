@@ -110,11 +110,11 @@ public class ZipkinStackdriverStorageModule {
           .successfulResponseLogLevel(LogLevel.INFO);
       switch (httpLogging) {
         case HEADERS:
-          loggingBuilder.contentSanitizer(unused -> "");
+          loggingBuilder.contentSanitizer((unused1, unused2) -> "");
           break;
         case BASIC:
-          loggingBuilder.contentSanitizer(unused -> "");
-          loggingBuilder.headersSanitizer(unused -> HttpHeaders.of());
+          loggingBuilder.contentSanitizer((unused1, unused2) -> "");
+          loggingBuilder.headersSanitizer((unused1, unused2) -> HttpHeaders.of());
           break;
         default:
           break;
