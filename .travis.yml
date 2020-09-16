@@ -6,7 +6,7 @@ cache:
 
 language: java
 
-jdk: openjdk13
+jdk: openjdk14
 
 before_install:
   # allocate commits to CI, not the owner of the deploy key
