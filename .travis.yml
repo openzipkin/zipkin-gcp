@@ -1,14 +1,22 @@
 # Run `travis lint` when changing this file to avoid breaking the build.
+dist: focal
+language: java
+# Intentionally don't use "jdk" key as it is coupled to jdk.java.net availability.
+addons:
+  apt:
+    update: true
 
 cache:
   directories:
     - $HOME/.m2
 
-language: java
-
-jdk: openjdk14
-
 before_install:
+  # Use OS package to update JDK (TODO 15 wasn't available)
+  - export JAVA_VERSION=14
+  - sudo apt-get -y install openjdk-$JAVA_VERSION-jdk
+  - export JAVA_HOME=/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64/
+  - ./mvnw -version
+
   # allocate commits to CI, not the owner of the deploy key
   - git config user.name "zipkinci"
   - git config user.email "zipkinci+zipkin-dev@googlegroups.com"

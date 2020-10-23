@@ -13,18 +13,30 @@
 # the License.
 #
 
-
-set -v
+# This script relies on variables defined by Docker Hub Autobuild
+# https://docs.docker.com/docker-hub/builds/advanced/#environment-variables-for-building-and-testing
+#
+# This script uses /bin/bash, not /bin/sh, because /bin/sh on Docker Hub image uses doesn't allow
+# substitutions like: ${DOCKER_TAG//,/ }
+set -eux
 
 # This hook is called with the current directory set to the same as the Dockerfile, so we go back
 # to top level.
 cd ..
 
-echo "Building images for $SOURCE_BRANCH"
+echo "Building images for ${SOURCE_BRANCH}"
 
-docker build --build-arg source_branch="$SOURCE_BRANCH" -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" .
+# $SOURCE_BRANCH is something like
+#
+#   master       - Building the master branch. This cut command will return 'master', and Dockerfiles will ignore it
+#   1.0.1        - Building a release image along with a new Zipkin server version. This cut command will return
+#                  '1.0.1' and Dockerfiles will use it to fetch the correct version of Zipkin.
+#   docker-1.0.1 - Building a release image, but not a new Zipkin server. This cut command will return
+#                  '1.0.1' and Dockerfiles will use it to fetch the correct version of Zipkin.
+RELEASE_VERSION="$(echo "${SOURCE_BRANCH}" | cut -d '-' -f 2)"
 
-IFS=',' read -ra TAGS <<< "$DOCKER_TAG"
-for tag in ${TAGS[@]}; do
+docker build --build-arg release_version="${RELEASE_VERSION}" -f "${DOCKERFILE_PATH}" -t "${IMAGE_NAME}" .
+
+for tag in ${DOCKER_TAG//,/ }; do
   docker tag "$IMAGE_NAME" "${DOCKER_REPO}:${tag}"
 done
