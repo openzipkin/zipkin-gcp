@@ -1,14 +1,14 @@
 # Run `travis lint` when changing this file to avoid breaking the build.
-
-cache:
-  directories:
-    - $HOME/.m2
-
+dist: focal
 language: java
 # Intentionally don't use "jdk" key as it is coupled to jdk.java.net availability.
 addons:
   apt:
     update: true
+
+cache:
+  directories:
+    - $HOME/.m2
 
 before_install:
   # Use OS package to update JDK (TODO 15 wasn't available)
