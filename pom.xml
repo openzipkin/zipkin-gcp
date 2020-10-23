@@ -67,7 +67,6 @@
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
     <grpc-google-cloud-trace.version>1.2.5</grpc-google-cloud-trace.version>
 
-
     <!-- Test only dependencies -->
     <junit.version>4.13.1</junit.version>
     <junit-jupiter.version>5.7.0</junit-jupiter.version>
