@@ -11,8 +11,8 @@ addons:
     update: true
 
 before_install:
-  # Use OS package to update JDK
-  - export JAVA_VERSION=15
+  # Use OS package to update JDK (TODO 15 wasn't available)
+  - export JAVA_VERSION=14
   - sudo apt-get -y install openjdk-$JAVA_VERSION-jdk
   - export JAVA_HOME=/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64/
   - ./mvnw -version
