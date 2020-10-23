@@ -29,9 +29,6 @@
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
-    <!-- Server is Java 8+ -->
-    <main.java.version>1.8</main.java.version>
-    <main.signature.artifact>java18</main.signature.artifact>
   </properties>
 
   <modules>
@@ -56,25 +53,10 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>net.orfjackal.retrolambda</groupId>
-        <artifactId>retrolambda-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
           <!-- https://github.com/spring-projects/spring-boot/issues/3426 transitive exclude doesn't work -->
-          <!--
-          Not excluding guava right now eventhough there is an overlap to avoid the following conflict
-
-          java.lang.NoSuchMethodError: com.google.common.base.Preconditions.checkArgument(ZLjava/lang/String;CLjava/lang/Object;)V
-             at io.grpc.Metadata$Key.validateName(Metadata.java:629) ~[grpc-core-1.20.0.jar!/:1.20.0]
-          -->
           <excludeGroupIds>
             io.zipkin.zipkin2,org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,com.google.code.gson,org.reactivestreams,com.google.code.findbugs,javax.annotation,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils
           </excludeGroupIds>

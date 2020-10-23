@@ -36,9 +36,15 @@ Stackdriver Configuration variables are detailed [here](../module/storage-stackd
 
 ## Building
 
-To build a zipkin-gcp Docker image, in the top level of the repository, run something
-like
+To build a zipkin-gcp Docker image from source, in the top level of the repository, run:
 
 ```bash
 $ docker build -t openzipkin/zipkin-gcp:test -f docker/Dockerfile .
 ```
+
+To build from a published version, run this instead:
+
+```bash
+$ docker build --build-arg RELEASE_VERSION=0.17.0 -t openzipkin/zipkin-gcp:test -f docker/Dockerfile .
+```
+

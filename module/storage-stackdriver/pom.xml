@@ -37,13 +37,7 @@
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>0.20.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
+      <version>0.22.0</version>
     </dependency>
     <!-- google-auth-library-oauth2-http strictly depends on...
             google-http-java-client, which strictly depends on...

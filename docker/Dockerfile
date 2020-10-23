@@ -1,5 +1,5 @@
 #
-# Copyright 2016-2020 The OpenZipkin Authors
+# Copyright 2015-2020 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -12,6 +12,8 @@
 # the License.
 #
 
+ARG zipkin_version=2.22.0
+
 # We copy files from the context into a scratch container first to avoid a problem where docker and
 # docker-compose don't share layer hashes https://github.com/docker/compose/issues/883 normally.
 # COPY --from= works around the issue.
@@ -19,25 +21,22 @@ FROM scratch as scratch
 
 COPY . /code/
 
-FROM openzipkin/zipkin-builder as built
+FROM openzipkin/zipkin-builder as install
 
+WORKDIR /install
+
+# Conditions aren't supported in Dockerfile instructions, so we copy source even if it isn't used.
 COPY --from=scratch /code /code
 
-WORKDIR /code
+# This will either be "master" or a real version ex. "2.4.5"
+ARG release_version=master
+ENV RELEASE_VERSION=${release_version}
+COPY docker/install.sh /tmp/
+RUN /tmp/install.sh && rm /tmp/install.sh
 
-RUN mvn -B --no-transfer-progress package -DskipTests=true -pl module/storage-stackdriver -am
+FROM openzipkin/zipkin:$zipkin_version
 
-WORKDIR /zipkin-gcp
-
-RUN cp /code/module/storage-stackdriver/target/zipkin-module-storage-stackdriver-*-module.jar stackdriver.jar && \
-  echo > .stackdriver_profile && \
-  (mkdir stackdriver && cd stackdriver && jar -xf ../stackdriver.jar) && \
-  rm stackdriver.jar
-
-FROM openzipkin/zipkin:2.21.7
-MAINTAINER Zipkin "https://zipkin.io/"
-
-COPY --from=built /zipkin-gcp/ /zipkin/
+COPY --from=install /install/ /zipkin/
 
 # Readback is currently not supported
 ENV QUERY_ENABLED false

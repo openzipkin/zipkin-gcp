@@ -3,7 +3,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-module-storage-stackdriver.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-module-storage-stackdriver)
 
 # zipkin-gcp
-Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 6 or later.
+Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 8 or later.
 
 # Usage
 These components integrate traced applications and servers through Google Cloud services
