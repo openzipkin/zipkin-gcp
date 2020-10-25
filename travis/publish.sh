@@ -187,7 +187,8 @@ if is_pull_request; then
   true
 
 # If we are on master, we will deploy the latest snapshot or release version
-#   - If a release commit fails to deploy for a transient reason, delete the broken version from bintray and click rebuild
+#  * If a release commit fails to deploy for a transient reason, drop to staging repository in
+#    sonatype and try again: https://oss.sonatype.org/#stagingRepositories
 elif is_travis_branch_master; then
 
   # Verify that the result of this snapshot will actually work by integrating stackdriver with
@@ -200,7 +201,6 @@ elif is_travis_branch_master; then
   # If the deployment succeeded, sync it to Maven Central. Note: this needs to be done once per project, not module, hence -N
   if is_release_commit; then
     run_docker_hub_build
-    ./mvnw --batch-mode -s ./.settings.xml -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
   fi
 
 # If we are on a release tag, the following will update any version references and push a version tag for deployment.

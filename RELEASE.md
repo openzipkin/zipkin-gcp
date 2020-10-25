@@ -26,14 +26,14 @@ Ex You'll see comments like this:
 ```yaml
 env:
   global:
-  # Ex. travis encrypt BINTRAY_USER=your_github_account
+  # Ex. travis encrypt SONATYPE_USER=your_sonatype_account
   - secure: "VeTO...
 ```
 
 To re-encrypt, you literally run the commands with relevant values and replace the "secure" key with the output:
 
 ```bash
-$ travis encrypt BINTRAY_USER=adrianmole
+$ travis encrypt SONATYPE_USER=adrianmole
 Please add the following to your .travis.yml file:
 
   secure: "mQnECL+dXc5l9wCYl/wUz+AaYFGt/1G31NAZcTLf2RbhKo8mUenc4hZNjHCEv+4ZvfYLd/NoTNMhTCxmtBMz1q4CahPKLWCZLoRD1ExeXwRymJPIhxZUPzx9yHPHc5dmgrSYOCJLJKJmHiOl9/bJi123456="
@@ -63,8 +63,8 @@ reformat the `.travis` file.
 
 ### Troubleshooting invalid credentials
 
-If you receive a '401 unauthorized' failure from jCenter or Bintray, it is
-likely `BINTRAY_USER` or `BINTRAY_KEY` entries are invalid, or possibly the user
+If you receive a '401 unauthorized' failure from OSSRH, it is
+likely `SONATYPE_USER` or `SONATYPE_PASSWORD` entries are invalid, or possibly the user
 associated with them does not have rights to upload.
 
 The least destructive test is to try to publish a snapshot manually. By passing
@@ -73,7 +73,7 @@ is a good way to validate that your unencrypted credentials are authorized.
 
 Here's an example of a snapshot deploy with specified credentials.
 ```bash
-$ BINTRAY_USER=adrianmole BINTRAY_KEY=ed6f20bde9123bbb2312b221 TRAVIS_PULL_REQUEST=false TRAVIS_TAG= TRAVIS_BRANCH=master travis/publish.sh
+$ export GPG_TTY=$(tty) && GPG_PASSPHRASE=whackamole SONATYPE_USER=adrianmole SONATYPE_PASSWORD=ed6f20bde9123bbb2312b221 TRAVIS_PULL_REQUEST=false TRAVIS_TAG= TRAVIS_BRANCH=master travis/publish.sh
 ```
 
 ## First release of the year
@@ -95,30 +95,27 @@ $ git commit -am"Adjusts copyright headers for this year"
 
 ## Manually releasing
 
-If for some reason, you lost access to CI or otherwise cannot get automation to work, bear in mind this is a normal maven project, and can be released accordingly. The main thing to understand is that libraries are not GPG signed here (it happens at bintray), and also that there is a utility to synchronise to maven central. Note that if for some reason [bintray is down](https://status.bintray.com/), the below will not work.
+If for some reason, you lost access to CI or otherwise cannot get automation to work, bear in mind
+this is a normal maven project, and can be released accordingly.
+
+*Note:* If [Sonatype is down](https://status.sonatype.com/), the below will not work.
 
 ```bash
 # First, set variable according to your personal credentials. These would normally be decrypted from .travis.yml
-BINTRAY_USER=your_github_account
-BINTRAY_KEY=xxx-https://bintray.com/profile/edit-xxx
-SONATYPE_USER=your_sonatype_account
-SONATYPE_PASSWORD=your_sonatype_password
+export GPG_TTY=$(tty)
+export GPG_PASSPHRASE=your_gpg_passphrase
+export SONATYPE_USER=your_sonatype_account
+export SONATYPE_PASSWORD=your_sonatype_password
 VERSION=xx-version-to-release-xx
 
 # now from latest master, prepare the release. We are intentionally deferring pushing commits
-./mvnw --batch-mode -s .settings.xml -Prelease -nsu -DreleaseVersion=$VERSION -Darguments="-DskipTests -Dlicense.skip=true" release:prepare  -DpushChanges=false
+./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DreleaseVersion=$VERSION -Darguments="-DskipTests -Dlicense.skip=true" release:prepare  -DpushChanges=false
 
 # once this works, deploy and synchronize to maven central
 git checkout $VERSION
-./mvnw --batch-mode -s .settings.xml -Prelease -nsu -DskipTests deploy
-./mvnw --batch-mode -s .settings.xml -nsu -N io.zipkin.centralsync-maven-plugin:centralsync-maven-plugin:sync
+./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests deploy
 
-# If Bintray is down, or having permissions problems, the above won't work, manually release
-# Note: you'll need GPG setup with your key, similar to Apache process
-GPG_TTY=$(tty) ./mvnw -s .settings.xml -Prelease -Psonatype -nsu deploy -DskipTests
-# When finished, click close and release here https://repository.apache.org/#stagingRepositories
-
-# if one of the above worked, clean up stuff and push the local changes.
+# if all the above worked, clean up stuff and push the local changes.
 ./mvnw release:clean
 git checkout master
 git push
