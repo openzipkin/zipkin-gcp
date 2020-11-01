@@ -12,6 +12,8 @@
 # the License.
 #
 
+# This file is in the ./docker directory as otherwise it is mistaken for a GitHub Workflow
+
 version: "3.6"
 volumes:
   gcp-service-account:
