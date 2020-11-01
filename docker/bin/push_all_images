@@ -22,7 +22,6 @@ if ! test -f docker/Dockerfile; then
   exit 1
 fi
 
-TARGET=zipkin-gcp
 VERSION=${1:-$(mvn help:evaluate -N -Dexpression=project.version -q -DforceStdout)}
 
 case ${VERSION} in
@@ -43,7 +42,7 @@ TAGS=""
 for repo in ${DOCKER_REPOS}; do
   TAGS="${TAGS}\n"
   for tag in ${DOCKER_TAGS}; do
-    TAGS="${TAGS} ${repo}/openzipkin/${TARGET}:${tag}"
+    TAGS="${TAGS} ${repo}/openzipkin/${DOCKER_TARGET}:${tag}"
   done
 done
 

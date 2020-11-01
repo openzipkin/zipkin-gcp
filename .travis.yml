@@ -16,6 +16,7 @@ cache:
     - $HOME/.m2
 
 before_install:
+  - export DOCKER_TARGET=zipkin-gcp
   - |
     # Use OS package to update JDK (TODO 15 wasn't available)
     OPENJDK_VERSION=14
@@ -66,7 +67,7 @@ jobs:
     - name: Re-push all Docker images
       script:
         - |
-          docker/bin/push_all $(echo "${TRAVIS_TAG}" | sed 's/^docker-//') &&
+          docker/bin/push_all_images $(echo "${TRAVIS_TAG}" | sed 's/^docker-//') &&
           git push origin :"${TRAVIS_TAG}"
       if: 'type IN (push) and tag =~ /^docker-/'
 
