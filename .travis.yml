@@ -1,56 +1,80 @@
 # Run `travis lint` when changing this file to avoid breaking the build.
-dist: focal
+
+# We need a full VM so that testcontainers can use Docker
+# See https://docs.travis-ci.com/user/reference/overview/#for-a-particular-travisyml-configuration
+arch: amd64           # arm64 is LXD containers which we can't use because we run Docker tests
+os: linux             # required for arch different than amd64
+dist: focal           # newest available distribution
+
 language: java
-# Intentionally don't use "jdk" key as it is coupled to jdk.java.net availability.
-addons:
-  apt:
-    update: true
+
+services:
+  - docker
 
 cache:
   directories:
     - $HOME/.m2
 
 before_install:
-  # Use OS package to update JDK (TODO 15 wasn't available)
-  - export JAVA_VERSION=14
-  - sudo apt-get -y install openjdk-$JAVA_VERSION-jdk
-  - export JAVA_HOME=/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64/
-  - ./mvnw -version
+  - |
+    # Use OS package to update JDK (TODO 15 wasn't available)
+    OPENJDK_VERSION=14
+    sudo apt-get -y install openjdk-${OPENJDK_VERSION}-jdk
+    export JAVA_HOME=/usr/lib/jvm/java-${OPENJDK_VERSION}-openjdk-${TRAVIS_CPU_ARCH}/
+    ./mvnw -version
+  - |
+    # Cache as help:evaluate is not quick
+    export POM_VERSION=$(./mvnw help:evaluate -N -Dexpression=project.version -q -DforceStdout)
 
-  # allocate commits to CI, not the owner of the deploy key
-  - git config user.name "zipkinci"
-  - git config user.email "zipkinci+zipkin-dev@googlegroups.com"
-  # setup https authentication credentials, used by ./mvnw release:prepare
-  - git config credential.helper "store --file=.git/credentials"
-  - echo "https://$GH_TOKEN:@github.com" > .git/credentials
-  # Only attempt to decrypt secrets when it's not a PR and has access to secure env var
-  #
-  # Encrypted service account file for integration testing
-  #   This file is referenced via GOOGLE_APPLICATION_CREDENTIALS env var
-  #   Ex. travis encrypt-file travis/zipkin-gcp-ci-0d7917f58da7.json
-  #
-  # Encrypted signing keys are used for the release profile
-  #   Ex. travis encrypt-file travis/signing_key.gpg
-  # When updating this, you also must update the encrypted GPG_PASSPHRASE at the bottom of this file
-  - if [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
-      openssl aes-256-cbc -K $encrypted_0d0e64b78c84_key -iv $encrypted_0d0e64b78c84_iv -in travis/zipkin-gcp-ci-0d7917f58da7.json.enc -out travis/zipkin-gcp-ci-0d7917f58da7.json -d &&
-      export GPG_TTY=$(tty) &&
-      openssl aes-256-cbc -K $encrypted_911894d24f52_key -iv $encrypted_911894d24f52_iv -in travis/signing_key.gpg.enc -out signing_key.gpg -d &&
-      gpg --batch --passphrase $GPG_PASSPHRASE --import signing_key.gpg && rm signing_key.gpg;
-    fi;
+    # Disable testcontainers checks
+    echo checks.disable=true > ~/.testcontainers.properties
+  - |
+    # Credentials entered into https://travis-ci.org/github/openzipkin/${REPO}/settings are access
+    # controlled by branch (typically only master). Check to see if a well-known env is available
+    # before attempting to log in.
+    if [[ -n "$SONATYPE_USER" ]]; then
+      # re-use this condition to control if we prepare Docker for multi-arch
+      build-bin/setup_multiarch_docker
 
-# Override default travis to use the maven wrapper; skip license on travis due to #1512
-install: ./mvnw install -DskipTests=true -Dlicense.skip=true -Dmaven.javadoc.skip=true -B -V
-script: ./travis/publish.sh
+      # allocate commits to CI, not the owner of the deploy key
+      git config user.name "zipkinci"
+      git config user.email "zipkinci+zipkin-dev@googlegroups.com"
+
+      # setup https authentication credentials, used by ./mvnw release:prepare
+      git config credential.helper "store --file=.git/credentials"
+      echo "https://$GH_TOKEN:@github.com" > .git/credentials
+
+      # Log in to GitHub Container Registry and Docker Hub for releasing images
+      echo "$GH_TOKEN"| docker login ghcr.io -u "$GH_USER" --password-stdin
+      echo "$DOCKERHUB_PASSWORD"| docker login -u "$DOCKERHUB_USER" --password-stdin
+
+      # ensure GPG commands work non-interactively
+      export GPG_TTY=$(tty)
+      # import signing key used for jar files
+      echo ${GPG_SIGNING_KEY} | base64 --decode | gpg --batch --passphrase ${GPG_PASSPHRASE} --import
+    fi
+
+install:
+  - |
+    # use a go-offline that properly works with multi-module builds
+    ./mvnw -q --batch-mode -nsu -Prelease de.qaware.maven:go-offline-maven-plugin:resolve-dependencies
+jobs:
+  include:
+    - name: default
+      script: ./travis/publish.sh
+      if: 'NOT tag =~ /^docker-/'
+    - name: Re-push all Docker images
+      script:
+        - |
+          docker/bin/push_all $(echo "${TRAVIS_TAG}" | sed 's/^docker-//') &&
+          git push origin :"${TRAVIS_TAG}"
+      if: 'type IN (push) and tag =~ /^docker-/'
 
 branches:
   except:
     # Don't build release tags. This avoids publish conflicts because the version commit exists both on master and the release tag.
     # See https://github.com/travis-ci/travis-ci/issues/1532
     - /^[0-9]/
-    # Don't build docker- tags with Travis. Docker Hub will pick up and run the build. docker- tags are used to recreate
-    # docker images without rebuilding Zipkin so we don't need to run here.
-    - /^docker-/
 
 notifications:
   webhooks:
@@ -60,23 +84,32 @@ notifications:
     on_success: change
     on_failure: always
 
-env:
-  global:
-    # GCP Application Default Credentials used for integration tests
-    - GOOGLE_APPLICATION_CREDENTIALS=$TRAVIS_BUILD_DIR/travis/zipkin-gcp-ci-0d7917f58da7.json
-    # Ex. travis encrypt GH_TOKEN=XXX-https://github.com/settings/tokens-XXX --add
-    - secure: "cjrozW0WLbIqj3p2CncvvGNI/00qk8QkgL68mAr+/wOgo/pcgLoSYzPSv8fC/qIeZz2EHwwNRX9SYghEh24CcetAAJew7bZx1uHfIPz3IXgDe/piXE4/gm3s6n/tryX2TdteDmq7oIzFG2sPvMlo2IfxTL82JMIBGCVmP1PF+MhaW/weqWRGrTf/SE/u07uOzUR3xp8N+RaeKSR9iBv3zqjjjSgOkXEH6x9WfmDMG44I1p0AX7/NwGhrb1Czz/UwX8Vd3MMfQ/b+eRvIS58TfZYy1CCCjp0MP9VoE/hgoeU4XMLpo8upE3Zk2TnUOrqhfIwX4y92jQ6uk5w2AkEvtHNPtkm1WP5f7rMtv+jQjHLis7apfbsbDKfX/+IcVuiz0zZmlRB6umCyGWkvBg6OPeaFKHu2j7QOnMDQ5Fsl7csIYRt//a7+75tYdVPGdINkVZOUJPLouBb30cJibMRrLsaq13WxzY66uo0OtNqBD04NqCxU1itxxVz9gqtkz5Ft2RjLJ4Jsb6IF7Ag7XH3jd5t2Pf+Fer2lv+seT3DSpw91kghNq6te2D8U3vONIHpLYgTWATFDQvmWSa9ARuoSv9+wzKqjenMNf7mpWwEp1hxelGUbyM2cjV1PEbO5MWprN/OCK3CM+oRUOhJcxAHBdALL+T09JJkJKpWWvBw2ptU="
-    # Ex. travis encrypt GPG_PASSPHRASE=passphrase_for_travis/signing_key.gpg
-    - secure: "FujNETICdqqxrbjNyJwqTJlKSC9NVSbGj3LCGKF0oye9Ely/ROSBbfaW0oLoqsQfCFvhO4XPn9VRpnoCj+6Q8K8oqfbkfrbx+9PFaixRRqkiGpP8Rdtb+amamKIHPqnpbRKoDAJCh0td0juJd0Xjsco4noQc7/1CoEh9ph2yvnqSiIGa7YYGQEhfoTNV+EKjSNEN/XliXXIXIychwlzerXPL0puOjB4H+o2OMPYlCensZyczBuvkXOExTbTd0L0BSaJbHHB//XDan6tdWKMhIMNS6AL+/v3XJ3W+aBHAoCScJsCrBiPmKfeguWqwIDvAFoW6jM7rg4obKv7TpqQANt0gy8MLh5KMOuRIBuRXKj7ANW2Wa5qpkTN/jfD4lxeGvUiZoqJaqdF2YH0s72ZGvpt69WcEvy6D/fLzNaKCwPFBAIogXG5el7SoXDEH7NphfUgeRQRgbCJYnYL6GccPkIEfmLpnv9j6p+VffU0oq+OXFY28AZA61mgbdV5EJ5fux/bXvmVDS40yQwBBPGeGIyYZMpCg5/otck6UuR8K70/tqPwC/Bkl4Vu79uaIYSJnO7ag50gctCBwAbEthBBZRnoFnaMeXQRfJfnI85egruYmpMBxD/n/tpTubwRv6FN2q1M8055EjQwfTqrqWptXnK3pSRai4BILNVMRfx8kjio="
-    # Ex. travis encrypt SONATYPE_USER=your_sonatype_account
-    - secure: "YiZ54F16YXnmdQEs8GjR6uhnSqC0OLSaCyCkYsAN4/sotg7pmZIPuByE06lwqYP6fZbBS4JqpZ73wnI4Oa4rCxfplsiG97D7S70/3W4WmE4b+eDfeZukMtO4Ce2495W2kH1IRYIqENpFBZGZsXZW+vvNxUkRxSiYVsrS4RFW1iK/7u4eQ53yXzbI7l7RW9B62s5m+NJk35eOEx4RXmHLhjS/BrAjY9A55nRjY8NUVofdfuOrLgmdQ/r9+aJaWAO8dt5GlgvDbrydZwyIdCD9xBO6N+3205Zg8pSJxEpPRzX952Qh16IhIT5vHzSOenKCT3XJj58LZN31wPLo4e/xkaLl24aeDHMLUo/idCjNNgXzAe3TFLSDpP2XFWoByI/tmvhac9OTE87OUTYDvyVmmPG9Zxpr07G3I6Bqt/eAozS2pWXsAEO0K171mGOvAdI0wJn8/drtw2oOtuRzi/NbT1kC/mFxJeox/ASXyiHtzMunMX9FWw8Wcc//TdX27MY60AecfPentDCXfGb/t5IrM66zqkm/pEsVBU22te5Ywt510aSRDSkNM8LVaHIrxgjs2seMSdv2NN8fn5wgMnOHdP1qcBDbs2Q483E32f0D97qIer+RKxQgSm+Ykqs7APASGy91XJbDrtBrMhQBtjWiROOAeQn0/L6HJEStUgJesXc="
-    # Ex. travis encrypt SONATYPE_PASSWORD=your_sonatype_password
-    - secure: "Ygg5la3KxUfOYeoNxeZdUaVmv95NS456EDNk0Jdia90GuyaClj93CM3vg40EhT5a2a0ZvkSuC/jJpSTZEbhUw4A/Y2Rt8Lx1B1x/D4n/z9uh0p6UaoOk5wfRrNcelKw6spZJhSRgmqD6OVdJRuL80xLtfz6uS4CDNH2r/ZrYqZc+31LKD+olReKGkvkSD+XsvHSUM25cq49K634Vnt31a+voMvTUZQXLdmUIp0Q3rDS5B3pViLZazlUbnvvCBZ5BStFRpTvnxu69mTalkhCVGixF+DP+ddy19xNoq9+0NFBZY+f6dfrKvyrdnZchBUdW2+Yt4zqVRPRxrerAJMDzmhmAvE7ClGsWDaNwEDlZw7O/ntO34FIvKqlYSfBh1R8OM2WZERt8kdw5MwCUy72dbboYZLqjFw9LUrdPniDhqVoG431jRELvjUAyEJ8+tM5fRzvuA4IoyG8IKLmmfxIFk7qg8eenQe024u8oWC8PWVWmDmhn12zBQtUMc/ljTQMViHBhdIsx+Nr2rtXFEnwgkEBkGloh6kARUxSYwoyqpqvZoM77NdZY2kNQU0PHkDqeolBO0LO1qml4FtAbx8ppAr1pm3WuOy8JbLTiDpAKml0bZPYX3/qHkAxezZUODusrMdhUp/qE8zT0UAtnnI6J/UAUX1HgHBIK3iZq/PwJRcs="
 
-    # To trigger Docker image publication, we need the Trigger Url from https://cloud.docker.com/u/openzipkin/repository/docker/openzipkin/zipkin/builds/edit
-    # However, this is too big for travis encrypt. Instead, we decompose it into
-    # two variables: https://cloud.docker.com/api/build/v1/source/${DOCKER_HUB_SERVICE_UUID}/trigger/${DOCKER_HUB_TRIGGER_UUID}/call/
-    # Ex. travis encrypt DOCKER_HUB_SERVICE_UUID=https://cloud.docker.com/api/build/v1/source/XXX/trigger/...
-    - secure: "lEl9FW++oLyEUbRusW1VNJgFKI788D5ElG2feQkWVgUwqKdcBlNNzMswuHO9vOJIlLV7TzNeplG8InLgFPGIjpf/+B6JeJewIBvr20GNKMQnhzRrjLrbrQkLC3HGWH7ZQYTC3H2CxiO7fu3vX4g/R9xdNrdK3uPLkhvVfNu+tqMPShuPpR2KhqS7qMK9iWOaB1svy858P59KbjC1e6eiGnVJpa7cAGNgr7GrtpkLKdQi6ocSpTxXfmiPioha8CPzY1AanTJklPWU5Jot06XFSjsLUdsn8pYrz/6SIMQG0DeZDSU1YTc5nbXoSxuuQncZDt5K946tNaB3SoBp6m3GDgWmxtsEuf6a3r/PMl8U8pSjRjL4lVCIZTwP9J55jCv307rEu29hXzkltf63Dmzp+oiYPiPET+glde58yndrDpQNOAIlwrVMw0ZpdeJ6qerdl0W/umvd9XE1hMOu6ZkV14ee5ZCSsBqFyZa53k0GPm/wWkjM8B5P0+emzBlR7DlxILWOPGqUcA4m/PqrxmdVZ9z7GsQ8p0WsJyzMQwp77mDI6wEulkVdAlNRUDIdBmqYvBv1Mbq2wUXqu4WFFgjca5AhxytSLrnX/WvqfDcwOmuP9Ul1qjjFsx4aa30VcMeXkkvqTIv1BCJhuv+lkaUPurhKqGQN2dfKJM9SqKqGvuQ="
-    # Ex. travis encrypt DOCKER_HUB_TRIGGER_UUID=https://cloud.docker.com/api/build/v1/source/.../trigger/XXX
-    - secure: "pKpiLKEn4A2Zd491b/A6rV8c5TAZ/ot3p59y2j7T9fVv7GLFGYIARTZdjKjbWfHwaK7K+AovF5EUv2+GvI9QzJk460RbZMuxs4oXBCsewk+K4sKDwHaJHBcUYeY6f3KrRnU/UqpwWpojZLDjvYlwWIfRoMtOaVYYd5yRMgOx2H0GZZGfnF07YbRRRSfqzJYY7TlCaj9ZukvFiJsYm67i/mfDvZ8kqNM+E8nBwQ9CBX0/uJ4o9QG8zL6P9YGtb1UjyGXWvg92mKwADBfFsqoU4hNs255UgPjUbxzVTQXAwyGr7ZOcsADKZ0g9IGX/4TdwQMeABIdb6JSIdZbxadPzLEy4NN45t6YeEm73XjXpkrA1DxohEKFzWpEGK5uXnTO09tEOH4YiifvEx7w6IUqVSDon2UulH1Bash44uiGGloD3dfdtPUCUIws+QcItm3kWVxHYNsuCqwmYuBuAYKVe6SZvBSFHM8Hj1WjO/O/+N/cIVTSIQJUaIqfd584yI7/VcI+7h3vEzvKlxUVakc3QVGfz7ANERdAm8hLwuJe52EHnln5MR3BBqkhexv+7jl8rPrfbzN/1xqzxrk1S1y12D2VBNWkWEWxBsl98IWlQECrjvTtUGAYIc/7gaa76xWxld1eCD0yjWB47m056OnJ/w3Y785Stf80NPZ2MykC0jYA="
+# Secure variables needed for release and publication
+#
+# When Travis, add to https://travis-ci.org/github/openzipkin/${REPO}/settings
+#
+# GH_TOKEN=XXX-https://github.com/settings/tokens-XXX
+#   - makes release commits and tags, also writes to GHCR if Docker
+#   - needs repo:status, public_repo and if Docker write:packages, delete:packages
+#   - referenced in .settings.xml
+#   - store like this: echo "https://$GH_TOKEN:@github.com" > .git/credentials
+# GH_USER=user_that_created_GH_TOKEN
+#   - login like this: echo "$GH_TOKEN"| docker login ghcr.io -u "$GH_USER" --password-stdin
+# GPG_SIGNING_KEY=$(gpg -a --export-secret-keys zipkin-admin@googlegroups.com |base64)
+#   - used to sign jars in release commands
+#   - sent to keyserver.ubuntu.com
+#   - import like this: echo ${GPG_SIGNING_KEY} | base64 --decode | gpg --batch --passphrase ${GPG_PASSPHRASE} --import
+# GPG_PASSPHRASE=passphrase_for_GPG_SIGNING_KEY
+#   - referenced in .settings.xml
+# SONATYPE_USER=your_sonatype_account_token
+#   - used to publish to Maven Central via https://oss.sonatype.org/#stagingRepositories
+#   - needs access to io.zipkin via https://issues.sonatype.org/browse/OSSRH-16669
+#   - generate via https://oss.sonatype.org/#profile;User%20Token
+#   - referenced in .settings.xml
+# SONATYPE_PASSWORD=password_to_SONATYPE_USER
+#   - referenced in .settings.xml
+# DOCKERHUB_USER=typically_dockerzipkindeployer
+#   - only push top-level projects: zipkin zipkin-aws zipkin-dependencies zipkin-gcp to Docker Hub, only on release
+#   - login like this: echo "$DOCKERHUB_PASSWORD"| docker login -u "$DOCKERHUB_USER" --password-stdin
+# DOCKERHUB_PASSWORD=password_to_DOCKERHUB_USER

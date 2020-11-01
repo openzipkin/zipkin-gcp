@@ -10,62 +10,29 @@ This repo uses semantic versions. Please keep this in mind when choosing version
 
 1. **Push a git tag**
 
-   The tag should be of the format `release-N.M.L`, for example `release-3.7.1`.
+   The tag should be of the format `release-N.M.L`, ex `git tag release-1.18.1; git push origin release-1.18.1`.
 
 1. **Wait for Travis CI**
 
-   This part is controlled by [`travis/publish.sh`](travis/publish.sh). It creates a bunch of new commits, bumps
-   the version, publishes artifacts and syncs to Maven Central.
+   Release automation invokes [`travis/publish.sh`](travis/publish.sh), which does the following:
+     * Creates commits, N.N.N tag, and increments the version (maven-release-plugin)
+     * Publishes jars to https://oss.sonatype.org/service/local/staging/deploy/maven2 (maven-deploy-plugin)
+       * Upon close, this synchronizes jars to Maven Central
+     * Invokes [DockerHub](docker/RELEASE.md] build (docker/bin/push_all)
+
+   Notes:
+     * https://search.maven.org/ index will take longer than direct links like https://repo1.maven.org/maven2/io/zipkin
 
 ## Credentials
 
-Credentials of various kind are needed for the release process to work. If you notice something
-failing due to unauthorized, re-encrypt them using instructions at the bottom of the `.travis.yml`
-
-Ex You'll see comments like this:
-```yaml
-env:
-  global:
-  # Ex. travis encrypt SONATYPE_USER=your_sonatype_account
-  - secure: "VeTO...
-```
-
-To re-encrypt, you literally run the commands with relevant values and replace the "secure" key with the output:
-
-```bash
-$ travis encrypt SONATYPE_USER=adrianmole
-Please add the following to your .travis.yml file:
-
-  secure: "mQnECL+dXc5l9wCYl/wUz+AaYFGt/1G31NAZcTLf2RbhKo8mUenc4hZNjHCEv+4ZvfYLd/NoTNMhTCxmtBMz1q4CahPKLWCZLoRD1ExeXwRymJPIhxZUPzx9yHPHc5dmgrSYOCJLJKJmHiOl9/bJi123456="
-```
-
-A Google Cloud Platform service account key file is used for integration tests against a GCP project and
-the Stackdriver Trace service. The service account was generated this way:
-
-```bash
-$ export PROJECT_ID=zipkin-gcp-ci
-$ gcloud --project=$PROJECT_ID iam service-accounts create zipkin-ci
-$ gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member "serviceAccount:zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com" \
-    --role "roles/cloudtrace.admin"
-$ gcloud --project=$PROJECT_ID iam service-accounts keys create travis/zipkin-ci.json \
-    --iam-account zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com
-```
-
-Make sure that the key file (`*.json`) is not checked into the repository. Encrypt the file and add the
-decryption commands manually.
-```
-$ travis encrypt-file travis/zipkin-ci.json
-```
-
-Note: Do not use `travis encrypt-file -a` to automatic append decryption commands. It'll significantly
-reformat the `.travis` file.
+The release process uses various credentials. If you notice something failing due to unauthorized,
+look at the notes in [.travis.yml] and check the [project settings](https://travis-ci.org/github/openzipkin/zipkin/settings)
 
 ### Troubleshooting invalid credentials
 
-If you receive a '401 unauthorized' failure from OSSRH, it is
-likely `SONATYPE_USER` or `SONATYPE_PASSWORD` entries are invalid, or possibly the user
-associated with them does not have rights to upload.
+If you receive a '401 unauthorized' failure from OSSRH, it is likely
+`SONATYPE_USER` or `SONATYPE_PASSWORD` entries are invalid, or possibly the
+user associated with them does not have rights to upload.
 
 The least destructive test is to try to publish a snapshot manually. By passing
 the values Travis would use, you can kick off a snapshot from your laptop. This
@@ -93,7 +60,7 @@ $ ./mvnw versions:set -DnewVersion=1.3.2-SNAPSHOT -DgenerateBackupPoms=false
 $ git commit -am"Adjusts copyright headers for this year"
 ```
 
-## Manually releasing
+### Manually releasing
 
 If for some reason, you lost access to CI or otherwise cannot get automation to work, bear in mind
 this is a normal maven project, and can be released accordingly.
@@ -121,3 +88,29 @@ git checkout master
 git push
 git push --tags
 ```
+
+### Test credentials
+
+A Google Cloud Platform service account key file is used for integration tests against a GCP project and
+the Stackdriver Trace service. The service account was generated this way:
+
+```bash
+$ export PROJECT_ID=zipkin-gcp-ci
+$ gcloud --project=$PROJECT_ID iam service-accounts create zipkin-ci
+$ gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member "serviceAccount:zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com" \
+    --role "roles/cloudtrace.admin"
+$ gcloud --project=$PROJECT_ID iam service-accounts keys create travis/zipkin-ci.json \
+    --iam-account zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com
+```
+
+TODO: update these instructions for GitHub Actions, as we don't test docker with Travis anymore:
+
+Make sure that the key file (`*.json`) is not checked into the repository. Encrypt the file and add
+the decryption commands manually.
+```
+$ travis encrypt-file travis/zipkin-ci.json
+```
+
+Note: Do not use `travis encrypt-file -a` to automatic append decryption commands. It'll significantly
+reformat the `.travis` file.

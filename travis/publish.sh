@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2016-2020 The OpenZipkin Authors
+# Copyright 2015-2020 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -13,8 +13,7 @@
 # the License.
 #
 
-set -euo pipefail
-set -x
+set -euxo pipefail
 
 build_started_by_tag() {
   if [ "${TRAVIS_TAG}" == "" ]; then
@@ -73,10 +72,12 @@ check_release_tag() {
 }
 
 print_project_version() {
-  ./mvnw help:evaluate -N -Dexpression=project.version|sed -n '/^[0-9]/p'
+  # Cache as help:evaluate is not quick
+  export POM_VERSION=${POM_VERSION:-$(mvn help:evaluate -N -Dexpression=project.version -q -DforceStdout)}
+  echo "${POM_VERSION}"
 }
 
-is_release_commit() {
+is_release_version() {
   project_version="$(print_project_version)"
   if [[ "$project_version" =~ ^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$ ]]; then
     echo "Build started by release commit $project_version. Will synchronize to maven central."
@@ -87,7 +88,7 @@ is_release_commit() {
 }
 
 release_version() {
-    echo "${TRAVIS_TAG}" | sed 's/^release-//'
+  echo "${TRAVIS_TAG}" | sed 's/^release-//'
 }
 
 safe_checkout_master() {
@@ -104,67 +105,6 @@ safe_checkout_master() {
   fi
 }
 
-test_server() {
-  # Test Stackdriver Storage module with the latest version of Zipkin server.
-  temp_dir=$(mktemp -d)
-  pushd $temp_dir
-
-  # Download wait-for-it as it isn't yet available as an Ubuntu Xenial package
-  curl -sSL https://raw.githubusercontent.com/openzipkin-contrib/wait-for-it/master/wait-for-it.sh > wait-for-it.sh
-  chmod 755 wait-for-it.sh
-
-  # Download and unpack Zipkin Server
-  curl -sSL https://jitpack.io/com/github/openzipkin/zipkin/zipkin-server/master-SNAPSHOT/zipkin-server-master-SNAPSHOT-exec.jar > zipkin.jar
-
-  # Copy the Stackdriver storage module over. We assume there is only one -module.jar file
-  # so that we can drop the version from the file name.
-  cp $TRAVIS_BUILD_DIR/module/storage-stackdriver/target/*-module.jar stackdriver.jar
-
-  # Start the server. Note that the GOOGLE_APPLICATION_CREDENTIALS is configured from .travis.yml
-  # Important to run everything as a single command (i.e., the trailing '\') so that
-  # the server starts w/ Stackdriver storage
-  STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-gcp-ci \
-    java \
-    -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
-    -Dspring.profiles.active=stackdriver \
-    -cp zipkin.jar \
-    org.springframework.boot.loader.PropertiesLauncher &
-  ZIPKIN_PID=$!
-
-  # In case something bad happens, kill the server!
-  trap 'kill -9 $ZIPKIN_PID' ERR INT
-
-  echo "Waiting for Zipkin server to start..."
-  ./wait-for-it.sh localhost:9411 -t 60
-  exit_status=$?
-  if [ $exit_status -ne 0 ]; then
-    exit $exit_status
-  fi
-
-  echo "Zipkin server started, waiting for OK health result..."
-  curl --silent localhost:9411/info | jq .
-
-  health_check_result=$(curl --silent localhost:9411/health | jq -r .status)
-
-  if [ "$health_check_result" != "UP" ]; then
-    echo "Health check failed!"
-    curl --silent localhost:9411/health | jq .
-    exit 1
-  else
-    echo "Health check status is up!"
-  fi
-
-  kill -9 $ZIPKIN_PID
-
-  popd
-}
-
-run_docker_hub_build() {
-  project_version="$(print_project_version)"
-  echo "Starting Docker Hub build for ${project_version}"
-  curl -X POST -H "Content-Type: application/json" -d "{\"build\": \"true\", \"source_type\": \"Tag\", \"source_name\": \"${project_version}\"}" "https://cloud.docker.com/api/build/v1/source/${DOCKER_HUB_SERVICE_UUID}/trigger/${DOCKER_HUB_TRIGGER_UUID}/call/"
-}
-
 #----------------------
 # MAIN
 #----------------------
@@ -175,11 +115,12 @@ if ! is_pull_request && build_started_by_tag; then
 fi
 
 # During a release upload, don't run tests as they can flake or overrun the max time allowed by Travis.
-# skip license on travis due to #1512
-if is_release_commit; then
+if is_release_version; then
   true
 else
-  ./mvnw verify -nsu
+  # verify runs both tests and integration tests (Docker tests included)
+  # -Dlicense.skip=true skips license on Travis due to #1512
+  ./mvnw verify -nsu -Dlicense.skip=true
 fi
 
 # If we are on a pull request, our only job is to run tests, which happened above via ./mvnw install
@@ -188,24 +129,21 @@ if is_pull_request; then
 
 # If we are on master, we will deploy the latest snapshot or release version
 #  * If a release commit fails to deploy for a transient reason, drop to staging repository in
-#    sonatype and try again: https://oss.sonatype.org/#stagingRepositories
+#    Sonatype and try again: https://oss.sonatype.org/#stagingRepositories
 elif is_travis_branch_master; then
+  # -Prelease ensures the core jar ends up JRE 1.6 compatible
+  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests deploy
 
-  # Verify that the result of this snapshot will actually work by integrating stackdriver with
-  # Zipkin Server. This only performs a smoke test, but it will catch problems including version
-  # drift.
-  test_server
+  # Regardless of if this is a release build or not, push to corresponding Docker Registries
+  RELEASE_FROM_MAVEN_BUILD=true docker/bin/push_all $(print_project_version)
 
-  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DskipTests -Dlicense.skip=true deploy
-
-  # If the deployment succeeded, sync it to Maven Central. Note: this needs to be done once per project, not module, hence -N
-  if is_release_commit; then
-    run_docker_hub_build
+  if is_release_version; then
+    # cleanup the release trigger, but don't fail if it was already there
+    git push origin :"release-$(print_project_version)" || true
   fi
 
 # If we are on a release tag, the following will update any version references and push a version tag for deployment.
 elif build_started_by_tag; then
   safe_checkout_master
-  # skip license on travis due to #1512
-  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DreleaseVersion="$(release_version)" -Darguments="-DskipTests -Dlicense.skip=true" release:prepare
+  ./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DreleaseVersion="$(release_version)" -Darguments="-DskipTests" release:prepare
 fi

@@ -14,6 +14,7 @@ If you want to try Zipkin against Stackdriver, the easiest start is to share
 your credentials with Zipkin's docker image.
 
 ```bash
+# Note: this is mirrored as ghcr.io/openzipkin/zipkin-gcp
 $ docker run -d -p 9411:9411 --name zipkin-gcp \
   -e STORAGE_TYPE=stackdriver \
   -e GOOGLE_APPLICATION_CREDENTIALS=/zipkin/.gcp/credentials.json \
@@ -38,13 +39,14 @@ Stackdriver Configuration variables are detailed [here](../module/storage-stackd
 
 To build a zipkin-gcp Docker image from source, in the top level of the repository, run:
 
+
 ```bash
-$ docker build -t openzipkin/zipkin-gcp:test -f docker/Dockerfile .
+$ docker/build_image openzipkin/zipkin-gcp:test
 ```
 
 To build from a published version, run this instead:
 
 ```bash
-$ docker build --build-arg RELEASE_VERSION=0.17.0 -t openzipkin/zipkin-gcp:test -f docker/Dockerfile .
+$ docker/build_image openzipkin/zipkin-gcp:test 0.18.1
 ```
 

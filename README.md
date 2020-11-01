@@ -136,11 +136,18 @@ If you believe that spans are reaching Stackdriver, verify what happens to them 
 NOTE: read and write permissions are separate; only the admin role has both.
 
 ## Artifacts
-All artifacts publish to the group ID "io.zipkin.gcp". We use a common release version for all
-components.
+All artifacts publish to the group ID "io.zipkin.gcp". We use a common
+release version for all components.
 
 ### Library Releases
 Releases are at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.zipkin.gcp%22)
+
 ### Library Snapshots
 Snapshots are uploaded to [Sonatype](https://oss.sonatype.org/content/repositories/snapshots) after
 commits to master.
+
+### Docker Images
+Released versions of zipkin-gcp are published to Docker Hub as `openzipkin/zipkin-gcp`
+and GitHub Container Registry as `ghcr.io/openzipkin/zipkin-gcp`.
+
+See [docker](./docker) for details.

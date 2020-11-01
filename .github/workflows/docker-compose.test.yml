@@ -33,32 +33,15 @@ services:
     command: sh -c 'ls -lh /credentials/service-account-key.json'
     depends_on:
       - extract-service-account
-  zipkin:
-    build:
-      context: ..
-      dockerfile: "${DOCKERFILE_PATH:-docker/Dockerfile}"
-      args:
-        source_branch: "${SOURCE_BRANCH:-master}"
+  # Use fixed service and container name 'sut; so our test script can copy/pasta
+  sut:
+    image: openzipkin/zipkin-gcp:test
     volumes:
       - gcp-service-account:/credentials:ro
-    networks:
-      default:
-        aliases:
-        - zipkin
+    container_name: sut
     environment:
       - STORAGE_TYPE=stackdriver
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/service-account-key.json
       - STACKDRIVER_PROJECT_ID=zipkin-gcp-ci
-    ports:
-      # Port used for the Zipkin UI and HTTP Api
-      - 9411:9411
     depends_on:
       - extract-service-account
-  # Docker Hub automated test service - https://docs.docker.com/docker-hub/builds/automated-testing/
-  sut:
-    image: appropriate/curl
-    networks:
-    - default
-    command: -v --connect-timeout 5 --retry 30 --retry-connrefused --retry-delay 5 http://zipkin:9411/health
-    depends_on:
-    - zipkin

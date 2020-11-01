@@ -45,7 +45,7 @@
 
     <!-- matching armeria/grpc/zipkin -->
     <spring-boot.version>2.3.4.RELEASE</spring-boot.version>
-    <zipkin.version>2.22.0</zipkin.version>
+    <zipkin.version>2.22.1</zipkin.version>
     <zipkin-reporter.version>2.15.2</zipkin-reporter.version>
 
     <!-- This allows you to test feature branches with jitpack -->
@@ -83,7 +83,7 @@
     <maven-failsafe-plugin.version>3.0.0-M5</maven-failsafe-plugin.version>
   </properties>
 
-  <name>Zipkin Google Cloud Platform(Parent)</name>
+  <name>Zipkin Google Cloud Platform (Parent)</name>
   <description>Zipkin Google Cloud Platform (Parent)</description>
   <url>https://github.com/openzipkin/zipkin-gcp</url>
   <inceptionYear>2016</inceptionYear>
@@ -295,6 +295,13 @@
   <build>
     <pluginManagement>
       <plugins>
+        <!-- mvn de.qaware.maven:go-offline-maven-plugin:resolve-dependencies -->
+        <plugin>
+          <groupId>de.qaware.maven</groupId>
+          <artifactId>go-offline-maven-plugin</artifactId>
+          <version>1.2.7</version>
+        </plugin>
+
         <!-- mvn -N io.takari:maven:wrapper generates the ./mvnw script -->
         <plugin>
           <groupId>io.takari</groupId>
