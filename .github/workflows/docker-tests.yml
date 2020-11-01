@@ -89,6 +89,6 @@ jobs:
       - name: Verify Docker image openzipkin/zipkin-gcp:test
         run: |
           # This just makes sure containers run and the HEALTHCHECK works (for now..)
-          COMPOSE_FILE=./.github/workflows/docker/docker-compose.test.yml
+          COMPOSE_FILE=./.github/workflows/docker-compose.test.yml
           docker-compose -f "${COMPOSE_FILE}" up -d --quiet-pull
           docker/bin/block-on-health sut || (docker logs sut && exit 1)
