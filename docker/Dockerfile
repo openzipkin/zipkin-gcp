@@ -12,7 +12,8 @@
 # the License.
 #
 
-ARG zipkin_version=2.22.0
+ARG java_version
+ARG zipkin_version
 
 # We copy files from the context into a scratch container first to avoid a problem where docker and
 # docker-compose don't share layer hashes https://github.com/docker/compose/issues/883 normally.
@@ -21,20 +22,23 @@ FROM scratch as scratch
 
 COPY . /code/
 
-FROM openzipkin/zipkin-builder as install
+FROM ghcr.io/openzipkin/java:${java_version} as install
 
 WORKDIR /install
 
 # Conditions aren't supported in Dockerfile instructions, so we copy source even if it isn't used.
 COPY --from=scratch /code /code
 
-# This will either be "master" or a real version ex. "2.4.5"
-ARG release_version=master
-ENV RELEASE_VERSION=${release_version}
-COPY docker/install.sh /tmp/
-RUN /tmp/install.sh && rm /tmp/install.sh
+# This will either be a snapshot like 2.4.5-SNAPSHOT or a real version ex. "2.4.5"
+ARG release_version
+ENV RELEASE_VERSION=$release_version
+# When true, main images reuse zipkin-exec.jar and zipkin-slim.jar in the context root
+ARG release_from_maven_build=false
+ENV RELEASE_FROM_MAVEN_BUILD=$release_from_maven_build
+RUN /code/docker/bin/install.sh
 
-FROM openzipkin/zipkin:$zipkin_version
+FROM ghcr.io/openzipkin/zipkin:${zipkin_version} as zipkin-gcp
+LABEL org.opencontainers.image.description="Zipkin with Google Cloud Trace storage on OpenJDK and Alpine Linux"
 
 COPY --from=install /install/ /zipkin/
 

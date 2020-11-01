@@ -1,12 +1,7 @@
-**/\.*
-!.git
+# https://docs.docker.com/engine/reference/builder/#dockerignore-file
+**
+# Install script runs within Docker
+!docker/bin/install.sh
 
-**/target
-**/node_modules
-**/*.iml
-
-*.md
-
-**/Dockerfile
-travis
-mvnw*
+# Allow re-use of built artifacts when building docker from master or a release tag
+!./module/storage-stackdriver/target/zipkin-module-storage-stackdriver-*-module.jar
