@@ -32,10 +32,11 @@ COPY --from=scratch /code /code
 # This will either be a snapshot like 2.4.5-SNAPSHOT or a real version ex. "2.4.5"
 ARG release_version
 ENV RELEASE_VERSION=$release_version
-# When true, main images reuse zipkin-exec.jar and zipkin-slim.jar in the context root
+# When true, main images reuse module jars in the context root
 ARG release_from_maven_build=false
 ENV RELEASE_FROM_MAVEN_BUILD=$release_from_maven_build
-RUN /code/docker/bin/install.sh
+ARG artifacts
+RUN GROUP_ID=io.zipkin.gcp ARTIFACTS=$artifacts /code/docker/bin/install_zipkin_modules
 
 FROM ghcr.io/openzipkin/zipkin:${zipkin_version} as zipkin-gcp
 LABEL org.opencontainers.image.description="Zipkin with Google Cloud Trace storage on OpenJDK and Alpine Linux"
@@ -45,4 +46,5 @@ COPY --from=install /install/ /zipkin/
 # Readback is currently not supported
 ENV QUERY_ENABLED false
 
-ENV MODULE_OPTS="-Dloader.path=stackdriver -Dspring.profiles.active=stackdriver"
+ARG modules
+ENV MODULE_OPTS="-Dloader.path=${modules} -Dspring.profiles.active=${modules}"

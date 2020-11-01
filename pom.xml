@@ -433,9 +433,11 @@
             <java>SLASHSTAR_STYLE</java>
             <kt>SLASHSTAR_STYLE</kt>
             <bnd>SCRIPT_STYLE</bnd>
-            <Dockerfile.release>SCRIPT_STYLE</Dockerfile.release>
-            <post_push>SCRIPT_STYLE</post_push>
-            <build>SCRIPT_STYLE</build>
+            <install_zipkin_modules>SCRIPT_STYLE</install_zipkin_modules>
+            <push_all_images>SCRIPT_STYLE</push_all_images>
+            <setup_multiarch_docker>SCRIPT_STYLE</setup_multiarch_docker>
+            <build_image>SCRIPT_STYLE</build_image>
+            <block_on_health>SCRIPT_STYLE</block_on_health>
           </mapping>
           <excludes>
             <exclude>.travis.yml</exclude>

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright 2015-2020 The OpenZipkin Authors
+# Copyright 2016-2020 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -25,6 +25,9 @@ if ! test -f docker/Dockerfile; then
 fi
 
 PROJECT="Zipkin Google Cloud Platform"
+# update .dockerignore if you ever add another here
+ARTIFACTS="storage-stackdriver"
+MODULES="stackdriver"
 TAG=${1:-openzipkin/zipkin-gcp:test}
 # Default the version to the pom when unset
 POM_VERSION=${POM_VERSION:-$(mvn help:evaluate -N -Dexpression=project.version -q -DforceStdout)}
@@ -69,6 +72,7 @@ esac
 
 DOCKER_ARGS="-f ${DOCKERFILE_PATH} --target ${TARGET} --tag ${TAG} \
 --build-arg release_version=${RELEASE_VERSION} --label zipkin-gcp-version=${RELEASE_VERSION} \
+--build-arg modules=${MODULES} --label zipkin-gcp-modules=${MODULES} \
 --build-arg release_from_maven_build=${RELEASE_FROM_MAVEN_BUILD} \
 --build-arg java_version=${JAVA_VERSION} --build-arg zipkin_version=${ZIPKIN_VERSION} \
 --label org.opencontainers.image.source=https://github.com/openzipkin/zipkin-gcp \
@@ -79,7 +83,7 @@ DOCKER_ARGS="-f ${DOCKERFILE_PATH} --target ${TARGET} --tag ${TAG} \
 #  * It would pull Docker Hub for moby/buildkit or multiarch/qemu-user-static images, using up quota
 if [ "${OP}" = "load" ]; then
   echo "Building image ${TAG} with zipkin_version ${ZIPKIN_VERSION}"
-  docker build ${DOCKER_ARGS}
+  docker build --build-arg artifacts="${ARTIFACTS}" ${DOCKER_ARGS}
   exit $?
 fi
 
@@ -101,4 +105,4 @@ case ${ARCH} in
 esac
 
 echo "Pushing image ${TAG} with platforms ${PLATFORMS} and Java version ${ZIPKIN_VERSION}"
-docker buildx build --progress plain --platform=${PLATFORMS} ${DOCKER_ARGS} --push
+docker buildx build --progress plain --platform=${PLATFORMS} --build-arg artifacts="${ARTIFACTS}" ${DOCKER_ARGS} --push
