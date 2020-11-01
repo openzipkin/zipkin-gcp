@@ -25,21 +25,11 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 15
-      - name: Cache NPM Packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.npm
-          key: npm-packages-${{ runner.os }}-${{ hashFiles('zipkin-lens/package-lock.json') }}
       - name: Cache Maven Modules
         uses: actions/cache@v1
         with:
           path: ~/.m2/repository
           key: m2-repository-${{ hashFiles('**/pom.xml') }}
-      - name: Cache Maven Wrapper
-        uses: actions/cache@v1
-        with:
-          path: .mvn/wrapper
-          key: mvn-wrapper-${{ hashFiles('.mvn/wrapper/maven-wrapper.properties') }}
       - name: Show version
         run: ./mvnw -version
         shell: bash
