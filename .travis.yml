@@ -6,6 +6,10 @@ arch: amd64           # arm64 is LXD containers which we can't use because we ru
 os: linux             # required for arch different than amd64
 dist: focal           # newest available distribution
 
+# Don't do a shallow clone to allow license plugin to correctly read git history.
+git:
+  depth: false
+
 language: java
 
 services:
@@ -18,6 +22,7 @@ cache:
 before_install:
   - export DOCKER_TARGET=zipkin-gcp
   - |
+    # Intentionally don't use "jdk" Travis apt key as it is coupled to jdk.java.net availability.
     # Use OS package to update JDK (TODO 15 wasn't available)
     OPENJDK_VERSION=14
     sudo apt-get -y install openjdk-${OPENJDK_VERSION}-jdk

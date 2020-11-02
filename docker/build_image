@@ -34,7 +34,7 @@ POM_VERSION=${POM_VERSION:-$(mvn help:evaluate -N -Dexpression=project.version -
 RELEASE_VERSION=${2:-${POM_VERSION}}
 OP=${3:-load}
 
-TARGET=$(echo $TAG|sed -e 's~.*/\(.*\):.*~\1~g')
+DOCKER_TARGET=${DOCKER_TARGET:-$(echo $TAG|sed -e 's~.*/\(.*\):.*~\1~g')}
 # When true use zipkin-gcp.jar produced by a Maven build.
 # This is implicitly true when a SNAPSHOT version.
 RELEASE_FROM_MAVEN_BUILD=${RELEASE_FROM_MAVEN_BUILD:-false}
@@ -70,7 +70,7 @@ case "${RELEASE_VERSION}" in
     ;;
 esac
 
-DOCKER_ARGS="-f ${DOCKERFILE_PATH} --target ${TARGET} --tag ${TAG} \
+DOCKER_ARGS="-f ${DOCKERFILE_PATH} --target ${DOCKER_TARGET} --tag ${TAG} \
 --build-arg release_version=${RELEASE_VERSION} --label zipkin-gcp-version=${RELEASE_VERSION} \
 --build-arg modules=${MODULES} --label zipkin-gcp-modules=${MODULES} \
 --build-arg release_from_maven_build=${RELEASE_FROM_MAVEN_BUILD} \
@@ -104,5 +104,5 @@ case ${ARCH} in
     exit 1
 esac
 
-echo "Pushing image ${TAG} with platforms ${PLATFORMS} and Java version ${ZIPKIN_VERSION}"
+echo "Pushing image ${TAG} with platforms ${PLATFORMS} and Zipkin version ${ZIPKIN_VERSION}"
 docker buildx build --progress plain --platform=${PLATFORMS} --build-arg artifacts="${ARTIFACTS}" ${DOCKER_ARGS} --push
