@@ -43,6 +43,7 @@ jobs:
           key: ${{ runner.os }}-docker-${{ hashFiles('**/Dockerfile') }}
           restore-keys: ${{ runner.os }}-docker
       - name: Execute Zipkin GCP Build
+        # Skips tests and license to run faster and allow shallow clones
         run: ./mvnw -T1C -q --batch-mode -DskipTests -Dlicense.skip=true clean package
         shell: bash
         env:
