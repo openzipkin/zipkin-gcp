@@ -64,6 +64,7 @@ case "${RELEASE_VERSION}" in
       fi
 
       echo Building ${PROJECT} ${RELEASE_VERSION}...
+      # Skips tests and license to run faster and allow shallow clones
       ./mvnw -T1C -q --batch-mode -DskipTests -Dlicense.skip=true package
     fi
     RELEASE_FROM_MAVEN_BUILD=true

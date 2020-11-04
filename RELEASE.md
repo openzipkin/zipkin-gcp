@@ -17,7 +17,7 @@ This repo uses semantic versions. Please keep this in mind when choosing version
    Release automation invokes [`travis/publish.sh`](travis/publish.sh), which does the following:
      * Creates commits, N.N.N tag, and increments the version (maven-release-plugin)
      * Publishes jars to https://oss.sonatype.org/service/local/staging/deploy/maven2 (maven-deploy-plugin)
-       * Upon close, this synchronizes jars to Maven Central
+       * Upon close, this synchronizes jars to Maven Central (nexus-staging-maven-plugin)
      * Invokes [DockerHub](docker/RELEASE.md] build (docker/bin/push_all_images)
 
    Notes:
@@ -60,7 +60,7 @@ $ ./mvnw versions:set -DnewVersion=1.3.2-SNAPSHOT -DgenerateBackupPoms=false
 $ git commit -am"Adjusts copyright headers for this year"
 ```
 
-### Manually releasing
+## Manually releasing
 
 If for some reason, you lost access to CI or otherwise cannot get automation to work, bear in mind
 this is a normal maven project, and can be released accordingly.
@@ -76,7 +76,7 @@ export SONATYPE_PASSWORD=your_sonatype_password
 VERSION=xx-version-to-release-xx
 
 # now from latest master, prepare the release. We are intentionally deferring pushing commits
-./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DreleaseVersion=$VERSION -Darguments="-DskipTests -Dlicense.skip=true" release:prepare  -DpushChanges=false
+./mvnw --batch-mode -s ./.settings.xml -Prelease -nsu -DreleaseVersion=$VERSION -Darguments="-DskipTests" release:prepare -DpushChanges=false
 
 # once this works, deploy and synchronize to maven central
 git checkout $VERSION
