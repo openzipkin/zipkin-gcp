@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - secret
   pull_request:
 
 jobs:
