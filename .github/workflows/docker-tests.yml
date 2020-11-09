@@ -51,6 +51,8 @@ jobs:
       - name: Build Docker image openzipkin/zipkin-gcp:test
         run: RELEASE_FROM_MAVEN_BUILD=true docker/build_image openzipkin/zipkin-gcp:test
       - name: Verify Docker image openzipkin/zipkin-gcp:test
+        env:
+          - GOOGLE_APPLICATION_CREDENTIALS_BASE64: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_BASE64 }}
         run: |
           # This just makes sure containers run and the HEALTHCHECK works (for now..)
           COMPOSE_FILE=./.github/workflows/docker/docker-compose.test.yml
