@@ -35,5 +35,4 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/credentials/service-account-key.json
       - STACKDRIVER_PROJECT_ID=zipkin-gcp-ci
     depends_on:
-      - show-service-account
       - extract-service-account
