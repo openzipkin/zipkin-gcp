@@ -26,7 +26,7 @@ This repo uses semantic versions. Please keep this in mind when choosing version
 ## Credentials
 
 The release process uses various credentials. If you notice something failing due to unauthorized,
-look at the notes in [.travis.yml] and check the [project settings](https://travis-ci.org/github/openzipkin/zipkin/settings)
+check [Settings > Secrets](https://github.com/openzipkin/zipkin-gcp/settings/secrets/actions) page.
 
 ### Troubleshooting invalid credentials
 
@@ -92,9 +92,6 @@ git push --tags
 ```
 
 ### Test credentials
-TODO: update and move this to docker-compose.test.yml
-https://github.com/openzipkin/zipkin-gcp/issues/182
-
 A Google Cloud Platform service account key file is used for integration tests against a GCP project and
 the Stackdriver Trace service. The service account was generated this way:
 
@@ -104,17 +101,14 @@ $ gcloud --project=$PROJECT_ID iam service-accounts create zipkin-ci
 $ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member "serviceAccount:zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com" \
     --role "roles/cloudtrace.admin"
-$ gcloud --project=$PROJECT_ID iam service-accounts keys create travis/zipkin-ci.json \
+$ gcloud --project=$PROJECT_ID iam service-accounts keys create $HOME/zipkin-ci.json \
     --iam-account zipkin-ci@$PROJECT_ID.iam.gserviceaccount.com
+$ base64 $HOME/zipkin-ci.json | pbcopy
 ```
 
-TODO: update these instructions for GitHub Actions, as we don't test docker with Travis anymore:
+Copy the Base64 encoded service account key value into GitHub Actions Secret, with the name of
+`GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
 
-Make sure that the key file (`*.json`) is not checked into the repository. Encrypt the file and add
-the decryption commands manually.
-```
-$ travis encrypt-file travis/zipkin-ci.json
-```
+In the Docker Compose workflow, it'll decode the value, save the content to a file, and then configure
+`GOOGLE_APPLICATION_CREDENTIALS` to point to the file name.
 
-Note: Do not use `travis encrypt-file -a` to automatic append decryption commands. It'll significantly
-reformat the `.travis` file.
