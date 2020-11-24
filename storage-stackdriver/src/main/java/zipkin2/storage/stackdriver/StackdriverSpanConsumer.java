@@ -44,8 +44,7 @@ final class StackdriverSpanConsumer implements SpanConsumer {
     projectName = "projects/" + projectId;
   }
 
-  @Override
-  public Call<Void> accept(List<Span> spans) {
+  @Override public Call<Void> accept(List<Span> spans) {
     if (spans.isEmpty()) return Call.create(null);
     List<com.google.devtools.cloudtrace.v2.Span> stackdriverSpans =
         SpanTranslator.translate(projectId, spans);
@@ -68,18 +67,15 @@ final class StackdriverSpanConsumer implements SpanConsumer {
       this.request = request;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
       return "BatchWriteSpansCall{" + request + "}";
     }
 
-    @Override
-    public BatchWriteSpansCall clone() {
+    @Override public BatchWriteSpansCall clone() {
       return new BatchWriteSpansCall(grpcClient, request);
     }
 
-    @Override
-    protected Void doExecute() {
+    @Override protected Void doExecute() {
       try {
         sendRequest().join();
         return null;
@@ -90,8 +86,7 @@ final class StackdriverSpanConsumer implements SpanConsumer {
       }
     }
 
-    @Override
-    protected void doEnqueue(Callback<Void> callback) {
+    @Override protected void doEnqueue(Callback<Void> callback) {
       try {
         sendRequest().handle((resp, t) -> {
           if (t != null) {

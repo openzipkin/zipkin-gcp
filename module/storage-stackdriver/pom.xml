@@ -22,7 +22,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>zipkin-module-storage-stackdriver</artifactId>
+  <artifactId>zipkin-module-gcp</artifactId>
   <name>Zipkin Server Module: Stackdriver Storage</name>
 
   <properties>
@@ -64,19 +64,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zipkin.zipkin2</groupId>
+      <groupId>${zipkin.groupId}</groupId>
       <artifactId>zipkin-tests</artifactId>
+      <version>${zipkin.version}</version>
       <scope>test</scope>
     </dependency>
 

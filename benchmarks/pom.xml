@@ -29,7 +29,7 @@
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
-    <jmh.version>1.25.2</jmh.version>
+    <jmh.version>1.26</jmh.version>
   </properties>
 
   <dependencies>
@@ -44,7 +44,7 @@
       <version>${project.version}</version>
       <exclusions>
         <exclusion>
-          <groupId>io.zipkin.zipkin2</groupId>
+          <groupId>${zipkin.groupId}</groupId>
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>

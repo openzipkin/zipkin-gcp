@@ -12,8 +12,15 @@
 # the License.
 #
 
-ARG java_version
-ARG zipkin_version
+# zipkin version should match zipkin.version in /pom.xml
+ARG zipkin_version=2.23.0
+
+# java_version is used during the installation process to build or download the module jar.
+#
+# Use latest version here: https://github.com/orgs/openzipkin/packages/container/package/java
+# This is defined in many places because Docker has no "env" script functionality unless you use
+# docker-compose: When updating, update everywhere.
+ARG java_version=15.0.1_p9
 
 # We copy files from the context into a scratch container first to avoid a problem where docker and
 # docker-compose don't share layer hashes https://github.com/docker/compose/issues/883 normally.
@@ -22,29 +29,37 @@ FROM scratch as scratch
 
 COPY . /code/
 
+# This version is only used during the install process. Try to be consistent as it reduces layers,
+# which reduces downloads.
 FROM ghcr.io/openzipkin/java:${java_version} as install
+
+WORKDIR /code
+# Conditions aren't supported in Dockerfile instructions, so we copy source even if it isn't used.
+COPY --from=scratch /code/ .
 
 WORKDIR /install
 
-# Conditions aren't supported in Dockerfile instructions, so we copy source even if it isn't used.
-COPY --from=scratch /code /code
-
-# This will either be a snapshot like 2.4.5-SNAPSHOT or a real version ex. "2.4.5"
-ARG release_version
-ENV RELEASE_VERSION=$release_version
-# When true, main images reuse module jars in the context root
+# When true, build-bin/maven/unjar searches /code for the artifact instead of resolving remotely.
+# /code contains what is allowed in .dockerignore. On problem, ensure .dockerignore is correct.
 ARG release_from_maven_build=false
 ENV RELEASE_FROM_MAVEN_BUILD=$release_from_maven_build
-ARG artifacts
-RUN GROUP_ID=io.zipkin.gcp ARTIFACTS=$artifacts /code/docker/bin/install_zipkin_modules
+# Version of the artifact to unjar. Ex. "2.4.5" or "2.4.5-SNAPSHOT" "master" to use the pom version.
+ARG version=master
+ENV VERSION=$version
+ENV MAVEN_PROJECT_BASEDIR=/code
+RUN /code/build-bin/maven/maven_build_or_unjar io.zipkin.gcp zipkin-module-gcp ${VERSION} module
 
-FROM ghcr.io/openzipkin/zipkin:${zipkin_version} as zipkin-gcp
-LABEL org.opencontainers.image.description="Zipkin with Google Cloud Trace storage on OpenJDK and Alpine Linux"
+# zipkin version should match zipkin.version in /code/pom.xml
+FROM ghcr.io/openzipkin/zipkin:$zipkin_version as zipkin-gcp
+LABEL org.opencontainers.image.description="Zipkin with Google Cloud on OpenJDK and Alpine Linux"
+LABEL org.opencontainers.image.source=https://github.com/openzipkin/zipkin-gcp
 
-COPY --from=install /install/ /zipkin/
+# Add installation root as a module
+ARG module=gcp
+COPY --from=install --chown=${USER} /install/* /zipkin/${module}
 
 # Readback is currently not supported
 ENV QUERY_ENABLED false
 
-ARG modules
-ENV MODULE_OPTS="-Dloader.path=${modules} -Dspring.profiles.active=${modules}"
+# * Active profile typically corresponds $1 in module/src/main/resources/zipkin-server-(.*).yml
+ENV MODULE_OPTS="-Dloader.path=${module} -Dspring.profiles.active=${module}"

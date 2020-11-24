@@ -1,0 +1,34 @@
+version: "3.6"
+volumes:
+  gcp-service-account:
+services:
+  extract-service-account:
+    image: ghcr.io/openzipkin/alpine:3.12.1
+    volumes:
+      - gcp-service-account:/credentials:rw
+    command: sh -c 'echo $GOOGLE_APPLICATION_CREDENTIALS_BASE64 | base64 -d > /credentials/service-account-key.json'
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS_BASE64
+  show-service-account:
+    image: ghcr.io/openzipkin/alpine:3.12.1
+    volumes:
+      - gcp-service-account:/credentials:ro
+    # Show that the file exists as a sanity check in logs.
+    # Normally the sut service (for test) does not depend on this.
+    # This block is kept in case we need to use it for debugging in the future.
+    command: sh -c 'ls -lh /credentials/service-account-key.json'
+    depends_on:
+      - extract-service-account
+  # Use fixed service and container name 'sut; so our test script can copy/pasta
+  sut:
+    # This is the image just built. It is not in a remote repository.
+    image: openzipkin/zipkin-gcp:test
+    volumes:
+      - gcp-service-account:/credentials:ro
+    container_name: sut
+    environment:
+      - STORAGE_TYPE=stackdriver
+      - GOOGLE_APPLICATION_CREDENTIALS=/credentials/service-account-key.json
+      - STACKDRIVER_PROJECT_ID=zipkin-gcp-ci
+    depends_on:
+      - extract-service-account

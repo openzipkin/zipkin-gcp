@@ -31,19 +31,22 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.zipkin.zipkin2</groupId>
+      <groupId>${zipkin.groupId}</groupId>
       <artifactId>zipkin</artifactId>
+      <version>${zipkin.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-common-protos</artifactId>
+      <version>2.0.1</version>
     </dependency>
 
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-trace-v2</artifactId>
+      <version>${grpc-google-cloud-trace.version}</version>
     </dependency>
 
     <dependency>
@@ -52,12 +55,6 @@
       <version>${protobuf.version}</version>
       <!-- We use provided scope to avoid pinning a protobuf version -->
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zipkin.zipkin2</groupId>
-      <artifactId>zipkin-tests</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

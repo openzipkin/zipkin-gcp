@@ -33,6 +33,7 @@
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>zipkin-translation-stackdriver</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>io.zipkin.reporter2</groupId>
@@ -42,6 +43,7 @@
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>grpc-google-cloud-trace-v2</artifactId>
+      <version>${grpc-google-cloud-trace.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -54,16 +56,6 @@
       <version>${grpc.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.zipkin.zipkin2</groupId>
-      <artifactId>zipkin-tests</artifactId>
-      <scope>test</scope>
-    </dependency>
     <!-- Stackdriver Trace read operations are only available in its v1 API. Use it to validate data was written during integration tests. -->
     <dependency>
       <groupId>com.google.api.grpc</groupId>
