@@ -1,23 +1,7 @@
 # https://docs.docker.com/engine/reference/builder/#dockerignore-file
-.git*
-.idea
-**/*.iml
-.mvn
-mvnw*
-Makefile
-.*yml
-.editorconfig
-.dockerignore
-.settings.xml
-LICENSE
-docker
-docs
-**/*.md
-**/src/test/**
-**/target
+**
 
 # Install script runs within Docker
-build-bin/**
 !build-bin/maven/maven_build
 !build-bin/maven/maven_build_or_unjar
 !build-bin/maven/maven_unjar
