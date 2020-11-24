@@ -3,7 +3,6 @@
 set -ue
 
 # Pushes docker as part of `deploy` or from a trigger tag
-
 version=${1:-master}
 
 # handle trigger pattern like /^docker-[0-9]+\.[0-9]+\.[0-9]+$/
@@ -13,6 +12,4 @@ case ${version} in
     ;;
 esac
 
-# openzipkin is named differently in docker.io (openzipkincontrib). Skip the latter for now.
-export DOCKER_RELEASE_REPOS=ghcr.io
 build-bin/docker/docker_push openzipkin/zipkin-gcp ${version}

@@ -5,13 +5,4 @@ set -ue
 # This script runs the tests of the project.
 #
 # See [README.md] for an explanation of this and how CI should use it.
-
-echo "Running Maven tests and integration tests..."
 ./mvnw -T1C -nsu verify
-
-echo "Building Docker image..."
-export RELEASE_FROM_MAVEN_BUILD=true
-build-bin/docker/docker_build openzipkin/zipkin-gcp:test
-
-echo "Verifying Docker image..."
-build-bin/docker/docker_test_image openzipkin/zipkin-gcp

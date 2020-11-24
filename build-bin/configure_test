@@ -6,6 +6,5 @@ set -ue
 # should be done in `configure_deploy`.
 #
 # See [README.md] for an explanation of this and how CI should use it.
-
 build-bin/docker/configure_docker
 build-bin/maven/maven_go_offline
