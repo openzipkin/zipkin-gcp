@@ -1,6 +1,6 @@
 [![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
-[![Build Status](https://travis-ci.org/openzipkin/zipkin-gcp.svg?branch=master)](https://travis-ci.org/openzipkin/zipkin-gcp)
-[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-module-storage-stackdriver.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-module-storage-stackdriver)
+[![Build Status](https://github.com/openzipkin/zipkin-gcp/workflows/test/badge.svg)](https://github.com/openzipkin/zipkin-gcp/actions?query=workflow%3Atest)
+[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-module-gcp.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-module-gcp)
 
 # zipkin-gcp
 Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 8 or later.
@@ -54,11 +54,11 @@ Each module will also have different minimum variables that need to be set.
 Ex.
 ```
 $ curl -sSL https://zipkin.io/quickstart.sh | bash -s
-$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.gcp:zipkin-module-storage-stackdriver:LATEST:module stackdriver.jar
+$ curl -sSL https://zipkin.io/quickstart.sh | bash -s io.zipkin.gcp:zipkin-module-gcp:LATEST:module gcp.jar
 $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
     java \
-    -Dloader.path='stackdriver.jar,stackdriver.jar!/lib' \
-    -Dspring.profiles.active=stackdriver \
+    -Dloader.path='gcp.jar,gcp.jar!/lib' \
+    -Dspring.profiles.active=gcp \
     -cp zipkin.jar \
     org.springframework.boot.loader.PropertiesLauncher
 ```
@@ -140,7 +140,7 @@ All artifacts publish to the group ID "io.zipkin.gcp". We use a common
 release version for all components.
 
 ### Library Releases
-Releases are at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.zipkin.gcp%22)
+Releases are at [Sonatype](https://oss.sonatype.org/content/repositories/releases) and  [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.zipkin.gcp%22)
 
 ### Library Snapshots
 Snapshots are uploaded to [Sonatype](https://oss.sonatype.org/content/repositories/snapshots) after

@@ -41,12 +41,12 @@ To build a zipkin-gcp Docker image from source, in the top level of the reposito
 
 
 ```bash
-$ docker/build_image openzipkin/zipkin-gcp:test
+$ build-bin/docker/docker_build openzipkin/zipkin-gcp:test
 ```
 
 To build from a published version, run this instead:
 
 ```bash
-$ docker/build_image openzipkin/zipkin-gcp:test 0.18.1
+$ build-bin/docker/docker_build openzipkin/zipkin-gcp:test 0.18.1
 ```
 

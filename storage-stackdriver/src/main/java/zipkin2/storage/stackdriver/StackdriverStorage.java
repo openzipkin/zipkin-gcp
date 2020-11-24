@@ -32,6 +32,7 @@ import zipkin2.storage.ServiceAndSpanNames;
 import zipkin2.storage.SpanConsumer;
 import zipkin2.storage.SpanStore;
 import zipkin2.storage.StorageComponent;
+import zipkin2.storage.Traces;
 import zipkin2.storage.stackdriver.StackdriverSpanConsumer.BatchWriteSpansCall;
 
 /**
@@ -46,6 +47,14 @@ public final class StackdriverStorage extends StorageComponent {
   }
 
   public static Builder newBuilder(String url) {  // visible for testing
+    // Massage URL into one that Armeria supports, taking into account upstream gRPC
+    // defaults.
+    if (!url.startsWith("https://") && !url.startsWith("http://")) {
+      // Default scheme to https for backwards compatibility with upstream gRPC.
+      url = "https://" + url;
+    }
+
+    if (!url.endsWith("/")) url = url + "/";
     return new Builder(url);
   }
 
@@ -61,8 +70,7 @@ public final class StackdriverStorage extends StorageComponent {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public final Builder strictTraceId(boolean strictTraceId) {
+    @Override public final Builder strictTraceId(boolean strictTraceId) {
       if (!strictTraceId) {
         throw new UnsupportedOperationException("strictTraceId cannot be disabled");
       }
@@ -70,8 +78,7 @@ public final class StackdriverStorage extends StorageComponent {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public final Builder searchEnabled(boolean searchEnabled) {
+    @Override public final Builder searchEnabled(boolean searchEnabled) {
       if (!searchEnabled) {
         throw new UnsupportedOperationException("searchEnabled cannot be disabled");
       }
@@ -96,38 +103,24 @@ public final class StackdriverStorage extends StorageComponent {
       return this;
     }
 
-    @Override
-    public StackdriverStorage build() {
+    @Override public StackdriverStorage build() {
       if (projectId == null) throw new NullPointerException("projectId == null");
-
-      // Massage URL into one that armeria supports, taking into account upstream gRPC
-      // defaults.
-      String url = this.url;
-      if (!url.startsWith("https://") && !url.startsWith("http://")) {
-        // Default scheme to https for backwards compatibility with upstream gRPC.
-        url = "https://" + url;
-      }
-
-      if (!url.endsWith("/")) {
-        url = url + "/";
-      }
-
-      WebClient webClient = WebClient.builder(url)
-          .decorator(SetGrpcContentType::new)
-          .factory(clientFactory)
-          .options(clientOptions)
-          .build();
-
-      return new StackdriverStorage(this, new UnaryGrpcClient(webClient));
+      return new StackdriverStorage(this);
     }
   }
 
+  final ClientFactory clientFactory;
   final UnaryGrpcClient grpcClient;
   final String projectId;
   final BatchWriteSpansCall healthcheckCall;
 
-  StackdriverStorage(Builder builder, UnaryGrpcClient grpcClient) {
-    this.grpcClient = grpcClient;
+  StackdriverStorage(Builder builder) {
+    this.clientFactory = builder.clientFactory;
+    this.grpcClient = new UnaryGrpcClient(WebClient.builder(builder.url)
+        .decorator(SetGrpcContentType::new)
+        .factory(builder.clientFactory)
+        .options(builder.clientOptions)
+        .build());
     projectId = builder.projectId;
     BatchWriteSpansRequest healthcheckRequest = BatchWriteSpansRequest.newBuilder()
         .setName("projects/" + builder.projectId)
@@ -135,23 +128,23 @@ public final class StackdriverStorage extends StorageComponent {
     healthcheckCall = new BatchWriteSpansCall(grpcClient, healthcheckRequest);
   }
 
-  @Override
-  public SpanStore spanStore() {
+  @Override public SpanStore spanStore() {
     throw new UnsupportedOperationException("Read operations are not supported");
   }
 
-  @Override
-  public AutocompleteTags autocompleteTags() {
+  @Override public Traces traces() {
     throw new UnsupportedOperationException("Read operations are not supported");
   }
 
-  @Override
-  public ServiceAndSpanNames serviceAndSpanNames() {
+  @Override public AutocompleteTags autocompleteTags() {
     throw new UnsupportedOperationException("Read operations are not supported");
   }
 
-  @Override
-  public SpanConsumer spanConsumer() {
+  @Override public ServiceAndSpanNames serviceAndSpanNames() {
+    throw new UnsupportedOperationException("Read operations are not supported");
+  }
+
+  @Override public SpanConsumer spanConsumer() {
     return new StackdriverSpanConsumer(grpcClient, projectId);
   }
 
@@ -182,8 +175,15 @@ public final class StackdriverStorage extends StorageComponent {
     return CheckResult.OK;
   }
 
-  @Override
-  public final String toString() {
+  @Override public void close() {
+    clientFactory.close();
+  }
+
+  @Override public boolean isOverCapacity(Throwable e) {
+    return super.isOverCapacity(e); // TODO
+  }
+
+  @Override public final String toString() {
     return "StackdriverStorage{" + projectId + "}";
   }
 

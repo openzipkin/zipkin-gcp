@@ -16,31 +16,98 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>io.zipkin.gcp</groupId>
     <artifactId>zipkin-gcp-parent</artifactId>
     <version>0.18.2-SNAPSHOT</version>
   </parent>
 
-  <artifactId>zipkin-module</artifactId>
-  <name>Zipkin Server Module</name>
-  <packaging>pom</packaging>
+  <artifactId>zipkin-module-gcp</artifactId>
+  <name>Zipkin Server Module: GCP</name>
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
   </properties>
 
-  <modules>
-    <module>storage-stackdriver</module>
-  </modules>
-
   <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>zipkin-storage-stackdriver</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
       <version>${spring-boot.version}</version>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.auth</groupId>
+      <artifactId>google-auth-library-oauth2-http</artifactId>
+      <version>0.22.0</version>
+    </dependency>
+    <!-- google-auth-library-oauth2-http strictly depends on...
+            google-http-java-client, which strictly depends on...
+               opencensus-api, which strictly depends on... grpc-context!
+         https://github.com/openzipkin/zipkin-gcp/issues/153
+      -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-context</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-trace-v2</artifactId>
+      <version>${grpc-google-cloud-trace.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>${armeria.groupId}</groupId>
+      <artifactId>armeria-grpc</artifactId>
+      <version>${armeria.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Stackdriver Trace read operations are only available in its v1 API. Use it to validate data was written during integration tests. -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-core</artifactId>
+      <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+      <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-auth</artifactId>
+      <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+      <version>${grpc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-trace-v1</artifactId>
+      <version>${grpc-google-cloud-trace.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>${awaitility.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -55,12 +122,23 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
+          <layoutFactory implementation="zipkin.layout.ZipkinLayoutFactory">
+            <name>zipkin</name>
+          </layoutFactory>
+          <classifier>module</classifier>
           <!-- https://github.com/spring-projects/spring-boot/issues/3426 transitive exclude doesn't work -->
           <excludeGroupIds>
-            io.zipkin.zipkin2,org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,com.google.code.gson,org.reactivestreams,com.google.code.findbugs,javax.annotation,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils
+            ${zipkin.groupId},org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,com.google.code.gson,org.reactivestreams,com.google.code.findbugs,javax.annotation,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils,${armeria.groupId},javax.inject,com.fasterxml.jackson.datatype
           </excludeGroupIds>
-          <!-- currently cannot exclude io.opencensus due to https://github.com/googleapis/google-http-java-client/issues/621 -->
           <excludes>
             <!-- zipkin-server depends on armeria and its grpc protocol-->
             <exclude>
@@ -78,6 +156,13 @@
             </exclude>
           </excludes>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>io.zipkin.layout</groupId>
+            <artifactId>zipkin-layout-factory</artifactId>
+            <version>1.0.0</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
