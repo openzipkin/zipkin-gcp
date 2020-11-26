@@ -497,12 +497,12 @@
   </build>
 
   <profiles>
-    <!-- -DskipBenchmarks ensures benchmarks don't end up in javadocs or in Maven Central -->
+    <!-- -DskipTests ensures benchmarks don't end up in javadocs or in Maven Central -->
     <profile>
       <id>include-benchmarks</id>
       <activation>
         <property>
-          <name>!skipBenchmarks</name>
+          <name>!skipTests</name>
         </property>
       </activation>
       <modules>
