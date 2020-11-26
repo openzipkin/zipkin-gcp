@@ -40,7 +40,7 @@ jobs:
       - name: Test Docker
         if: github.ref == 'refs/heads/master'  # needs secure credentials
         run: |
-          build-bin/docker/docker_build openzipkin/zipkin-gcp:test
+          build-bin/docker/docker_build openzipkin/zipkin-gcp:test &&
           build-bin/docker/docker_test_image openzipkin/zipkin-gcp
         env:
           RELEASE_FROM_MAVEN_BUILD: true
