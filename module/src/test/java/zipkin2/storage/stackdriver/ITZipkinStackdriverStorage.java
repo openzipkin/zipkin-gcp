@@ -59,6 +59,7 @@ public class ITZipkinStackdriverStorage {
     // Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
     // See: https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application
 
+    // TODO: implement GOOGLE_APPLICATION_CREDENTIALS_BASE64 also
     String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
     assumeThat(credentialsPath).isNotBlank();
     assumeThat(new File(credentialsPath)).exists();
