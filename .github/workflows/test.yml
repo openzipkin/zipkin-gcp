@@ -43,7 +43,7 @@ jobs:
         if: github.ref == 'refs/heads/master'  # needs secure credentials
         run: |
           build-bin/docker/docker_build openzipkin/zipkin-gcp:test &&
-          build-bin/docker/docker_test_image openzipkin/zipkin-gcp
+          build-bin/docker/docker_test_image openzipkin/zipkin-gcp:test
         env:
           RELEASE_FROM_MAVEN_BUILD: true
           GOOGLE_APPLICATION_CREDENTIALS_BASE64: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_BASE64 }}
