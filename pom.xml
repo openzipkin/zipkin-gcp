@@ -60,12 +60,12 @@
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>2.23.0</zipkin.version>
-    <zipkin-reporter.version>2.16.1</zipkin-reporter.version>
+    <zipkin.version>2.23.1</zipkin.version>
+    <zipkin-reporter.version>2.16.2</zipkin-reporter.version>
     <spring-boot.version>2.4.0</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
-    <armeria.version>1.2.0</armeria.version>
+    <armeria.version>1.3.0</armeria.version>
 
     <!-- This allows you to test feature branches with jitpack -->
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
@@ -440,8 +440,8 @@
             <maven_unjar>SCRIPT_STYLE</maven_unjar>
           </mapping>
           <excludes>
-            <exclude>.docker.env</exclude>
             <exclude>.gitignore</exclude>
+            <exclude>.dockerignore</exclude>
             <exclude>.editorconfig</exclude>
             <exclude>.mvn/**</exclude>
             <exclude>mvnw*</exclude>
@@ -451,7 +451,6 @@
             <exclude>**/*.md</exclude>
             <exclude>src/test/resources/**</exclude>
             <exclude>src/main/resources/**</exclude>
-            <exclude>.dockerignore</exclude>
             <exclude>build-bin/*</exclude>
           </excludes>
           <strictCheck>true</strictCheck>
