@@ -26,12 +26,8 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
-      - name: Cache Docker
-        uses: actions/cache@v2
-        with:
-          path: ~/.docker
-          key: ${{ runner.os }}-docker-${{ hashFiles('**/Dockerfile') }}
-          restore-keys: ${{ runner.os }}-docker
+      # We can't cache Docker without using buildx because GH actions restricts /var/lib/docker
+      # That's ok because DOCKER_PARENT_IMAGE is always ghcr.io and local anyway.
       - name: Deploy
         env:
           # GH_USER=<user that created GH_TOKEN>
@@ -55,7 +51,7 @@ jobs:
           #   - referenced in .settings.xml
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           # DOCKERHUB_USER=<typically dockerzipkindeployer>
-          #   - only push top-level projects: zipkin zipkin-aws zipkin-dependencies zipkin-gcp to Docker Hub, only on release
+          #   - only push top-level projects: zipkin zipkin-aws zipkin-dependencies zipkin-aws to Docker Hub, only on release
           #   - login like this: echo "$DOCKERHUB_TOKEN"| docker login -u "$DOCKERHUB_USER" --password-stdin
           DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USER }}
           # DOCKERHUB_TOKEN=<access token for DOCKERHUB_USER>
