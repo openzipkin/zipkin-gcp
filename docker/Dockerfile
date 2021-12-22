@@ -13,7 +13,7 @@
 #
 
 # zipkin version should match zipkin.version in /pom.xml
-ARG zipkin_version=2.23.4
+ARG zipkin_version=2.23.15
 
 # java_version is used during the installation process to build or download the module jar.
 #
