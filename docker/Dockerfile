@@ -1,5 +1,5 @@
 #
-# Copyright 2016-2020 The OpenZipkin Authors
+# Copyright 2016-2021 The OpenZipkin Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -13,7 +13,7 @@
 #
 
 # zipkin version should match zipkin.version in /pom.xml
-ARG zipkin_version=2.23.2
+ARG zipkin_version=2.23.15
 
 # java_version is used during the installation process to build or download the module jar.
 #
