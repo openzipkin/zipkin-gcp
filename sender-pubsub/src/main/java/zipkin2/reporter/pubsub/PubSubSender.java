@@ -16,7 +16,12 @@ package zipkin2.reporter.pubsub;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
+import com.google.api.core.ApiFuture;
+import com.google.api.core.ApiFutureCallback;
+import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.ExecutorProvider;
 
 import com.google.api.gax.core.InstantiatingExecutorProvider;
@@ -25,6 +30,7 @@ import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 
 import zipkin2.Call;
+import zipkin2.Callback;
 import zipkin2.CheckResult;
 import zipkin2.codec.Encoding;
 import zipkin2.reporter.BytesMessageEncoder;
@@ -153,7 +159,6 @@ public class PubSubSender extends Sender {
 
         byte[] messageBytes = BytesMessageEncoder.forEncoding(encoding()).encode(byteList);
         PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(ByteString.copyFrom(messageBytes)).build();
-        publisher.publish(pubsubMessage);
         return null;
         /*
 
@@ -189,6 +194,69 @@ public class PubSubSender extends Sender {
         }
     }
 
+    class PubSubCall extends Call.Base<Void> {
+        private final PubsubMessage message;
+        volatile ApiFuture<String> future;
 
+        public PubSubCall(PubsubMessage message) {
+            this.message = message;
+        }
+
+        @Override
+        protected Void doExecute() throws IOException {
+            try {
+                publisher.publish(message).get();
+            } catch (InterruptedException| ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        }
+
+        @Override
+        protected void doEnqueue(Callback<Void> callback) {
+            ApiFuture<String> future = publisher.publish(message);
+            ApiFutures.addCallback(future, new ApiFutureCallbackAdapter(callback), executorProvider.getExecutor());
+            if (future.isCancelled()) throw new IllegalStateException("cancelled sending spans");
+        }
+
+        @Override
+        protected void doCancel() {
+            Future<String> maybeFuture = future;
+            if (maybeFuture != null) maybeFuture.cancel(true);
+        }
+
+        @Override
+        protected boolean doIsCanceled() {
+            Future<String> maybeFuture = future;
+            return maybeFuture != null && maybeFuture.isCancelled();
+        }
+
+        @Override
+        public Call<Void> clone() {
+            PubsubMessage clone = PubsubMessage.newBuilder(message).build();
+            return new PubSubCall(clone);
+        }
+
+    }
+
+    static final class ApiFutureCallbackAdapter implements ApiFutureCallback<String> {
+
+        final Callback<Void> callback;
+
+        public ApiFutureCallbackAdapter(Callback<Void> callback) {
+            this.callback = callback;
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+            callback.onError(t);
+        }
+
+        @Override
+        public void onSuccess(String result) {
+            callback.onSuccess(null);
+        }
+
+    }
 
 }
