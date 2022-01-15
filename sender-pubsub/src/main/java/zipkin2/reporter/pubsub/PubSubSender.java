@@ -16,6 +16,7 @@ package zipkin2.reporter.pubsub;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -26,8 +27,11 @@ import com.google.api.gax.core.ExecutorProvider;
 
 import com.google.api.gax.core.InstantiatingExecutorProvider;
 import com.google.cloud.pubsub.v1.Publisher;
+import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
+import com.google.pubsub.v1.Topic;
+import com.google.pubsub.v1.TopicName;
 
 import zipkin2.Call;
 import zipkin2.Callback;
@@ -52,6 +56,7 @@ public class PubSubSender extends Sender {
         Encoding encoding = Encoding.JSON;
         Publisher publisher;
         ExecutorProvider executorProvider;
+        TopicAdminClient topicAdminClient;
 
         Builder(PubSubSender pubSubSender) {
             this.topic = pubSubSender.topic;
@@ -73,7 +78,6 @@ public class PubSubSender extends Sender {
             return this;
         }
 
-
         public Builder publisher(Publisher publisher) {
             if (publisher == null) throw new NullPointerException("publisher == null");
             this.publisher = publisher;
@@ -81,9 +85,15 @@ public class PubSubSender extends Sender {
         }
 
         /** ExecutorProvider for PubSub operations **/
-        public Builder publisher(ExecutorProvider executorProvider) {
+        public Builder executorProvider(ExecutorProvider executorProvider) {
             if (executorProvider == null) throw new NullPointerException("executorProvider == null");
             this.executorProvider = executorProvider;
+            return this;
+        }
+
+        public Builder topicAdminClient(TopicAdminClient topicAdminClient) {
+            if (topicAdminClient == null) throw new NullPointerException("topicAdminClient == null");
+            this.topicAdminClient = topicAdminClient;
             return this;
         }
 
@@ -100,6 +110,14 @@ public class PubSubSender extends Sender {
             if(publisher == null) {
                 try {
                     publisher = Publisher.newBuilder(topic).setExecutorProvider(executorProvider).build();
+                } catch (IOException e) {
+                    throw new PubSubSenderInitializationException(e);
+                }
+            }
+
+            if(topicAdminClient == null) {
+                try {
+                    topicAdminClient = TopicAdminClient.create();
                 } catch (IOException e) {
                     throw new PubSubSenderInitializationException(e);
                 }
@@ -123,6 +141,7 @@ public class PubSubSender extends Sender {
     final Encoding encoding;
     final Publisher publisher;
     final ExecutorProvider executorProvider;
+    final TopicAdminClient topicAdminClient;
 
     volatile boolean closeCalled;
 
@@ -132,11 +151,18 @@ public class PubSubSender extends Sender {
         this.encoding = builder.encoding;
         this.publisher = builder.publisher;
         this.executorProvider = builder.executorProvider;
+        this.topicAdminClient = builder.topicAdminClient;
     }
 
+    /**
+     * If no permissions given sent back ok, f permissions and topic exist ok, if topic does not exist error
+     * @return
+     */
     @Override
     public CheckResult check() {
+        Topic topic = topicAdminClient.getTopic(TopicName.parse(this.topic));
         return CheckResult.OK;
+        //   return CheckResult.failed(e);
     }
 
     @Override public Encoding encoding() {
@@ -159,18 +185,8 @@ public class PubSubSender extends Sender {
 
         byte[] messageBytes = BytesMessageEncoder.forEncoding(encoding()).encode(byteList);
         PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(ByteString.copyFrom(messageBytes)).build();
-        return null;
-        /*
 
-        ByteBuffer message = ByteBuffer.wrap(BytesMessageEncoder.forEncoding(encoding()).encode(list));
-
-        PutRecordRequest request = new PutRecordRequest();
-        request.setStreamName(streamName);
-        request.setData(message);
-        request.setPartitionKey(getPartitionKey());
-
-        return new KinesisCall(request);
-        */
+        return new PubSubCall(pubsubMessage);
     }
 
     /**
@@ -192,6 +208,10 @@ public class PubSubSender extends Sender {
             closeCalled = true;
             return true;
         }
+    }
+
+    @Override public final String toString() {
+        return "PubSubSender{topic=" + topic+ "}";
     }
 
     class PubSubCall extends Call.Base<Void> {
@@ -236,7 +256,6 @@ public class PubSubSender extends Sender {
             PubsubMessage clone = PubsubMessage.newBuilder(message).build();
             return new PubSubCall(clone);
         }
-
     }
 
     static final class ApiFutureCallbackAdapter implements ApiFutureCallback<String> {
@@ -256,7 +275,6 @@ public class PubSubSender extends Sender {
         public void onSuccess(String result) {
             callback.onSuccess(null);
         }
-
     }
 
 }
