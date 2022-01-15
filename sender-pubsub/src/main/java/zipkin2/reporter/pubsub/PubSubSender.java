@@ -14,23 +14,35 @@
 package zipkin2.reporter.pubsub;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import com.google.api.gax.core.ExecutorProvider;
 
+import com.google.api.gax.core.InstantiatingExecutorProvider;
 import com.google.cloud.pubsub.v1.Publisher;
+import com.google.protobuf.ByteString;
+import com.google.pubsub.v1.PubsubMessage;
+
 import zipkin2.Call;
+import zipkin2.CheckResult;
 import zipkin2.codec.Encoding;
+import zipkin2.reporter.BytesMessageEncoder;
 import zipkin2.reporter.Sender;
 
 public class PubSubSender extends Sender {
 
     public static PubSubSender create(String topic) {
-        return null;
+        return newBuilder().topic(topic).build();
+    }
+
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
     public static final class Builder {
         String topic;
+        int messageMaxBytes = 10 * 1024 * 1024; // 10MB PubSub limit.
         Encoding encoding = Encoding.JSON;
         Publisher publisher;
         ExecutorProvider executorProvider;
@@ -49,48 +61,134 @@ public class PubSubSender extends Sender {
             return this;
         }
 
+        /** Maximum size of a message. PubSub max message size is 10MB */
+        public Builder messageMaxBytes(int messageMaxBytes) {
+            this.messageMaxBytes = messageMaxBytes;
+            return this;
+        }
+
+
         public Builder publisher(Publisher publisher) {
             if (publisher == null) throw new NullPointerException("publisher == null");
             this.publisher = publisher;
             return this;
         }
 
+        /** ExecutorProvider for PubSub operations **/
         public Builder publisher(ExecutorProvider executorProvider) {
             if (executorProvider == null) throw new NullPointerException("executorProvider == null");
             this.executorProvider = executorProvider;
             return this;
         }
 
+        public PubSubSender build() {
+            if (topic == null) throw new NullPointerException("topic == null");
+            try {
+                Publisher.newBuilder("dsdssd").setExecutorProvider(null).build();
+            } catch (IOException e) {
+                throw new PubSubSenderInitializationException(e);
+            }
+
+            if (executorProvider == null) executorProvider = defaultExecutorProvider(); ;
+
+            if(publisher == null) {
+                try {
+                    publisher = Publisher.newBuilder(topic).setExecutorProvider(executorProvider).build();
+                } catch (IOException e) {
+                    throw new PubSubSenderInitializationException(e);
+                }
+            }
+
+            return new PubSubSender(this);
+        }
+
+        private InstantiatingExecutorProvider defaultExecutorProvider() {
+            return InstantiatingExecutorProvider.newBuilder()
+                                                .setExecutorThreadCount(5 * Runtime.getRuntime().availableProcessors())
+                                                .build();
+        }
+
+        Builder() {
+        }
+    }
+
+    final String topic;
+    final int messageMaxBytes;
+    final Encoding encoding;
+    final Publisher publisher;
+    final ExecutorProvider executorProvider;
+
+    volatile boolean closeCalled;
+
+    PubSubSender(Builder builder) {
+        this.topic = builder.topic;
+        this.messageMaxBytes = builder.messageMaxBytes;
+        this.encoding = builder.encoding;
+        this.publisher = builder.publisher;
+        this.executorProvider = builder.executorProvider;
+    }
+
+    @Override
+    public CheckResult check() {
+        return CheckResult.OK;
     }
 
     @Override public Encoding encoding() {
+        return encoding;
+    }
+
+    @Override
+    public int messageMaxBytes() {
+        return messageMaxBytes;
+    }
+
+    @Override
+    public int messageSizeInBytes(List<byte[]> bytes) {
+        return encoding().listSizeInBytes(bytes);
+    }
+
+    @Override
+    public Call<Void> sendSpans(List<byte[]> byteList) {
+        if (closeCalled) throw new IllegalStateException("closed");
+
+        byte[] messageBytes = BytesMessageEncoder.forEncoding(encoding()).encode(byteList);
+        PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(ByteString.copyFrom(messageBytes)).build();
+        publisher.publish(pubsubMessage);
         return null;
+        /*
+
+        ByteBuffer message = ByteBuffer.wrap(BytesMessageEncoder.forEncoding(encoding()).encode(list));
+
+        PutRecordRequest request = new PutRecordRequest();
+        request.setStreamName(streamName);
+        request.setData(message);
+        request.setPartitionKey(getPartitionKey());
+
+        return new KinesisCall(request);
+        */
     }
 
-    @Override public int messageMaxBytes() {
-        return 0;
+    /**
+     * Shutdown on Publisher is not async thus moving the synchronized block to another function in order not to block until the shutdown is over
+     * @throws IOException
+     */
+    @Override
+    public void close() throws IOException {
+        if(!setClosed()) {
+            return;
+        }
+        publisher.shutdown();
     }
 
-    @Override public int messageSizeInBytes(List<byte[]> list) {
-        return 0;
+    private synchronized boolean setClosed() {
+        if(closeCalled) {
+            return false;
+        } else {
+            closeCalled = true;
+            return true;
+        }
     }
 
-    @Override public Call<Void> sendSpans(List<byte[]> list) {
-        return null;
-    }
-
-    final String topic  = "saddsa";
-    final Encoding encoding = Encoding.JSON;
-    final Publisher publisher = null;
-    final ExecutorProvider executorProvider = null;
 
 
-    public PubSubSender() throws IOException {
-        Publisher publisher = Publisher.newBuilder(topic).setExecutorProvider(executorProvider)
-                .build();
-
-
-        publisher.publish(null).addListener(()-> {}, executorProvider.getExecutor());
-        //publisherStub = new Pu
-    }
 }
