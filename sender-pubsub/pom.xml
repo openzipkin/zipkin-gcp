@@ -29,6 +29,7 @@
 
     <properties>
         <main.basedir>${project.basedir}/..</main.basedir>
+        <jackson.version>2.12.0</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -53,20 +54,19 @@
             <artifactId>zipkin-reporter</artifactId>
             <version>${zipkin-reporter.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>io.zipkin.reporter2</groupId>-->
-<!--            <artifactId>zipkin-reporter</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.grpc</groupId>-->
-<!--            <artifactId>grpc-core</artifactId>-->
-<!--            <version>${grpc.version}</version>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>io.grpc</groupId>-->
-<!--            <artifactId>grpc-protobuf</artifactId>-->
-<!--            <version>${grpc.version}</version>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-testing</artifactId>
+            <version>1.43.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.api.grpc</groupId>
+            <artifactId>grpc-google-cloud-pubsub-v1</artifactId>
+            <version>1.97.1</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>

@@ -14,9 +14,7 @@
 package zipkin2.reporter.pubsub;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -26,6 +24,8 @@ import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.ExecutorProvider;
 
 import com.google.api.gax.core.InstantiatingExecutorProvider;
+import com.google.api.gax.rpc.ApiException;
+import com.google.api.gax.rpc.UnknownException;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.protobuf.ByteString;
@@ -33,6 +33,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.Topic;
 import com.google.pubsub.v1.TopicName;
 
+import io.grpc.StatusRuntimeException;
 import zipkin2.Call;
 import zipkin2.Callback;
 import zipkin2.CheckResult;
@@ -78,6 +79,17 @@ public class PubSubSender extends Sender {
             return this;
         }
 
+        /**
+         * Use this to change the encoding used in messages. Default is {@linkplain Encoding#JSON}
+         *
+         * <p>Note: If ultimately sending to Zipkin, version 2.8+ is required to process protobuf.
+         */
+        public Builder encoding(Encoding encoding) {
+            if (encoding == null) throw new NullPointerException("encoding == null");
+            this.encoding = encoding;
+            return this;
+        }
+
         public Builder publisher(Publisher publisher) {
             if (publisher == null) throw new NullPointerException("publisher == null");
             this.publisher = publisher;
@@ -99,11 +111,6 @@ public class PubSubSender extends Sender {
 
         public PubSubSender build() {
             if (topic == null) throw new NullPointerException("topic == null");
-            try {
-                Publisher.newBuilder("dsdssd").setExecutorProvider(null).build();
-            } catch (IOException e) {
-                throw new PubSubSenderInitializationException(e);
-            }
 
             if (executorProvider == null) executorProvider = defaultExecutorProvider(); ;
 
@@ -136,6 +143,10 @@ public class PubSubSender extends Sender {
         }
     }
 
+    public Builder toBuilder() {
+        return new Builder(this);
+    }
+
     final String topic;
     final int messageMaxBytes;
     final Encoding encoding;
@@ -160,9 +171,12 @@ public class PubSubSender extends Sender {
      */
     @Override
     public CheckResult check() {
-        Topic topic = topicAdminClient.getTopic(TopicName.parse(this.topic));
-        return CheckResult.OK;
-        //   return CheckResult.failed(e);
+        try {
+            Topic topic = topicAdminClient.getTopic(TopicName.parse(this.topic));
+            return CheckResult.OK;
+        } catch (ApiException e) {
+            return CheckResult.failed(e);
+        }
     }
 
     @Override public Encoding encoding() {
@@ -234,7 +248,7 @@ public class PubSubSender extends Sender {
 
         @Override
         protected void doEnqueue(Callback<Void> callback) {
-            ApiFuture<String> future = publisher.publish(message);
+            future = publisher.publish(message);
             ApiFutures.addCallback(future, new ApiFutureCallbackAdapter(callback), executorProvider.getExecutor());
             if (future.isCancelled()) throw new IllegalStateException("cancelled sending spans");
         }
