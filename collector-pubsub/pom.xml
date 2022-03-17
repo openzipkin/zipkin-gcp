@@ -24,13 +24,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>zipkin-sender-pubsub</artifactId>
-
-    <name>Zipkin Sender: Google PubSub</name>
+    <artifactId>collector-pubsub</artifactId>
 
     <properties>
         <main.basedir>${project.basedir}/..</main.basedir>
-        <jackson.version>2.12.0</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -51,9 +48,9 @@
             <artifactId>google-cloud-pubsub</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.zipkin.reporter2</groupId>
-            <artifactId>zipkin-reporter</artifactId>
-            <version>${zipkin-reporter.version}</version>
+            <groupId>io.zipkin.zipkin2</groupId>
+            <artifactId>zipkin-collector</artifactId>
+            <version>${zipkin.version}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
@@ -67,7 +64,6 @@
             <version>1.97.1</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
 
 </project>
