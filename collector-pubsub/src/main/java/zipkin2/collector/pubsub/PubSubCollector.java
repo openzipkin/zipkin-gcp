@@ -170,7 +170,7 @@ public class PubSubCollector extends CollectorComponent {
 
     @Override
     public void close() throws IOException {
-        subscriber.stopAsync().awaitRunning();
+        subscriber.stopAsync().awaitTerminated();
     }
 
 }
