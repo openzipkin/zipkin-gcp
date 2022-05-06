@@ -14,6 +14,7 @@
 package zipkin2.collector.pubsub;
 
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
@@ -41,6 +42,9 @@ public class StreamingPullStreamObserver extends AbstractExecutionThreadService 
 
         this.responseObserver.setOnReadyHandler(
                 () -> {
+                        if(!isRunning()) {
+                            startAsync().awaitRunning();
+                        }
                         this.responseObserver.request(1);
                 });
         this.responseObserver.setOnCancelHandler(this::stopIfRunning);
@@ -57,7 +61,7 @@ public class StreamingPullStreamObserver extends AbstractExecutionThreadService 
 
                 byte[] encoded = SpanBytesEncoder.JSON_V2.encodeList(Collections.singletonList(span));
                 PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(ByteString.copyFrom(encoded)).build();
-                ReceivedMessage receivedMessage = ReceivedMessage.newBuilder().setMessage(pubsubMessage).build();
+                ReceivedMessage receivedMessage = ReceivedMessage.newBuilder().setAckId(UUID.randomUUID().toString()).setMessage(pubsubMessage).build();
 
                 builder.addReceivedMessages(receivedMessage);
 
@@ -70,7 +74,9 @@ public class StreamingPullStreamObserver extends AbstractExecutionThreadService 
 
     @Override
     public void onNext(StreamingPullRequest streamingPullRequest) {
-        startAsync().awaitRunning();
+        if(!isRunning()) {
+            startAsync().awaitRunning();
+        }
         responseObserver.request(1);
     }
 

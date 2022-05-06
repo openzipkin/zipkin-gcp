@@ -54,7 +54,7 @@ public class PubSubCollector extends CollectorComponent {
         }
 
         @Override
-        public Builder metrics(CollectorMetrics collectorMetrics) {
+        public Builder metrics(CollectorMetrics metrics) {
             if (metrics == null) throw new NullPointerException("metrics == null");
             delegate.metrics(this.metrics = metrics.forTransport("pubsub"));
             return this;

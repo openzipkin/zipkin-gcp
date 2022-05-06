@@ -13,18 +13,27 @@
  */
 package zipkin2.collector.pubsub;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.pubsub.v1.AcknowledgeRequest;
 import com.google.pubsub.v1.ModifyAckDeadlineRequest;
+import com.google.pubsub.v1.PubsubMessage;
+import com.google.pubsub.v1.PullRequest;
+import com.google.pubsub.v1.PullResponse;
+import com.google.pubsub.v1.ReceivedMessage;
 import com.google.pubsub.v1.StreamingPullRequest;
 import com.google.pubsub.v1.StreamingPullResponse;
 import com.google.pubsub.v1.SubscriberGrpc;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import zipkin2.Span;
+import zipkin2.codec.SpanBytesEncoder;
 
 public class QueueBasedSubscriberImpl extends SubscriberGrpc.SubscriberImplBase {
 
@@ -35,22 +44,24 @@ public class QueueBasedSubscriberImpl extends SubscriberGrpc.SubscriberImplBase 
         return new StreamingPullStreamObserver(spanQueue, responseObserver);
     }
 
+    public void addSpans(List<Span> spans) {
+        spans.forEach(this::addSpan);
+    }
+
     public void addSpan(Span span) {
         spanQueue.add(span);
     }
 
     @Override
     public void acknowledge(AcknowledgeRequest request, StreamObserver<Empty> responseObserver) {
-        responseObserver.onNext(Empty.newBuilder().build());
+        responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();
     }
 
     @Override
     public void modifyAckDeadline(ModifyAckDeadlineRequest request, StreamObserver<Empty> responseObserver) {
-        responseObserver.onNext(Empty.newBuilder().build());
+        responseObserver.onNext(Empty.getDefaultInstance());
         responseObserver.onCompleted();
     }
-
-
 
 }
