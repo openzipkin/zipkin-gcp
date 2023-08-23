@@ -60,7 +60,7 @@
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>2.23.16</zipkin.version>
+    <zipkin.version>2.24.3</zipkin.version>
     <zipkin-reporter.version>2.16.3</zipkin-reporter.version>
     <spring-boot.version>2.4.1</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
