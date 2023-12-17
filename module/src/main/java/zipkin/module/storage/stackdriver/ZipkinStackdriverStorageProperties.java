@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("zipkin.storage.stackdriver")
 public class ZipkinStackdriverStorageProperties implements Serializable { // for Spark jobs
   private static final long serialVersionUID = 0L;
+
   /**
    * Sets the level of logging for HTTP requests made by the Stackdriver client. If not set or
    * none, logging will be disabled.

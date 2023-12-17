@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,16 +13,22 @@
  */
 package zipkin2.reporter.stackdriver;
 
+import com.asarkar.grpc.test.GrpcCleanupExtension;
+import com.asarkar.grpc.test.Resources;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
+import io.grpc.ManagedChannel;
+import io.grpc.Server;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcServerRule;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import zipkin2.Span;
@@ -39,31 +45,38 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 /** Same as StackdriverSpanConsumerTest: tests everything wired together */
-public class AsyncReporterStackdriverSenderTest {
-  @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
+@ExtendWith(GrpcCleanupExtension.class)
+class AsyncReporterStackdriverSenderTest {
   TestTraceService traceService = spy(new TestTraceService());
   String projectId = "test-project";
   AsyncReporter<Span> reporter;
 
-  @Before
-  public void setUp() {
-    server.getServiceRegistry().addService(traceService);
-    reporter =
-        AsyncReporter.builder(
-                StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build())
-            .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
-            .build(StackdriverEncoder.V2);
+  @BeforeEach void setUp(Resources resources) throws Exception {
+    String serverName = InProcessServerBuilder.generateName();
+
+    Server server = InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(traceService)
+        .build().start();
+    resources.register(server, Duration.ofSeconds(10)); // shutdown deadline
+
+    ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+    resources.register(channel, Duration.ofSeconds(10));// close deadline
+
+    reporter = AsyncReporter.builder(
+            StackdriverSender.newBuilder(channel).projectId(projectId).build())
+        .messageTimeout(0, TimeUnit.MILLISECONDS) // don't spawn a thread
+        .build(StackdriverEncoder.V2);
   }
 
-  @Test
-  public void sendSpans_empty() {
+  @Test void sendSpans_empty() {
     reporter.flush();
 
     verify(traceService, never()).batchWriteSpans(any(), any());
   }
 
-  @Test
-  public void sendSpans() {
+  @Test void sendSpans() {
     onClientCall(
         observer -> {
           observer.onNext(Empty.getDefaultInstance());
@@ -87,16 +100,17 @@ public class AsyncReporterStackdriverSenderTest {
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
     doAnswer(
-            (Answer<Void>)
-                invocationOnMock -> {
-                  StreamObserver<Empty> observer =
-                      ((StreamObserver) invocationOnMock.getArguments()[1]);
-                  onClientCall.accept(observer);
-                  return null;
-                })
+        (Answer<Void>)
+            invocationOnMock -> {
+              StreamObserver<Empty> observer =
+                  ((StreamObserver) invocationOnMock.getArguments()[1]);
+              onClientCall.accept(observer);
+              return null;
+            })
         .when(traceService)
         .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
   }
 
-  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
+  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {
+  }
 }

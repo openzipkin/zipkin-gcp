@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,25 +14,23 @@
 package zipkin2.collector.pubsub;
 
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
-
 import zipkin2.Callback;
 
 final class SpanCallback implements Callback<Void> {
 
-    private final AckReplyConsumer ackReplyConsumer;
+  private final AckReplyConsumer ackReplyConsumer;
 
-    public SpanCallback(AckReplyConsumer ackReplyConsumer) {
-        this.ackReplyConsumer = ackReplyConsumer;
-    }
+  public SpanCallback(AckReplyConsumer ackReplyConsumer) {
+    this.ackReplyConsumer = ackReplyConsumer;
+  }
 
-    @Override
-    public void onSuccess(Void value) {
-        ackReplyConsumer.ack();
-    }
+  @Override
+  public void onSuccess(Void value) {
+    ackReplyConsumer.ack();
+  }
 
-    @Override
-    public void onError(Throwable throwable) {
-        ackReplyConsumer.nack();
-    }
-
+  @Override
+  public void onError(Throwable throwable) {
+    ackReplyConsumer.nack();
+  }
 }

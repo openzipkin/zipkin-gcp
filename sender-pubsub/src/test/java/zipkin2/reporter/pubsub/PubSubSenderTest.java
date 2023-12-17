@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,20 +13,11 @@
  */
 package zipkin2.reporter.pubsub;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.junit.Rule;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
+import com.asarkar.grpc.test.GrpcCleanupExtension;
+import com.asarkar.grpc.test.Resources;
 import com.google.api.gax.core.ExecutorProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
@@ -43,183 +34,197 @@ import com.google.pubsub.v1.PublishResponse;
 import com.google.pubsub.v1.PublisherGrpc;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.Topic;
-
 import io.grpc.ManagedChannel;
+import io.grpc.Server;
+import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcCleanupRule;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import zipkin2.Call;
+import zipkin2.CheckResult;
+import zipkin2.Span;
+import zipkin2.codec.Encoding;
+import zipkin2.codec.SpanBytesDecoder;
+import zipkin2.codec.SpanBytesEncoder;
+
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import zipkin2.Call;
-import zipkin2.CheckResult;
-import zipkin2.Span;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import static zipkin2.TestObjects.CLIENT_SPAN;
-import zipkin2.codec.Encoding;
-import zipkin2.codec.SpanBytesDecoder;
-import zipkin2.codec.SpanBytesEncoder;
 
+@ExtendWith({MockitoExtension.class, GrpcCleanupExtension.class})
 class PubSubSenderTest {
+  PubSubSender sender;
+  @Spy PublisherGrpc.PublisherImplBase publisherImplBase;
 
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+  @BeforeEach void initSender(Resources resources) throws IOException {
+    String serverName = InProcessServerBuilder.generateName();
 
-    PubSubSender sender;
+    Server server = InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(publisherImplBase)
+        .build().start();
+    resources.register(server, Duration.ofSeconds(10)); // shutdown deadline
 
-    private PublisherGrpc.PublisherImplBase publisherImplBase;
+    ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+    resources.register(channel, Duration.ofSeconds(10));// close deadline
 
-    @BeforeEach
-    void setUp() throws IOException, ExecutionException, InterruptedException {
-        publisherImplBase = mock(PublisherGrpc.PublisherImplBase.class);
+    TransportChannel transportChannel = GrpcTransportChannel.create(channel);
+    TransportChannelProvider transportChannelProvider =
+        FixedTransportChannelProvider.create(transportChannel);
 
-        String serverName = InProcessServerBuilder.generateName();
+    ExecutorProvider executorProvider = testExecutorProvider();
 
-        grpcCleanup.register(InProcessServerBuilder
-                                     .forName(serverName).directExecutor().addService(publisherImplBase).build().start());
+    String topicName = "projects/test-project/topics/my-topic";
+    Publisher publisher = Publisher.newBuilder(topicName)
+        .setExecutorProvider(executorProvider)
+        .setChannelProvider(transportChannelProvider)
+        .setCredentialsProvider(new NoCredentialsProvider())
+        .build();
 
-        ExecutorProvider executorProvider = testExecutorProvider();
+    PublisherStubSettings publisherStubSettings = PublisherStubSettings.newBuilder()
+        .setTransportChannelProvider(transportChannelProvider)
+        .setCredentialsProvider(new NoCredentialsProvider())
+        .build();
+    PublisherStub publisherStub = GrpcPublisherStub.create(publisherStubSettings);
+    TopicAdminClient topicAdminClient = TopicAdminClient.create(publisherStub);
 
-        ManagedChannel managedChannel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+    sender = PubSubSender.newBuilder()
+        .topic(topicName)
+        .publisher(publisher)
+        .topicAdminClient(topicAdminClient)
+        .build();
+  }
 
-        TransportChannel transportChannel = GrpcTransportChannel.create(managedChannel);
-        TransportChannelProvider transportChannelProvider = FixedTransportChannelProvider.create(transportChannel);
+  private InstantiatingExecutorProvider testExecutorProvider() {
+    return InstantiatingExecutorProvider.newBuilder()
+        .setExecutorThreadCount(5 * Runtime.getRuntime().availableProcessors())
+        .build();
+  }
 
-        String topicName = "projects/test-project/topics/my-topic";
-        Publisher publisher = Publisher.newBuilder(topicName)
-                                       .setExecutorProvider(executorProvider)
-                                        .setChannelProvider(transportChannelProvider)
-                                       .build();
+  @Test void sendsSpans() throws Exception {
+    ArgumentCaptor<PublishRequest> requestCaptor =
+        ArgumentCaptor.forClass(PublishRequest.class);
 
-        PublisherStubSettings publisherStubSettings = PublisherStubSettings.newBuilder()
-                                                                           .setTransportChannelProvider(transportChannelProvider)
-                                                                           .build();
-        PublisherStub publisherStub = GrpcPublisherStub.create(publisherStubSettings);
-        TopicAdminClient topicAdminClient = TopicAdminClient.create(publisherStub);
+    doAnswer(invocationOnMock -> {
+      StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
+      responseObserver.onNext(
+          PublishResponse.newBuilder().addMessageIds(UUID.randomUUID().toString()).build());
+      responseObserver.onCompleted();
+      return null;
+    }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
 
-        sender = PubSubSender.newBuilder()
-                             .topic(topicName)
-                             .publisher(publisher)
-                             .topicAdminClient(topicAdminClient)
-                             .build();
+    send(CLIENT_SPAN, CLIENT_SPAN).execute();
+
+    assertThat(extractSpans(requestCaptor.getValue()))
+        .containsExactly(CLIENT_SPAN, CLIENT_SPAN);
+  }
+
+  @Test void sendsSpans_PROTO3() throws Exception {
+    ArgumentCaptor<PublishRequest> requestCaptor =
+        ArgumentCaptor.forClass(PublishRequest.class);
+
+    doAnswer(invocationOnMock -> {
+      StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
+      responseObserver.onNext(
+          PublishResponse.newBuilder().addMessageIds(UUID.randomUUID().toString()).build());
+      responseObserver.onCompleted();
+      return null;
+    }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
+
+    sender = sender.toBuilder().encoding(Encoding.PROTO3).build();
+
+    send(CLIENT_SPAN, CLIENT_SPAN).execute();
+
+    assertThat(extractSpans(requestCaptor.getValue()))
+        .containsExactly(CLIENT_SPAN, CLIENT_SPAN);
+  }
+
+  @Test void sendsSpans_json_unicode() throws Exception {
+    ArgumentCaptor<PublishRequest> requestCaptor =
+        ArgumentCaptor.forClass(PublishRequest.class);
+
+    doAnswer(invocationOnMock -> {
+      StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
+      responseObserver.onNext(
+          PublishResponse.newBuilder().addMessageIds(UUID.randomUUID().toString()).build());
+      responseObserver.onCompleted();
+      return null;
+    }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
+
+    Span unicode = CLIENT_SPAN.toBuilder().putTag("error", "\uD83D\uDCA9").build();
+    send(unicode).execute();
+
+    assertThat(extractSpans(requestCaptor.getValue())).containsExactly(unicode);
+  }
+
+  @Test void checkPasses() throws Exception {
+    ArgumentCaptor<GetTopicRequest> captor =
+        ArgumentCaptor.forClass(GetTopicRequest.class);
+
+    doAnswer(invocationOnMock -> {
+      StreamObserver<Topic> responseObserver = invocationOnMock.getArgument(1);
+      responseObserver.onNext(Topic.newBuilder().setName("topic-name").build());
+      responseObserver.onCompleted();
+      return null;
+    }).when(publisherImplBase).getTopic(captor.capture(), any(StreamObserver.class));
+
+    CheckResult result = sender.check();
+    assertThat(result.ok()).isTrue();
+  }
+
+  @Test void checkFailsWithStreamNotActive() throws Exception {
+    ArgumentCaptor<GetTopicRequest> captor =
+        ArgumentCaptor.forClass(GetTopicRequest.class);
+
+    doAnswer(invocationOnMock -> {
+      StreamObserver<Topic> responseObserver = invocationOnMock.getArgument(1);
+      responseObserver.onError(new io.grpc.StatusRuntimeException(Status.NOT_FOUND));
+      return null;
+    }).when(publisherImplBase).getTopic(captor.capture(), any(StreamObserver.class));
+
+    CheckResult result = sender.check();
+    assertThat(result.error()).isInstanceOf(ApiException.class);
+  }
+
+  private List<Span> extractSpans(PublishRequest publishRequest) {
+    return publishRequest.getMessagesList()
+        .stream()
+        .flatMap(this::extractSpans)
+        .collect(Collectors.toList());
+  }
+
+  Stream<Span> extractSpans(PubsubMessage pubsubMessage) {
+    byte[] messageBytes = pubsubMessage.getData().toByteArray();
+
+    if (messageBytes[0] == '[') {
+      return SpanBytesDecoder.JSON_V2.decodeList(messageBytes).stream();
     }
+    return SpanBytesDecoder.PROTO3.decodeList(messageBytes).stream();
+  }
 
-    private InstantiatingExecutorProvider testExecutorProvider() {
-        return InstantiatingExecutorProvider.newBuilder()
-                                            .setExecutorThreadCount(5 * Runtime.getRuntime().availableProcessors())
-                                            .build();
-    }
-
-    @Test
-    public void sendsSpans() throws Exception {
-        ArgumentCaptor<PublishRequest> requestCaptor =
-                ArgumentCaptor.forClass(PublishRequest.class);
-
-        doAnswer(invocationOnMock -> {
-            StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
-            responseObserver.onNext(PublishResponse.newBuilder().addMessageIds(UUID.randomUUID().toString()).build());
-            responseObserver.onCompleted();
-            return null;
-        }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
-
-        send(CLIENT_SPAN, CLIENT_SPAN).execute();
-
-        assertThat(extractSpans(requestCaptor.getValue()))
-                .containsExactly(CLIENT_SPAN, CLIENT_SPAN);
-    }
-
-    @Test
-    public void sendsSpans_PROTO3() throws Exception {
-        ArgumentCaptor<PublishRequest> requestCaptor =
-                ArgumentCaptor.forClass(PublishRequest.class);
-
-        doAnswer(invocationOnMock -> {
-            StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
-            responseObserver.onNext(PublishResponse.newBuilder().addMessageIds(UUID.randomUUID().toString()).build());
-            responseObserver.onCompleted();
-            return null;
-        }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
-
-        sender = sender.toBuilder().encoding(Encoding.PROTO3).build();
-
-        send(CLIENT_SPAN, CLIENT_SPAN).execute();
-
-        assertThat(extractSpans(requestCaptor.getValue()))
-                .containsExactly(CLIENT_SPAN, CLIENT_SPAN);
-    }
-
-    @Test
-    public void sendsSpans_json_unicode() throws Exception {
-        ArgumentCaptor<PublishRequest> requestCaptor =
-                ArgumentCaptor.forClass(PublishRequest.class);
-
-        doAnswer(invocationOnMock -> {
-            StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
-            responseObserver.onNext(PublishResponse.newBuilder().addMessageIds(UUID.randomUUID().toString()).build());
-            responseObserver.onCompleted();
-            return null;
-        }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
-
-        Span unicode = CLIENT_SPAN.toBuilder().putTag("error", "\uD83D\uDCA9").build();
-        send(unicode).execute();
-
-        assertThat(extractSpans(requestCaptor.getValue())).containsExactly(unicode);
-    }
-
-    @Test
-    public void checkPasses() throws Exception {
-        ArgumentCaptor<GetTopicRequest> captor =
-                ArgumentCaptor.forClass(GetTopicRequest.class);
-
-        doAnswer(invocationOnMock -> {
-            StreamObserver<Topic> responseObserver = invocationOnMock.getArgument(1);
-            responseObserver.onNext(Topic.newBuilder().setName("topic-name").build());
-            responseObserver.onCompleted();
-            return null;
-        }).when(publisherImplBase).getTopic(captor.capture(), any(StreamObserver.class));
-
-        CheckResult result = sender.check();
-        assertThat(result.ok()).isTrue();
-    }
-
-    @Test
-    public void checkFailsWithStreamNotActive() throws Exception {
-        ArgumentCaptor<GetTopicRequest> captor =
-                ArgumentCaptor.forClass(GetTopicRequest.class);
-
-        doAnswer(invocationOnMock -> {
-            StreamObserver<Topic> responseObserver = invocationOnMock.getArgument(1);
-            responseObserver.onError(new io.grpc.StatusRuntimeException(Status.NOT_FOUND));
-            return null;
-        }).when(publisherImplBase).getTopic(captor.capture(), any(StreamObserver.class));
-
-        CheckResult result = sender.check();
-        assertThat(result.error()).isInstanceOf(ApiException.class);
-    }
-
-    private List<Span> extractSpans(PublishRequest publishRequest) {
-        return publishRequest.getMessagesList()
-                            .stream()
-                            .flatMap(this::extractSpans)
-                            .collect(Collectors.toList());
-    }
-
-    Stream<Span> extractSpans(PubsubMessage pubsubMessage) {
-        byte[] messageBytes = pubsubMessage.getData().toByteArray();
-
-        if (messageBytes[0] == '[') {
-            return SpanBytesDecoder.JSON_V2.decodeList(messageBytes).stream();
-        }
-        return SpanBytesDecoder.PROTO3.decodeList(messageBytes).stream();
-    }
-
-    Call<Void> send(zipkin2.Span... spans) {
-        SpanBytesEncoder bytesEncoder =
-                sender.encoding() == Encoding.JSON ? SpanBytesEncoder.JSON_V2 : SpanBytesEncoder.PROTO3;
-        return sender.sendSpans(Stream.of(spans).map(bytesEncoder::encode).collect(toList()));
-    }
-
+  Call<Void> send(zipkin2.Span... spans) {
+    SpanBytesEncoder bytesEncoder =
+        sender.encoding() == Encoding.JSON ? SpanBytesEncoder.JSON_V2 : SpanBytesEncoder.PROTO3;
+    return sender.sendSpans(Stream.of(spans).map(bytesEncoder::encode).collect(toList()));
+  }
 }

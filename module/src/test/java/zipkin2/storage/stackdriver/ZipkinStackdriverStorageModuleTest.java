@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,8 +16,8 @@ package zipkin2.storage.stackdriver;
 import com.google.auth.Credentials;
 import com.google.auth.oauth2.GoogleCredentials;
 import java.io.IOException;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
@@ -28,32 +28,33 @@ import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageModule;
 import zipkin.module.storage.stackdriver.ZipkinStackdriverStorageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 public class ZipkinStackdriverStorageModuleTest {
 
   AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 
-  @After
+  @AfterEach
   public void close() {
     context.close();
   }
 
-  @Test(expected = NoSuchBeanDefinitionException.class)
-  public void doesntProvideStorageComponent_whenStorageTypeNotStackdriver() {
-    TestPropertyValues.of("zipkin.storage.type:elasticsearch").applyTo(context);
-    context.register(
-        PropertyPlaceholderAutoConfiguration.class,
-        ZipkinStackdriverStorageProperties.class,
-        ZipkinStackdriverStorageModule.class,
-        TestConfiguration.class);
-    context.refresh();
+  @Test void doesntProvideStorageComponent_whenStorageTypeNotStackdriver() {
+    assertThrows(NoSuchBeanDefinitionException.class, () -> {
+      TestPropertyValues.of("zipkin.storage.type:elasticsearch").applyTo(context);
+      context.register(
+              PropertyPlaceholderAutoConfiguration.class,
+              ZipkinStackdriverStorageProperties.class,
+              ZipkinStackdriverStorageModule.class,
+              TestConfiguration.class);
+      context.refresh();
 
-    context.getBean(StackdriverStorage.class);
+      context.getBean(StackdriverStorage.class);
+    });
   }
 
-  @Test
-  public void providesStorageComponent_whenStorageTypeStackdriverAndProjectIdSet() {
+  @Test void providesStorageComponent_whenStorageTypeStackdriverAndProjectIdSet() {
     TestPropertyValues.of(
         "zipkin.storage.type:stackdriver",
         "zipkin.storage.stackdriver.project-id:zipkin",
@@ -67,8 +68,7 @@ public class ZipkinStackdriverStorageModuleTest {
     assertThat(context.getBean(StackdriverStorage.class)).isNotNull();
   }
 
-  @Test
-  public void canOverrideProperty_apiHost() {
+  @Test void canOverrideProperty_apiHost() {
     TestPropertyValues.of(
         "zipkin.storage.type:stackdriver",
         "zipkin.storage.stackdriver.project-id:zipkin",

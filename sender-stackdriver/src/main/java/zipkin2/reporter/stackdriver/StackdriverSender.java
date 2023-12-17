@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -34,9 +34,9 @@ import zipkin2.codec.Encoding;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 
-import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 import static com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag;
 import static io.grpc.CallOptions.DEFAULT;
+import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 
 public final class StackdriverSender extends Sender {
 
@@ -76,7 +76,9 @@ public final class StackdriverSender extends Sender {
     }
 
     public Builder serverResponseTimeoutMs(long serverResponseTimeoutMs) {
-      if (serverResponseTimeoutMs <= 0) throw new IllegalArgumentException("Server response timeout must be greater than 0");
+      if (serverResponseTimeoutMs <= 0) {
+        throw new IllegalArgumentException("Server response timeout must be greater than 0");
+      }
       this.serverResponseTimeoutMs = serverResponseTimeoutMs;
       return this;
     }
@@ -173,6 +175,7 @@ public final class StackdriverSender extends Sender {
 
   /**
    * Sends a malformed call to Stackdriver Trace to validate service health.
+   *
    * @return successful status if Stackdriver Trace API responds with expected validation
    * error (or happens to respond as success -- unexpected but okay); otherwise returns error status
    * wrapping the underlying exception.
@@ -246,7 +249,8 @@ public final class StackdriverSender extends Sender {
   final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
 
     BatchWriteSpansCall(BatchWriteSpansRequest request) {
-      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request, serverResponseTimeoutMs);
+      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request,
+          serverResponseTimeoutMs);
     }
 
     @Override

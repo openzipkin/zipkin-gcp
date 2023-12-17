@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -17,7 +17,7 @@ import com.google.protobuf.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import zipkin2.Endpoint;
 import zipkin2.Span;
 
@@ -29,8 +29,7 @@ import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableString;
 
 public class SpanTranslatorTest {
   /** This test is intentionally sensitive, so changing other parts makes obvious impact here */
-  @Test
-  public void translate_clientSpan() {
+  @Test void translate_clientSpan() {
     Span zipkinSpan =
         Span.newBuilder()
             .traceId("7180c278b62e8f6a216a2aea45d08fc9")
@@ -82,8 +81,7 @@ public class SpanTranslatorTest {
                 .build());
   }
 
-  @Test
-  public void translate_missingName() {
+  @Test void translate_missingName() {
     Span zipkinSpan = Span.newBuilder().traceId("3").id("2").build();
     com.google.devtools.cloudtrace.v2.Span translated = SpanTranslator.translate(
         com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
@@ -91,8 +89,7 @@ public class SpanTranslatorTest {
     assertThat(translated.getDisplayName().getValue()).isNotEmpty();
   }
 
-  @Test
-  public void testTranslateSpans() {
+  @Test void testTranslateSpans() {
     Span span1 =
         Span.newBuilder().id("1").traceId("1").name("/a").timestamp(1L).duration(1L).build();
     Span span2 =
@@ -112,8 +109,7 @@ public class SpanTranslatorTest {
             "projects/test-project/traces/00000000000000000000000000000001/spans/0000000000000003");
   }
 
-  @Test
-  public void testTranslateSpanEmptyName() {
+  @Test void testTranslateSpanEmptyName() {
     Span spanNullName =
         Span.newBuilder().id("1").traceId("1").timestamp(1L).duration(1L).build();
     Span spanEmptyName =

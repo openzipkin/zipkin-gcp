@@ -54,6 +54,13 @@
     </dependency>
 
     <dependency>
+      <groupId>${zipkin.groupId}</groupId>
+      <artifactId>zipkin-tests</artifactId>
+      <version>${zipkin.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>${armeria.groupId}</groupId>
       <artifactId>armeria-grpc</artifactId>
       <version>${armeria.version}</version>
@@ -62,7 +69,7 @@
 
     <dependency>
       <groupId>${armeria.groupId}</groupId>
-      <artifactId>armeria-junit4</artifactId>
+      <artifactId>armeria-junit5</artifactId>
       <version>${armeria.version}</version>
       <scope>test</scope>
     </dependency>

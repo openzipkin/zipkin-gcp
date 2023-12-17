@@ -56,6 +56,12 @@
       <version>${grpc.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>${zipkin.groupId}</groupId>
+      <artifactId>zipkin-tests</artifactId>
+      <version>${zipkin.version}</version>
+      <scope>test</scope>
+    </dependency>
     <!-- Stackdriver Trace read operations are only available in its v1 API. Use it to validate data was written during integration tests. -->
     <dependency>
       <groupId>com.google.api.grpc</groupId>
@@ -64,8 +70,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.asarkar.grpc</groupId>
+      <artifactId>grpc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.grpc</groupId>
-      <artifactId>grpc-testing</artifactId>
+      <artifactId>grpc-inprocess</artifactId>
       <version>${grpc.version}</version>
       <scope>test</scope>
     </dependency>
@@ -76,15 +87,22 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-netty-shaded</artifactId>
-      <version>${grpc.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>0.22.2</version>
+      <version>${google-auth-library-oauth2-http.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+        </exclusion>
+      </exclusions>
+      <scope>test</scope>
+    </dependency>
+    <!-- avoid CVE in ^^ transient deps -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>${commons-codec.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

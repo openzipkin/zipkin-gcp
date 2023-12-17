@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,51 +18,28 @@ import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.Span;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
-import com.linecorp.armeria.server.Server;
+import com.linecorp.armeria.server.ServerBuilder;
 import com.linecorp.armeria.server.grpc.GrpcService;
+import com.linecorp.armeria.testing.junit5.server.ServerExtension;
 import io.grpc.stub.StreamObserver;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import org.junit.rules.ExternalResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.unmodifiableSet;
 
 /** Starts up a local Stackdriver Trace server, listening for GRPC requests on {@link #grpcURI}. */
-public class StackdriverMockServer extends ExternalResource {
-  private static final Logger LOG = LoggerFactory.getLogger(StackdriverMockServer.class);
-
-  private final Server server;
-
+public class StackdriverMockServer extends ServerExtension {
   private final Set<String> traceIds = Sets.newConcurrentHashSet();
   private final Set<String> spanIds = Sets.newConcurrentHashSet();
   private CountDownLatch spanCountdown;
 
-  public StackdriverMockServer() {
-    this.server = Server.builder()
-        .service(GrpcService.builder()
-            .addService(new Service())
-            .build())
-        .tlsSelfSigned()
-        .build();
+  @Override protected void configure(ServerBuilder sb) {
+    sb.service(GrpcService.builder().addService(new Service()).build()).tlsSelfSigned();
   }
 
   public int getPort() {
-    return server.activeLocalPort();
-  }
-
-  @Override
-  protected void before() {
-    this.server.start().join();
-
-    LOG.info("Started MOCK grpc server on 'localhost:{}'", getPort());
-  }
-
-  @Override
-  public void after() {
-    this.server.stop().join();
+    return server().activeLocalPort();
   }
 
   public void reset() {
@@ -72,8 +49,7 @@ public class StackdriverMockServer extends ExternalResource {
   }
 
   class Service extends TraceServiceGrpc.TraceServiceImplBase {
-    @Override
-    public void batchWriteSpans(BatchWriteSpansRequest request,
+    @Override public void batchWriteSpans(BatchWriteSpansRequest request,
         StreamObserver<Empty> responseObserver) {
       final List<Span> spansList = request.getSpansList();
       for (Span span : spansList) {
@@ -90,7 +66,7 @@ public class StackdriverMockServer extends ExternalResource {
   }
 
   public String grpcURI() {
-    return String.format("%s:%s", "localhost", this.getPort());
+    return String.format("%s:%s", "localhost", getPort());
   }
 
   public Set<String> spanIds() {
