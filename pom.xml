@@ -28,6 +28,8 @@
     <module>sender-stackdriver</module>
     <module>storage-stackdriver</module>
     <module>propagation-stackdriver</module>
+    <module>sender-pubsub</module>
+    <module>collector-pubsub</module>
   </modules>
 
   <distributionManagement>
@@ -150,6 +152,17 @@
   </developers>
 
   <dependencies>
+    <dependency>
+      <groupId>io.zipkin.zipkin2</groupId>
+      <artifactId>zipkin-collector</artifactId>
+      <version>${zipkin.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.zipkin.reporter2</groupId>
+      <artifactId>zipkin-reporter</artifactId>
+      <version>${zipkin-reporter.version}</version>
+    </dependency>
+
     <dependency>
       <groupId>${zipkin.groupId}</groupId>
       <artifactId>zipkin-tests</artifactId>
