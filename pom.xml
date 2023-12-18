@@ -63,7 +63,7 @@
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
     <zipkin.version>2.25.2</zipkin.version>
-    <zipkin-reporter.version>2.17.0</zipkin-reporter.version>
+    <zipkin-reporter.version>2.17.1</zipkin-reporter.version>
     <spring-boot.version>2.7.18</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
@@ -73,7 +73,7 @@
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
     <!--    <brave.version>master-SNAPSHOT</brave.version>-->
     <brave.groupId>io.zipkin.brave</brave.groupId>
-    <brave.version>5.16.0</brave.version>
+    <brave.version>5.17.0</brave.version>
 
     <!-- from armeria-grpc -->
     <grpc.version>1.58.0</grpc.version>
@@ -298,9 +298,10 @@
         <version>${maven-compiler-plugin.version}</version>
         <inherited>true</inherited>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>${main.java.version}</source>
+          <target>${main.java.version}</target>
           <fork>true</fork>
+          <release>8</release>
           <showWarnings>true</showWarnings>
         </configuration>
       </plugin>
