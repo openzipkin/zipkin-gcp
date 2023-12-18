@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -17,7 +17,7 @@ import com.google.devtools.cloudtrace.v2.AttributeValue;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import zipkin2.Endpoint;
 import zipkin2.Span;
 import zipkin2.Span.Kind;
@@ -27,8 +27,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
 
 public class AttributesExtractorTest {
-  @Test
-  public void testLabel() {
+  @Test void testLabel() {
     AttributesExtractor extractor = new AttributesExtractor(Collections.emptyMap());
     Span zipkinSpan =
         Span.newBuilder()
@@ -42,8 +41,7 @@ public class AttributesExtractorTest {
     assertThat(labels).contains(entry("tag.key.1", toAttributeValue("value")));
   }
 
-  @Test
-  public void testLabelIsRenamed() {
+  @Test void testLabelIsRenamed() {
     Map<String, String> knownLabels = new LinkedHashMap<>();
     knownLabels.put("known.1", "renamed.1");
     knownLabels.put("known.2", "renamed.2");
@@ -62,8 +60,7 @@ public class AttributesExtractorTest {
     assertThat(labels).contains(entry("renamed.2", toAttributeValue("known.value")));
   }
 
-  @Test
-  public void testAgentLabelIsSet() {
+  @Test void testAgentLabelIsSet() {
     AttributesExtractor extractor = new AttributesExtractor(Collections.emptyMap());
     Span rootSpan = Span.newBuilder().traceId("4").name("test-span").id("5").build();
     Span nonRootSpan =
@@ -80,8 +77,7 @@ public class AttributesExtractorTest {
     System.clearProperty("stackdriver.trace.zipkin.agent");
   }
 
-  @Test
-  public void testEndpointIsSetIpv4() {
+  @Test void testEndpointIsSetIpv4() {
     Endpoint.Builder serverEndpointBuilder = Endpoint.newBuilder().serviceName("service1").port(80);
     serverEndpointBuilder.parseIp("10.0.0.1");
     Endpoint serverEndpoint = serverEndpointBuilder.build();
@@ -114,8 +110,7 @@ public class AttributesExtractorTest {
     assertThat(clientLabels).doesNotContainKeys("endpoint.ipv4", "endpoint.ipv6");
   }
 
-  @Test
-  public void testEndpointIsSetIpv6() {
+  @Test void testEndpointIsSetIpv6() {
     Endpoint.Builder serverEndpointBuilder = Endpoint.newBuilder().serviceName("service1").port(80);
     serverEndpointBuilder.parseIp("::1");
     Endpoint serverEndpoint = serverEndpointBuilder.build();
@@ -148,8 +143,7 @@ public class AttributesExtractorTest {
     assertThat(clientLabels).doesNotContainKeys("endpoint.ipv4", "endpoint.ipv6");
   }
 
-  @Test
-  public void testEndpointWithNullServiceName() {
+  @Test void testEndpointWithNullServiceName() {
     Endpoint.Builder serverEndpointBuilder = Endpoint.newBuilder().port(80);
     Endpoint serverEndpoint = serverEndpointBuilder.build();
     Span serverSpan =
@@ -166,8 +160,7 @@ public class AttributesExtractorTest {
     assertThat(serverLabels).doesNotContainKey("endpoint.serviceName");
   }
 
-  @Test
-  public void testComponentLabelIsSet() {
+  @Test void testComponentLabelIsSet() {
     AttributesExtractor extractor = new AttributesExtractor(Collections.emptyMap());
     Span clientSpan =
         Span.newBuilder()

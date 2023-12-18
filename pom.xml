@@ -62,59 +62,66 @@
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>2.24.3</zipkin.version>
-    <zipkin-reporter.version>2.16.3</zipkin-reporter.version>
-    <spring-boot.version>2.4.1</spring-boot.version>
+    <zipkin.version>2.25.2</zipkin.version>
+    <zipkin-reporter.version>2.17.0</zipkin-reporter.version>
+    <spring-boot.version>2.7.18</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
-    <armeria.version>1.3.0</armeria.version>
+    <armeria.version>1.26.4</armeria.version>
 
     <!-- This allows you to test feature branches with jitpack -->
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
     <!--    <brave.version>master-SNAPSHOT</brave.version>-->
     <brave.groupId>io.zipkin.brave</brave.groupId>
-    <brave.version>5.13.7</brave.version>
+    <brave.version>5.16.0</brave.version>
 
     <!-- from armeria-grpc -->
-    <grpc.version>1.33.1</grpc.version>
+    <grpc.version>1.58.0</grpc.version>
     <!-- from grpc-protobuf -->
-    <protobuf.version>3.12.0</protobuf.version>
-    <guava.version>29.0-android</guava.version>
+    <protobuf.version>3.24.0</protobuf.version>
+    <guava.version>32.0.1-android</guava.version>
 
+    <!-- stackdriver deps -->
+    <google-auth-library-oauth2-http.version>1.20.0</google-auth-library-oauth2-http.version>
+    <!-- avoid CVE in ^^ transient deps -->
+    <commons-codec.version>1.16.0</commons-codec.version>
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace.version>1.2.10</grpc-google-cloud-trace.version>
+    <grpc-google-cloud-trace.version>2.32.0</grpc-google-cloud-trace.version>
 
-    <assertj.version>3.18.1</assertj.version>
-    <awaitility.version>4.0.3</awaitility.version>
-    <junit.version>4.13.1</junit.version>
-    <junit-jupiter.version>5.7.0</junit-jupiter.version>
-    <mockito.version>3.6.28</mockito.version>
+    <!-- pubsub deps -->
+    <google-cloud-pubsub.version>1.125.13</google-cloud-pubsub.version>
+    <grpc-google-cloud-pubsub-v1.version>1.107.13</grpc-google-cloud-pubsub-v1.version>
+
+    <assertj.version>3.24.2</assertj.version>
+    <awaitility.version>4.2.0</awaitility.version>
+    <junit-jupiter.version>5.10.1</junit-jupiter.version>
+    <mockito.version>5.8.0</mockito.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
-    <errorprone.version>2.4.0</errorprone.version>
+    <errorprone.version>2.23.0</errorprone.version>
 
     <license.skip>${skipTests}</license.skip>
 
-    <animal-sniffer-maven-plugin.version>1.19</animal-sniffer-maven-plugin.version>
+    <animal-sniffer-maven-plugin.version>1.23</animal-sniffer-maven-plugin.version>
     <go-offline-maven-plugin.version>1.2.8</go-offline-maven-plugin.version>
     <!-- TODO: cleanup any redundant ignores now also in the 4.0 release (once final) -->
-    <license-maven-plugin.version>4.2</license-maven-plugin.version>
-    <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+    <license-maven-plugin.version>4.3</license-maven-plugin.version>
+    <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
     <!-- Use same version as https://github.com/openzipkin/docker-java -->
-    <maven-dependency-plugin.version>3.1.2</maven-dependency-plugin.version>
-    <maven-deploy-plugin.version>3.0.0-M1</maven-deploy-plugin.version>
-    <maven-enforcer-plugin.version>3.0.0-M3</maven-enforcer-plugin.version>
+    <maven-dependency-plugin.version>3.6.1</maven-dependency-plugin.version>
+    <maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
+    <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
     <!-- Use same version as https://github.com/openzipkin/docker-java -->
-    <maven-help-plugin.version>3.2.0</maven-help-plugin.version>
-    <maven-install-plugin.version>3.0.0-M1</maven-install-plugin.version>
-    <maven-javadoc-plugin.version>3.2.0</maven-javadoc-plugin.version>
-    <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
-    <maven-release-plugin.version>3.0.0-M1</maven-release-plugin.version>
-    <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
-    <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
-    <maven-surefire-plugin.version>3.0.0-M5</maven-surefire-plugin.version>
-    <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
+    <maven-help-plugin.version>3.4.0</maven-help-plugin.version>
+    <maven-install-plugin.version>3.1.1</maven-install-plugin.version>
+    <maven-javadoc-plugin.version>3.6.2</maven-javadoc-plugin.version>
+    <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+    <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
+    <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
+    <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+    <maven-surefire-plugin.version>3.2.2</maven-surefire-plugin.version>
+    <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
   </properties>
 
   <name>Zipkin Google Cloud Platform (Parent)</name>
@@ -151,60 +158,25 @@
     </developer>
   </developers>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.asarkar.grpc</groupId>
+        <artifactId>grpc-test</artifactId>
+        <version>1.2.2</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
-    <dependency>
-      <groupId>io.zipkin.zipkin2</groupId>
-      <artifactId>zipkin-collector</artifactId>
-      <version>${zipkin.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.zipkin.reporter2</groupId>
-      <artifactId>zipkin-reporter</artifactId>
-      <version>${zipkin-reporter.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>${zipkin.groupId}</groupId>
-      <artifactId>zipkin-tests</artifactId>
-      <version>${zipkin.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>${junit.version}</version>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
-      <version>${junit-jupiter.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-      <version>${junit-jupiter.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!--
-    Current versions of JUnit5 provide the above junit-jupiter artifact for convenience but we may
-    still have transitive dependencies on these older artifacts and have to make sure they're all
-    using the same version.
-    -->
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <version>${junit-jupiter.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
       <version>${junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
@@ -218,12 +190,12 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.2.3</version>
+      <version>1.2.13</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <artifactId>mockito-junit-jupiter</artifactId>
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
@@ -232,16 +204,6 @@
   <build>
     <pluginManagement>
       <plugins>
-        <!-- mvn -N io.takari:maven:wrapper generates the ./mvnw script -->
-        <plugin>
-          <groupId>io.takari</groupId>
-          <artifactId>maven</artifactId>
-          <version>0.7.7</version>
-          <configuration>
-            <maven>3.6.3</maven>
-          </configuration>
-        </plugin>
-
         <!-- mvn de.qaware.maven:go-offline-maven-plugin:resolve-dependencies -->
         <plugin>
           <groupId>de.qaware.maven</groupId>
@@ -347,32 +309,56 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${maven-surefire-plugin.version}</version>
         <configuration>
-          <!-- Ensure scope leak cause ends up in the console -->
+          <!-- Ensures root cause ends up in the console -->
           <trimStackTrace>false</trimStackTrace>
+          <!-- TODO: remove when assertj releases a new version, and includes updated bytebuddy.
+               https://github.com/mockito/mockito/issues/3119#issuecomment-1732179039 -->
+          <argLine>-Dnet.bytebuddy.experimental=true</argLine>
         </configuration>
+        <dependencies>
+          <!-- needed for surefire.
+     https://maven.apache.org/surefire/maven-surefire-plugin/examples/junit-platform.html -->
+          <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-jupiter.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
 
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${maven-surefire-plugin.version}</version>
-        <configuration>
-          <!-- Try to prevent flakes in CI -->
-          <reuseForks>false</reuseForks>
-          <!-- workaround to SUREFIRE-1831 -->
-          <useModulePath>false</useModulePath>
-          <!-- Ensure scope leak cause ends up in the console -->
-          <trimStackTrace>false</trimStackTrace>
-        </configuration>
         <executions>
           <execution>
             <id>integration-test</id>
-            <phase>verify</phase>
             <goals>
               <goal>integration-test</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>verify</id>
+            <goals>
               <goal>verify</goal>
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <systemProperties>
+            <!-- Gives better context when there's an exception such as AbortedStreamException.
+                 Set globally as we have failures sometimes in storage-elasticsearch and sometimes
+                 in zipkin-server tests (same code used two places).
+            -->
+            <com.linecorp.armeria.verboseExceptions>always</com.linecorp.armeria.verboseExceptions>
+          </systemProperties>
+          <!-- workaround to SUREFIRE-1831 -->
+          <useModulePath>false</useModulePath>
+          <!-- Ensures root cause ends up in the console -->
+          <trimStackTrace>false</trimStackTrace>
+          <!-- TODO: remove when assertj releases a new version, and includes updated bytebuddy.
+                https://github.com/mockito/mockito/issues/3119#issuecomment-1732179039 -->
+          <argLine>-Dnet.bytebuddy.experimental=true</argLine>
+        </configuration>
       </plugin>
 
       <!-- Ensure no Java 9+ api usage -->
@@ -410,7 +396,9 @@
             <configuration>
               <rules>
                 <requireJavaVersion>
-                  <version>[11,16)</version>
+                  <!-- Change this to control LTS JDK versions allowed to build
+                       the project. Keep in sync with .github/workflows -->
+                  <version>[11,12),[17,18),[21,22)</version>
                 </requireJavaVersion>
               </rules>
             </configuration>
@@ -521,15 +509,25 @@
       </modules>
     </profile>
 
+
     <profile>
-      <id>error-prone</id>
+      <id>error-prone-11+</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <!-- Only LTS versions -->
+        <jdk>[11,12),[17,18),[21,22)</jdk>
       </activation>
       <build>
         <plugins>
           <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
+            <version>${maven-compiler-plugin.version}</version>
+            <inherited>true</inherited>
+            <configuration>
+              <source>${main.java.version}</source>
+              <target>${main.java.version}</target>
+              <fork>true</fork>
+              <showWarnings>true</showWarnings>
+            </configuration>
             <executions>
               <execution>
                 <!-- only use errorprone on main source tree -->
@@ -543,6 +541,17 @@
                   <compilerArgs>
                     <arg>-XDcompilePolicy=simple</arg>
                     <arg>-Xplugin:ErrorProne ${errorprone.args}</arg>
+                    <!-- below needed for JDK16+ per https://errorprone.info/docs/installation -->
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+                    <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+                    <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+                    <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
                   </compilerArgs>
                   <annotationProcessorPaths>
                     <processorPath>
@@ -570,9 +579,10 @@
             <configuration>
               <serverId>ossrh</serverId>
               <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-              <!-- Double the normal timeout even though we haven't had a problem in this project.
-                   The only outcome of timing out client side is trying again. -->
-              <stagingProgressTimeoutMinutes>10</stagingProgressTimeoutMinutes>
+              <!-- Zipkin release is about ~100M mostly from the two server distributions. Default
+                   will timeout after 5 minutes, which can trigger fairly easily with this size. -->
+              <stagingProgressPauseDurationSeconds>20</stagingProgressPauseDurationSeconds>
+              <stagingProgressTimeoutMinutes>30</stagingProgressTimeoutMinutes>
               <autoReleaseAfterClose>true</autoReleaseAfterClose>
             </configuration>
           </plugin>
@@ -580,7 +590,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>

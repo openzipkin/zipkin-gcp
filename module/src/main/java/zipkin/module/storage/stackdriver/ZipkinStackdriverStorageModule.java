@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -74,8 +74,8 @@ public class ZipkinStackdriverStorageModule {
   String getDefaultProjectId() {
     WebClient client = WebClient.of("http://metadata.google.internal/");
     return client.execute(RequestHeaders.of(
-        HttpMethod.GET, "/computeMetadata/v1/project/project-id",
-        "Metadata-Flavor", "Google"))
+            HttpMethod.GET, "/computeMetadata/v1/project/project-id",
+            "Metadata-Flavor", "Google"))
         .aggregate()
         .join()
         .contentUtf8();

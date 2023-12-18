@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,21 +13,27 @@
  */
 package zipkin2.reporter.stackdriver;
 
+import com.asarkar.grpc.test.GrpcCleanupExtension;
+import com.asarkar.grpc.test.Resources;
 import com.google.common.collect.ImmutableList;
 import com.google.devtools.cloudtrace.v2.BatchWriteSpansRequest;
 import com.google.devtools.cloudtrace.v2.TraceServiceGrpc;
 import com.google.protobuf.Empty;
+import io.grpc.ManagedChannel;
+import io.grpc.Server;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
-import io.grpc.testing.GrpcServerRule;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import zipkin2.CheckResult;
@@ -41,22 +47,31 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static zipkin2.TestObjects.FRONTEND;
 
-public class StackdriverSenderTest {
-  @Rule public final GrpcServerRule server = new GrpcServerRule().directExecutor();
+@ExtendWith(GrpcCleanupExtension.class)
+class StackdriverSenderTest {
   TestTraceService traceService = spy(new TestTraceService());
   String projectId = "test-project";
   StackdriverSender sender;
 
   Span span = Span.newBuilder().traceId("1").id("a").name("get").localEndpoint(FRONTEND).build();
 
-  @Before
-  public void setUp() {
-    server.getServiceRegistry().addService(traceService);
-    sender = StackdriverSender.newBuilder(server.getChannel()).projectId(projectId).build();
+  @BeforeEach void setUp(Resources resources) throws Exception {
+    String serverName = InProcessServerBuilder.generateName();
+
+    Server server = InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(traceService)
+        .build().start();
+    resources.register(server, Duration.ofSeconds(10)); // shutdown deadline
+
+    ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+    resources.register(channel, Duration.ofSeconds(10));// close deadline
+
+    sender = StackdriverSender.newBuilder(channel).projectId(projectId).build();
   }
 
-  @Test
-  public void verifyRequestSent_single() throws IOException {
+  @Test void verifyRequestSent_single() throws IOException {
     byte[] oneTrace = StackdriverEncoder.V2.encode(span);
     List<byte[]> encodedSpans = ImmutableList.of(oneTrace);
 
@@ -73,8 +88,7 @@ public class StackdriverSenderTest {
     assertThat(sender.messageSizeInBytes(oneTrace.length)).isEqualTo(actualSize);
   }
 
-  @Test
-  public void verifyRequestSent_multipleTraces() throws IOException {
+  @Test void verifyRequestSent_multipleTraces() throws IOException {
     // intentionally change only the boundaries to help break any offset-based logic
     List<Span> spans =
         ImmutableList.of(
@@ -86,8 +100,7 @@ public class StackdriverSenderTest {
     verifyRequestSent(spans);
   }
 
-  @Test
-  public void verifyRequestSent_multipleSpans() throws IOException {
+  @Test void verifyRequestSent_multipleSpans() throws IOException {
     // intentionally change only the boundaries to help break any offset-based logic
     List<Span> spans =
         ImmutableList.of(
@@ -125,8 +138,7 @@ public class StackdriverSenderTest {
     assertThat(sender.messageSizeInBytes(encodedSpans)).isEqualTo(actualSize);
   }
 
-  @Test
-  public void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
+  @Test void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
     onClientCall(observer -> {
       observer.onError(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
     });
@@ -137,8 +149,7 @@ public class StackdriverSenderTest {
         .hasMessageContaining("RESOURCE_EXHAUSTED");
   }
 
-  @Test
-  public void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
+  @Test void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
     onClientCall(observer -> {
       observer.onError(new RuntimeException("oh no"));
     });
@@ -149,16 +160,14 @@ public class StackdriverSenderTest {
         .hasMessageContaining("UNKNOWN");
   }
 
-  @Test
-  public void verifyCheckReturnsOkWhenExpectedValidationFailure() {
+  @Test void verifyCheckReturnsOkWhenExpectedValidationFailure() {
     onClientCall(observer -> {
       observer.onError(new StatusRuntimeException(Status.INVALID_ARGUMENT));
     });
     assertThat(sender.check()).isSameAs(CheckResult.OK);
   }
 
-  @Test
-  public void verifyCheckReturnsOkWhenServiceSucceeds() {
+  @Test void verifyCheckReturnsOkWhenServiceSucceeds() {
     onClientCall(observer -> {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
@@ -168,13 +177,13 @@ public class StackdriverSenderTest {
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {
     doAnswer(
-            (Answer<Void>)
-                invocationOnMock -> {
-                  StreamObserver<Empty> observer =
-                      ((StreamObserver) invocationOnMock.getArguments()[1]);
-                  onClientCall.accept(observer);
-                  return null;
-                })
+        (Answer<Void>)
+            invocationOnMock -> {
+              StreamObserver<Empty> observer =
+                  ((StreamObserver) invocationOnMock.getArguments()[1]);
+              onClientCall.accept(observer);
+              return null;
+            })
         .when(traceService)
         .batchWriteSpans(any(BatchWriteSpansRequest.class), any(StreamObserver.class));
   }
@@ -188,5 +197,6 @@ public class StackdriverSenderTest {
     return requestCaptor.getValue();
   }
 
-  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {}
+  static class TestTraceService extends TraceServiceGrpc.TraceServiceImplBase {
+  }
 }

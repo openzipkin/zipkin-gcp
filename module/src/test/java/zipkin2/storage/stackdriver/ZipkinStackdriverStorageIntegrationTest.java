@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -29,10 +29,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -45,36 +50,34 @@ import zipkin2.Span;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ZipkinStackdriverStorageIntegrationTest {
-  @ClassRule public static final StackdriverMockServer mockServer = new StackdriverMockServer();
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class ZipkinStackdriverStorageIntegrationTest {
+  @Order(0) @RegisterExtension StackdriverMockServer mockServer = new StackdriverMockServer();
 
   AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
   StackdriverStorage storage;
   ZipkinStackdriverStorageProperties storageProperties;
+  @Order(1) @RegisterExtension BeforeAllCallback init = new BeforeAllCallback() {
+    @Override public void beforeAll(ExtensionContext extensionContext) {
+      TestPropertyValues.of(
+          "zipkin.storage.type:stackdriver",
+          "zipkin.storage.stackdriver.project-id:test_project",
+          "zipkin.storage.stackdriver.api-host:localhost:" + mockServer.getPort()).applyTo(context);
+      context.register(
+          PropertyPlaceholderAutoConfiguration.class,
+          TestConfiguration.class,
+          ZipkinStackdriverStorageModule.class);
+      context.refresh();
+      storage = context.getBean(StackdriverStorage.class);
+      storageProperties = context.getBean(ZipkinStackdriverStorageProperties.class);
+    }
+  };
 
-  @Before
-  public void init() {
-    TestPropertyValues.of(
-        "zipkin.storage.type:stackdriver",
-        "zipkin.storage.stackdriver.project-id:test_project",
-        "zipkin.storage.stackdriver.api-host:localhost:" + mockServer.getPort()).applyTo(context);
-    context.register(
-        PropertyPlaceholderAutoConfiguration.class,
-        TestConfiguration.class,
-        ZipkinStackdriverStorageModule.class);
-    context.refresh();
-    storage = context.getBean(StackdriverStorage.class);
-    storageProperties = context.getBean(ZipkinStackdriverStorageProperties.class);
-  }
-
-  @After
-  public void close() {
+  @AfterEach void close() {
     mockServer.reset();
-    context.close();
   }
 
-  @Test
-  public void openSSLAvailable() {
+  @Test void openSSLAvailable() {
     assertThat(OpenSsl.isAvailable())
         .withFailMessage("OpenSsl unavailable:" + OpenSsl.unavailabilityCause())
         .isTrue();
@@ -88,8 +91,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
         .isEqualTo(SslProvider.OPENSSL);
   }
 
-  @Test
-  public void mockGrpcServerServesOverSSL() { // sanity checks the mock server
+  @Test void mockGrpcServerServesOverSSL() { // sanity checks the mock server
     TraceServiceGrpc.TraceServiceBlockingStub sslTraceService =
         Clients.builder("gproto+https://" + mockServer.grpcURI() + "/")
             .factory(ClientFactory.builder()
@@ -100,8 +102,7 @@ public class ZipkinStackdriverStorageIntegrationTest {
     sslTraceService.batchWriteSpans(BatchWriteSpansRequest.getDefaultInstance());
   }
 
-  @Test
-  public void traceConsumerGetsCalled() throws Exception {
+  @Test void traceConsumerGetsCalled() throws Exception {
     List<String> spanIds =
         LongStream.of(1, 2, 3)
             .mapToObj(Long::toHexString)

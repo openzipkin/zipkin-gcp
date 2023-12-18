@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,7 +19,7 @@ import brave.propagation.TraceContext;
 import brave.propagation.TraceContextOrSamplingFlags;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,8 +35,7 @@ public class StackdriverTracePropagationTest {
       StackdriverTracePropagation.newFactory(B3Propagation.FACTORY).get();
   TraceContext.Extractor<Map<String,String>> extractor = propagation.extractor(Map::get);
 
-  @Test
-  public void b3TakesPrecedenceOverXCloud() {
+  @Test void b3TakesPrecedenceOverXCloud() {
 
     Map<String, String> headers = new HashMap<>();
     headers.put(StackdriverTracePropagation.TRACE_ID_NAME, XCLOUD_VALUE);
@@ -47,8 +46,7 @@ public class StackdriverTracePropagationTest {
     assertThat(ctx.context().traceIdString()).isEqualTo(B3_TRACE_ID);
   }
 
-  @Test
-  public void xCloudReturnedWhenB3Missing() {
+  @Test void xCloudReturnedWhenB3Missing() {
     Map<String, String> headers = new HashMap<>();
     headers.put(StackdriverTracePropagation.TRACE_ID_NAME, XCLOUD_VALUE);
 
@@ -57,8 +55,7 @@ public class StackdriverTracePropagationTest {
     assertThat(ctx.context().traceIdString()).isEqualTo(XCLOUD_TRACE_ID);
   }
 
-  @Test
-  public void b3ReturnedWhenXCloudMissing() {
+  @Test void b3ReturnedWhenXCloudMissing() {
     Map<String, String> headers = new HashMap<>();
     headers.put(B3_HEADER, B3_VALUE);
 
@@ -67,8 +64,7 @@ public class StackdriverTracePropagationTest {
     assertThat(ctx.context().traceIdString()).isEqualTo(B3_TRACE_ID);
   }
 
-  @Test
-  public void emptyContextReturnedWhenNoHeadersPresent() {
+  @Test void emptyContextReturnedWhenNoHeadersPresent() {
     TraceContextOrSamplingFlags ctx = extractor.extract(new HashMap<>());
 
     assertThat(ctx).isSameAs(TraceContextOrSamplingFlags.EMPTY);

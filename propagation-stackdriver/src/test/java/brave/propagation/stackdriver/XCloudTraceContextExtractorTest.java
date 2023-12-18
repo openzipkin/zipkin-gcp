@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,15 +16,14 @@ package brave.propagation.stackdriver;
 import brave.propagation.B3Propagation;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContextOrSamplingFlags;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class XCloudTraceContextExtractorTest {
 
-  @Test
-  public void testExtractXCloudTraceContext_traceTrue() {
+  @Test void testExtractXCloudTraceContext_traceTrue() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=1";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
@@ -38,8 +37,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().sampled()).isTrue();
   }
 
-  @Test
-  public void testExtractXCloudTraceContext_spanIdZero() {
+  @Test void testExtractXCloudTraceContext_spanIdZero() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/0;o=1";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
@@ -52,8 +50,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.traceIdContext().sampled()).isTrue();
   }
 
-  @Test
-  public void testExtractXCloudTraceContext_traceFalse() {
+  @Test void testExtractXCloudTraceContext_traceFalse() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=0";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
@@ -64,8 +61,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().sampled()).isFalse();
   }
 
-  @Test
-  public void testExtractXCloudTraceContext_missingTraceTrueValue() {
+  @Test void testExtractXCloudTraceContext_missingTraceTrueValue() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185;o=";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
@@ -79,8 +75,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().sampled()).isNull();
   }
 
-  @Test
-  public void testExtractXCloudTraceContext_noTraceTrue() {
+  @Test void testExtractXCloudTraceContext_noTraceTrue() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/4981115762139876185";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
@@ -94,8 +89,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().sampled()).isNull();
   }
 
-  @Test
-  public void testExtractXCloudTraceContext_noSpanId() {
+  @Test void testExtractXCloudTraceContext_noSpanId() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317";
     XCloudTraceContextExtractor extractor =
         new XCloudTraceContextExtractor<>(
@@ -108,8 +102,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.traceIdContext().sampled()).isNull();
   }
 
-  @Test
-  public void testExtractXCloudTraceContext_unsignedLong() {
+  @Test void testExtractXCloudTraceContext_unsignedLong() {
     String xCloudTraceContext = "8fd836bcfe241ee19a057679a77ba317/13804021222261907717";
     XCloudTraceContextExtractor extractor = new XCloudTraceContextExtractor<>(
                 B3Propagation.FACTORY.get(), (request, key) -> xCloudTraceContext);
@@ -121,8 +114,7 @@ public class XCloudTraceContextExtractorTest {
     assertThat(context.context().sampled()).isNull();
   }
 
-  @Test
-  public void parseUnsignedLong() {
+  @Test void parseUnsignedLong() {
     // max int64
     assertThat(XCloudTraceContextExtractor.parseUnsignedLong("9223372036854775807"))
             .isEqualTo(Long.parseUnsignedLong("9223372036854775807"));

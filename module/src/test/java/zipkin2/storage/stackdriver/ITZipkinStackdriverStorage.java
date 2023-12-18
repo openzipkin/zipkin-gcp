@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -76,13 +76,12 @@ public class ITZipkinStackdriverStorage {
     storageProperties = context.getBean(ZipkinStackdriverStorageProperties.class);
 
     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
-			.createScoped("https://www.googleapis.com/auth/cloud-platform");
+        .createScoped("https://www.googleapis.com/auth/cloud-platform");
 
     channel = ManagedChannelBuilder.forTarget("cloudtrace.googleapis.com")
-            .build();
+        .build();
     traceServiceGrpcV1 = TraceServiceGrpc.newBlockingStub(channel)
-            .withCallCredentials(MoreCallCredentials.from(credentials));
-
+        .withCallCredentials(MoreCallCredentials.from(credentials));
   }
 
   @AfterEach
@@ -94,47 +93,43 @@ public class ITZipkinStackdriverStorage {
     }
   }
 
-  @Test
-  public void healthCheck() {
+  @Test void healthCheck() {
     assertThat(storage.check().ok()).isTrue();
   }
 
-  @Test
-  public void spanConsumer() throws IOException {
+  @Test void spanConsumer() throws IOException {
     Random random = new Random();
     Span span = Span.newBuilder()
-            .traceId(random.nextLong(), random.nextLong())
-            .parentId("1")
-            .id("2")
-            .name("get")
-            .kind(Span.Kind.CLIENT)
-            .localEndpoint(FRONTEND)
-            .remoteEndpoint(BACKEND)
-            .timestamp((TODAY + 50L) * 1000L)
-            .duration(200000L)
-            .addAnnotation((TODAY + 100L) * 1000L, "foo")
-            .putTag("http.path", "/api")
-            .putTag("clnt/finagle.version", "6.45.0")
-            .build();
-
+        .traceId(random.nextLong(), random.nextLong())
+        .parentId("1")
+        .id("2")
+        .name("get")
+        .kind(Span.Kind.CLIENT)
+        .localEndpoint(FRONTEND)
+        .remoteEndpoint(BACKEND)
+        .timestamp((TODAY + 50L) * 1000L)
+        .duration(200000L)
+        .addAnnotation((TODAY + 100L) * 1000L, "foo")
+        .putTag("http.path", "/api")
+        .putTag("clnt/finagle.version", "6.45.0")
+        .build();
 
     storage.spanConsumer().accept(asList(span)).execute();
 
     Trace trace = await()
-            .atLeast(1, TimeUnit.SECONDS)
-            .atMost(10, TimeUnit.SECONDS)
-            .pollInterval(1, TimeUnit.SECONDS)
-            .ignoreExceptionsMatching(e ->
-                    e instanceof StatusRuntimeException &&
-                            ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
-            )
-            .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
-                    .setProjectId(projectId)
-                    .setTraceId(span.traceId())
-                    .build()), t -> t.getSpansCount() == 1);
+        .atLeast(1, TimeUnit.SECONDS)
+        .atMost(10, TimeUnit.SECONDS)
+        .pollInterval(1, TimeUnit.SECONDS)
+        .ignoreExceptionsMatching(e ->
+            e instanceof StatusRuntimeException &&
+                ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
+        )
+        .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
+            .setProjectId(projectId)
+            .setTraceId(span.traceId())
+            .build()), t -> t.getSpansCount() == 1);
 
     assertThat(trace.getSpans(0).getSpanId()).isEqualTo(2);
     assertThat(trace.getSpans(0).getParentSpanId()).isEqualTo(1);
   }
-
 }

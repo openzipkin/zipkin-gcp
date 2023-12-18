@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,15 +19,16 @@ import com.google.protobuf.Empty;
 import com.linecorp.armeria.common.grpc.protocol.ArmeriaStatusException;
 import com.linecorp.armeria.server.ServerBuilder;
 import com.linecorp.armeria.server.grpc.GrpcService;
-import com.linecorp.armeria.testing.junit4.server.ServerRule;
+import com.linecorp.armeria.testing.junit5.server.ServerExtension;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import java.util.Collections;
 import java.util.function.Consumer;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import zipkin2.CheckResult;
@@ -44,11 +45,12 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 /** Same as AsyncReporterStackdriverSenderTest: tests everything wired together */
-public class StackdriverSpanConsumerTest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class StackdriverSpanConsumerTest {
 
   final TestTraceService traceService = spy(new TestTraceService());
 
-  @Rule public final ServerRule server = new ServerRule() {
+  @RegisterExtension ServerExtension server = new ServerExtension() {
     @Override protected void configure(ServerBuilder sb) {
       sb.service(GrpcService.builder()
           .addService(traceService)
@@ -60,23 +62,21 @@ public class StackdriverSpanConsumerTest {
   StackdriverStorage storage;
   SpanConsumer spanConsumer;
 
-  @Before
-  public void setUp() {
+  @BeforeEach
+  void setUp() {
     storage = StackdriverStorage.newBuilder("http://localhost:" + server.httpPort())
         .projectId(projectId)
         .build();
     spanConsumer = storage.spanConsumer();
   }
 
-  @Test
-  public void accept_empty() throws Exception {
+  @Test void accept_empty() throws Exception {
     spanConsumer.accept(Collections.emptyList()).execute();
 
     verify(traceService, never()).batchWriteSpans(any(), any());
   }
 
-  @Test
-  public void accept() throws Exception {
+  @Test void accept() throws Exception {
     onClientCall(
         observer -> {
           observer.onNext(Empty.getDefaultInstance());
@@ -96,8 +96,7 @@ public class StackdriverSpanConsumerTest {
         .isEqualTo(SpanTranslator.translate(projectId, asList(TestObjects.CLIENT_SPAN)));
   }
 
-  @Test
-  public void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
+  @Test void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
     onClientCall(observer -> {
       observer.onError(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
     });
@@ -111,8 +110,7 @@ public class StackdriverSpanConsumerTest {
             .isEqualTo(Status.RESOURCE_EXHAUSTED.getCode().value()));
   }
 
-  @Test
-  public void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
+  @Test void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
     onClientCall(observer -> {
       observer.onError(new RuntimeException("oh no"));
     });
@@ -125,16 +123,14 @@ public class StackdriverSpanConsumerTest {
             .isEqualTo(Status.UNKNOWN.getCode().value()));
   }
 
-  @Test
-  public void verifyCheckReturnsOkWhenExpectedValidationFailure() {
+  @Test void verifyCheckReturnsOkWhenExpectedValidationFailure() {
     onClientCall(observer -> {
       observer.onError(new StatusRuntimeException(Status.INVALID_ARGUMENT));
     });
     assertThat(storage.check()).isSameAs(CheckResult.OK);
   }
 
-  @Test
-  public void verifyCheckReturnsOkWhenServiceSucceeds() {
+  @Test void verifyCheckReturnsOkWhenServiceSucceeds() {
     onClientCall(observer -> {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();

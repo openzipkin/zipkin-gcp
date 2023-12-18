@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -62,13 +62,13 @@ public class ITStackdriverSender {
     assumeThatCode(GoogleCredentials::getApplicationDefault).doesNotThrowAnyException();
 
     credentials = GoogleCredentials.getApplicationDefault()
-            .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
+        .createScoped(Collections.singletonList("https://www.googleapis.com/auth/trace.append"));
 
     // Setup the sender to authenticate the Google Stackdriver service
     sender = StackdriverSender.newBuilder()
-            .projectId(projectId)
-            .callOptions(CallOptions.DEFAULT.withCallCredentials(MoreCallCredentials.from(credentials)))
-            .build();
+        .projectId(projectId)
+        .callOptions(CallOptions.DEFAULT.withCallCredentials(MoreCallCredentials.from(credentials)))
+        .build();
 
     reporter =
         AsyncReporter.builder(sender)
@@ -76,16 +76,17 @@ public class ITStackdriverSender {
             .build(StackdriverEncoder.V2);
 
     traceServiceGrpcV1 = TraceServiceGrpc.newBlockingStub(sender.channel)
-            .withCallCredentials(MoreCallCredentials.from(credentials.createScoped("https://www.googleapis.com/auth/cloud-platform")));
+        .withCallCredentials(MoreCallCredentials.from(
+            credentials.createScoped("https://www.googleapis.com/auth/cloud-platform")));
 
     senderNoPermission = StackdriverSender.newBuilder()
-            .projectId(projectId)
-            .build();
+        .projectId(projectId)
+        .build();
 
     reporterNoPermission =
-            AsyncReporter.builder(senderNoPermission)
-                    .messageTimeout(0, TimeUnit.MILLISECONDS)
-                    .build(StackdriverEncoder.V2);
+        AsyncReporter.builder(senderNoPermission)
+            .messageTimeout(0, TimeUnit.MILLISECONDS)
+            .build(StackdriverEncoder.V2);
   }
 
   @AfterEach
@@ -98,81 +99,78 @@ public class ITStackdriverSender {
     }
   }
 
-  @Test
-  public void healthcheck() {
+  @Test void healthcheck() {
     assertThat(reporter.check().ok()).isTrue();
   }
 
-  @Test
-  public void sendSpans() {
+  @Test void sendSpans() {
     Random random = new Random();
     Span span = Span.newBuilder()
-            .traceId(random.nextLong(), random.nextLong())
-            .parentId("1")
-            .id("2")
-            .name("get")
-            .kind(Span.Kind.CLIENT)
-            .localEndpoint(FRONTEND)
-            .remoteEndpoint(BACKEND)
-            .timestamp((TODAY + 50L) * 1000L)
-            .duration(200000L)
-            .addAnnotation((TODAY + 100L) * 1000L, "foo")
-            .putTag("http.path", "/api")
-            .putTag("clnt/finagle.version", "6.45.0")
-            .build();
+        .traceId(random.nextLong(), random.nextLong())
+        .parentId("1")
+        .id("2")
+        .name("get")
+        .kind(Span.Kind.CLIENT)
+        .localEndpoint(FRONTEND)
+        .remoteEndpoint(BACKEND)
+        .timestamp((TODAY + 50L) * 1000L)
+        .duration(200000L)
+        .addAnnotation((TODAY + 100L) * 1000L, "foo")
+        .putTag("http.path", "/api")
+        .putTag("clnt/finagle.version", "6.45.0")
+        .build();
 
     reporter.report(span);
     reporter.flush();
 
     Trace trace = await()
-            .atLeast(1, TimeUnit.SECONDS)
-            .atMost(10, TimeUnit.SECONDS)
-            .pollInterval(1, TimeUnit.SECONDS)
-            .ignoreExceptionsMatching(e ->
-                    e instanceof StatusRuntimeException &&
-                            ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
-            )
-            .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
-                    .setProjectId(projectId)
-                    .setTraceId(span.traceId())
-                    .build()), t -> t.getSpansCount() == 1);
+        .atLeast(1, TimeUnit.SECONDS)
+        .atMost(10, TimeUnit.SECONDS)
+        .pollInterval(1, TimeUnit.SECONDS)
+        .ignoreExceptionsMatching(e ->
+            e instanceof StatusRuntimeException &&
+                ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
+        )
+        .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
+            .setProjectId(projectId)
+            .setTraceId(span.traceId())
+            .build()), t -> t.getSpansCount() == 1);
 
     assertThat(trace.getSpans(0).getSpanId()).isEqualTo(2);
     assertThat(trace.getSpans(0).getParentSpanId()).isEqualTo(1);
   }
 
-  @Test
-  public void sendSpanEmptyName() {
+  @Test void sendSpanEmptyName() {
     Random random = new Random();
     Span span = Span.newBuilder()
-            .traceId(random.nextLong(), random.nextLong())
-            .parentId("1")
-            .id("2")
-            .kind(Span.Kind.CLIENT)
-            .localEndpoint(FRONTEND)
-            .remoteEndpoint(BACKEND)
-            .timestamp((TODAY + 50L) * 1000L)
-            .duration(200000L)
-            .addAnnotation((TODAY + 100L) * 1000L, "foo")
-            .putTag("http.path", "/api")
-            .putTag("clnt/finagle.version", "6.45.0")
-            .build();
+        .traceId(random.nextLong(), random.nextLong())
+        .parentId("1")
+        .id("2")
+        .kind(Span.Kind.CLIENT)
+        .localEndpoint(FRONTEND)
+        .remoteEndpoint(BACKEND)
+        .timestamp((TODAY + 50L) * 1000L)
+        .duration(200000L)
+        .addAnnotation((TODAY + 100L) * 1000L, "foo")
+        .putTag("http.path", "/api")
+        .putTag("clnt/finagle.version", "6.45.0")
+        .build();
 
     reporter.report(span);
     reporter.flush();
 
     Trace trace = await()
-            .atLeast(1, TimeUnit.SECONDS)
-            .atMost(10, TimeUnit.SECONDS)
-            .pollInterval(1, TimeUnit.SECONDS)
-            .ignoreExceptionsMatching(e ->
-                    e instanceof StatusRuntimeException &&
-                            ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
-            )
-            .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
-                    .setProjectId(projectId)
-                    .setTraceId(span.traceId())
-                    .build()), t -> t.getSpansCount() == 1);
+        .atLeast(1, TimeUnit.SECONDS)
+        .atMost(10, TimeUnit.SECONDS)
+        .pollInterval(1, TimeUnit.SECONDS)
+        .ignoreExceptionsMatching(e ->
+            e instanceof StatusRuntimeException &&
+                ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
+        )
+        .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
+            .setProjectId(projectId)
+            .setTraceId(span.traceId())
+            .build()), t -> t.getSpansCount() == 1);
 
     // In Stackdriver Trace v2 API, Zipkin Span "name" is sent as Stackdriver Span "displayName"
     // However, in Stackdriver Trace v1 API, to read this back, it's Stackdriver TraceSpan's "name"
@@ -181,12 +179,11 @@ public class ITStackdriverSender {
     assertThat(trace.getSpans(0).getParentSpanId()).isEqualTo(1);
   }
 
-  @Test
-  public void healthcheckFailNoPermission() {
+  @Test void healthcheckFailNoPermission() {
     CheckResult result = reporterNoPermission.check();
     assertThat(result.ok()).isFalse();
     assertThat(result.error()).isNotNull();
     assertThat(result.error()).isInstanceOfSatisfying(StatusRuntimeException.class,
-            sre -> assertThat(sre.getStatus().getCode()).isEqualTo(Status.Code.PERMISSION_DENIED));
+        sre -> assertThat(sre.getStatus().getCode()).isEqualTo(Status.Code.PERMISSION_DENIED));
   }
 }

@@ -45,7 +45,19 @@
     <dependency>
       <groupId>com.google.auth</groupId>
       <artifactId>google-auth-library-oauth2-http</artifactId>
-      <version>0.22.0</version>
+      <version>${google-auth-library-oauth2-http.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- avoid CVE in ^^ transient deps -->
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>${commons-codec.version}</version>
     </dependency>
     <!-- google-auth-library-oauth2-http strictly depends on...
             google-http-java-client, which strictly depends on...
@@ -59,19 +71,29 @@
     </dependency>
 
     <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-cloud-trace-v2</artifactId>
-      <version>${grpc-google-cloud-trace.version}</version>
+      <groupId>${zipkin.groupId}</groupId>
+      <artifactId>zipkin-tests</artifactId>
+      <version>${zipkin.version}</version>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>${armeria.groupId}</groupId>
+      <artifactId>armeria-junit5</artifactId>
+      <version>${armeria.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>${armeria.groupId}</groupId>
       <artifactId>armeria-grpc</artifactId>
       <version>${armeria.version}</version>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-trace-v2</artifactId>
+      <version>${grpc-google-cloud-trace.version}</version>
+      <scope>test</scope>
+    </dependency>
     <!-- Stackdriver Trace read operations are only available in its v1 API. Use it to validate data was written during integration tests. -->
     <dependency>
       <groupId>io.grpc</groupId>
@@ -160,7 +182,7 @@
           <dependency>
             <groupId>io.zipkin.layout</groupId>
             <artifactId>zipkin-layout-factory</artifactId>
-            <version>1.0.0</version>
+            <version>1.1.0</version>
           </dependency>
         </dependencies>
       </plugin>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2022 The OpenZipkin Authors
+ * Copyright 2016-2023 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,120 +13,120 @@
  */
 package zipkin2.collector.pubsub;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
+import com.asarkar.grpc.test.GrpcCleanupExtension;
+import com.asarkar.grpc.test.Resources;
 import com.google.api.gax.batching.FlowControlSettings;
 import com.google.api.gax.core.ExecutorProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannel;
 import com.google.api.gax.rpc.TransportChannelProvider;
-
 import io.grpc.ManagedChannel;
+import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.testing.GrpcCleanupRule;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import zipkin2.Span;
-import static zipkin2.TestObjects.CLIENT_SPAN;
-import static zipkin2.TestObjects.LOTS_OF_SPANS;
 import zipkin2.codec.Encoding;
 import zipkin2.collector.CollectorComponent;
 import zipkin2.collector.InMemoryCollectorMetrics;
 import zipkin2.storage.InMemoryStorage;
 
-public class PubSubCollectorTest {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static zipkin2.TestObjects.CLIENT_SPAN;
+import static zipkin2.TestObjects.LOTS_OF_SPANS;
 
-    @Rule
-    public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
+@ExtendWith(GrpcCleanupExtension.class)
+class PubSubCollectorTest {
+  private InMemoryStorage store;
+  private InMemoryCollectorMetrics metrics;
+  private CollectorComponent collector;
 
-    private InMemoryStorage store;
-    private InMemoryCollectorMetrics metrics;
-    private CollectorComponent collector;
+  private QueueBasedSubscriberImpl subImplTest = new QueueBasedSubscriberImpl();
 
-    private QueueBasedSubscriberImpl subImplTest = new QueueBasedSubscriberImpl();
+  @BeforeEach void initCollector(Resources resources) throws IOException {
+    String serverName = InProcessServerBuilder.generateName();
 
-    @Before
-    public void setup() throws IOException {
+    Server server = InProcessServerBuilder
+        .forName(serverName)
+        .directExecutor()
+        .addService(subImplTest)
+        .build().start();
+    resources.register(server, Duration.ofSeconds(10)); // shutdown deadline
 
-        String serverName = InProcessServerBuilder.generateName();
+    ManagedChannel channel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+    resources.register(channel, Duration.ofSeconds(10));// close deadline
 
-        grpcCleanup.register(InProcessServerBuilder
-                                     .forName(serverName).directExecutor().addService(subImplTest).build().start());
-        ExecutorProvider executorProvider = testExecutorProvider();
+    TransportChannel transportChannel = GrpcTransportChannel.create(channel);
+    TransportChannelProvider transportChannelProvider =
+        FixedTransportChannelProvider.create(transportChannel);
 
-        ManagedChannel managedChannel = InProcessChannelBuilder.forName(serverName).directExecutor().build();
+    ExecutorProvider executorProvider = testExecutorProvider();
 
-        TransportChannel transportChannel = GrpcTransportChannel.create(managedChannel);
-        TransportChannelProvider transportChannelProvider = FixedTransportChannelProvider.create(transportChannel);
+    store = InMemoryStorage.newBuilder().build();
+    metrics = new InMemoryCollectorMetrics();
 
+    SubscriberSettings subscriberSettings = new SubscriberSettings();
+    subscriberSettings.setChannelProvider(transportChannelProvider);
+    subscriberSettings.setExecutorProvider(executorProvider);
+    subscriberSettings.setCredentialsProvider(new NoCredentialsProvider());
+    subscriberSettings.setFlowControlSettings(
+        FlowControlSettings.newBuilder().setMaxOutstandingElementCount(1000L).build());
 
-        store = InMemoryStorage.newBuilder().build();
-        metrics = new InMemoryCollectorMetrics();
+    collector = new PubSubCollector.Builder()
+        .subscription("projects/test-project/topics/test-subscription")
+        .storage(store)
+        .encoding(Encoding.JSON)
+        .executorProvider(executorProvider)
+        .subscriberSettings(subscriberSettings)
+        .metrics(metrics)
+        .build()
+        .start();
+    metrics = metrics.forTransport("pubsub");
+  }
 
-        SubscriberSettings subscriberSettings = new SubscriberSettings();
-        subscriberSettings.setChannelProvider(transportChannelProvider);
-        subscriberSettings.setExecutorProvider(executorProvider);
-        subscriberSettings.setFlowControlSettings(FlowControlSettings.newBuilder().setMaxOutstandingElementCount(1000l).build());
+  @Test void collectSpans() throws Exception {
+    List<Span> spans = Arrays.asList(LOTS_OF_SPANS[0], LOTS_OF_SPANS[1], LOTS_OF_SPANS[2]);
+    subImplTest.addSpans(spans);
+    assertSpansAccepted(spans);
+  }
 
+  @Test void testNow() {
+    subImplTest.addSpan(CLIENT_SPAN);
+    await().atMost(10, TimeUnit.SECONDS).until(() -> store.acceptedSpanCount() == 1);
+  }
 
-        collector = new PubSubCollector.Builder()
-                .subscription("projects/test-project/topics/test-subscription")
-                .storage(store)
-                .encoding(Encoding.JSON)
-                .executorProvider(executorProvider)
-                .subscriberSettings(subscriberSettings)
-                .metrics(metrics)
-                .build()
-                .start();
-        metrics = metrics.forTransport("pubsub");
-    }
+  @AfterEach void teardown() throws Exception {
+    store.close();
+    collector.close();
+  }
 
-    @Test
-    public void collectSpans() throws Exception {
-        List<Span> spans = Arrays.asList(LOTS_OF_SPANS[0], LOTS_OF_SPANS[1], LOTS_OF_SPANS[2]);
-        subImplTest.addSpans(spans);
-        assertSpansAccepted(spans);
-    }
+  private InstantiatingExecutorProvider testExecutorProvider() {
+    return InstantiatingExecutorProvider.newBuilder()
+        .setExecutorThreadCount(5 * Runtime.getRuntime().availableProcessors())
+        .build();
+  }
 
-    @Test
-    public void testNow() {
-        subImplTest.addSpan(CLIENT_SPAN);
-        await().atMost(10, TimeUnit.SECONDS).until(() -> store.acceptedSpanCount() == 1);
-    }
+  void assertSpansAccepted(List<Span> spans) throws Exception {
+    await().atMost(20, TimeUnit.SECONDS).until(() -> store.acceptedSpanCount() == 3);
 
-    @After
-    public void teardown() throws IOException, InterruptedException {
-        store.close();
-        collector.close();
-    }
+    List<Span> someSpans = store.spanStore().getTrace(spans.get(0).traceId()).execute();
 
-    private InstantiatingExecutorProvider testExecutorProvider() {
-        return InstantiatingExecutorProvider.newBuilder()
-                                            .setExecutorThreadCount(5 * Runtime.getRuntime().availableProcessors())
-                                            .build();
-    }
-
-    void assertSpansAccepted(List<Span> spans) throws Exception {
-        await().atMost(20, TimeUnit.SECONDS).until(() -> store.acceptedSpanCount() == 3);
-
-        List<Span> someSpans = store.spanStore().getTrace(spans.get(0).traceId()).execute();
-
-        assertThat(metrics.messages()).as("check accept metrics.").isPositive();
-        assertThat(metrics.bytes()).as("check bytes metrics.").isPositive();
-        assertThat(metrics.messagesDropped()).as("check dropped metrics.").isEqualTo(0);
-        assertThat(someSpans).as("recorded spans should not be null").isNotNull();
-        assertThat(spans).as("some spans have been recorded").containsAll(someSpans);
-    }
-
+    assertThat(metrics.messages()).as("check accept metrics.").isPositive();
+    assertThat(metrics.bytes()).as("check bytes metrics.").isPositive();
+    assertThat(metrics.messagesDropped()).as("check dropped metrics.").isEqualTo(0);
+    assertThat(someSpans).as("recorded spans should not be null").isNotNull();
+    assertThat(spans).as("some spans have been recorded").containsAll(someSpans);
+  }
 }
