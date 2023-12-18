@@ -159,7 +159,7 @@
           <classifier>module</classifier>
           <!-- https://github.com/spring-projects/spring-boot/issues/3426 transitive exclude doesn't work -->
           <excludeGroupIds>
-            ${zipkin.groupId},org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,com.google.code.gson,org.reactivestreams,com.google.code.findbugs,javax.annotation,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils,${armeria.groupId},javax.inject,com.fasterxml.jackson.datatype
+            ${zipkin.groupId},org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,org.reactivestreams,com.google.code.findbugs,javax.annotation,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils,${armeria.groupId},javax.inject,com.fasterxml.jackson.datatype
           </excludeGroupIds>
           <excludes>
             <!-- zipkin-server depends on armeria and its grpc protocol-->

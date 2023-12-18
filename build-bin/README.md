@@ -8,6 +8,7 @@ configuration settings.
 [docker-compose-zipkin-gcp.xml] ensures GCP authentication works. It is not run on pull request, as
 the required secure variable is only available on master push.
 
+[//]: # (Below here should be standard for all projects)
 
 ## Build Overview
 `build-bin` holds portable scripts used in CI to test and deploy the project.
