@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,7 +13,6 @@
  */
 package brave.propagation.stackdriver;
 
-import brave.internal.propagation.StringPropagationAdapter;
 import brave.propagation.B3Propagation;
 import brave.propagation.Propagation;
 import brave.propagation.TraceContext;
@@ -54,8 +53,12 @@ public class StackdriverTracePropagation implements Propagation<String> {
       return new StackdriverTracePropagation(primary.get());
     }
 
-    @Deprecated public <K> Propagation<K> create(KeyFactory<K> keyFactory) {
-      return StringPropagationAdapter.create(get(), keyFactory);
+    /**
+     * @deprecated end users and instrumentation should never call this, and instead use
+     * {@link #get()}. This only remains to avoid rev-lock upgrading to Brave 6.
+     */
+    @Deprecated public <K> Propagation<K> create(KeyFactory<K> unused) {
+      throw new UnsupportedOperationException("As of Brave 5.12, call PropagationFactory.get()");
     }
 
     @Override public boolean supportsJoin() {
