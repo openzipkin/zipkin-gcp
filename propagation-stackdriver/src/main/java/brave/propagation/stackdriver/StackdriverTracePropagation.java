@@ -57,6 +57,8 @@ public class StackdriverTracePropagation implements Propagation<String> {
      * @deprecated end users and instrumentation should never call this, and instead use
      * {@link #get()}. This only remains to avoid rev-lock upgrading to Brave 6.
      */
+    // This only exists for spring-cloud-sleuth, which is no longer being released. It hasn't and
+    // might not upgrade to Brave 5.18 which implements the same way.
     @Deprecated public <K> Propagation<K> create(KeyFactory<K> unused) {
       throw new UnsupportedOperationException("As of Brave 5.12, call PropagationFactory.get()");
     }

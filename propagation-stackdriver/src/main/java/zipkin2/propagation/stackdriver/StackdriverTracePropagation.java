@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2020 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -37,9 +37,14 @@ public final class StackdriverTracePropagation<K> implements Propagation<K> {
           return new StackdriverTracePropagation<>(DELEGATE.get(), KeyFactory.STRING);
         }
 
-        @Override
-        public <K> Propagation<K> create(KeyFactory<K> keyFactory) {
-          return new StackdriverTracePropagation<>(DELEGATE.create(keyFactory), keyFactory);
+        /**
+         * @deprecated end users and instrumentation should never call this, and instead use
+         * {@link #get()}. This only remains to avoid rev-lock upgrading to Brave 6.
+         */
+        // This only exists for spring-cloud-sleuth, which is no longer being released. It hasn't and
+        // might not upgrade to Brave 5.18 which implements the same way.
+        @Deprecated public <K> Propagation<K> create(KeyFactory<K> unused) {
+          throw new UnsupportedOperationException("As of Brave 5.12, call PropagationFactory.get()");
         }
 
         @Override
