@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -31,9 +31,10 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import zipkin2.reporter.stackdriver.zipkin.StackdriverEncoder;
 
-import static zipkin2.reporter.stackdriver.StackdriverEncoderBenchmarks.CLIENT_SPAN;
 import static zipkin2.reporter.stackdriver.StackdriverSender.SPAN_ID_PREFIX;
+import static zipkin2.reporter.stackdriver.zipkin.StackdriverEncoderBenchmarks.CLIENT_SPAN;
 
 @Measurement(iterations = 5, time = 1)
 @Warmup(iterations = 10, time = 1)

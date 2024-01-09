@@ -19,12 +19,14 @@
 
   <groupId>io.zipkin.gcp</groupId>
   <artifactId>zipkin-gcp-parent</artifactId>
-  <version>1.1.2-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
     <module>module</module>
     <module>translation-stackdriver</module>
+    <module>encoder-stackdriver-brave</module>
+    <module>encoder-stackdriver-zipkin</module>
     <module>sender-stackdriver</module>
     <module>storage-stackdriver</module>
     <module>propagation-stackdriver</module>
@@ -72,8 +74,8 @@
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>2.27.0</zipkin.version>
-    <zipkin-reporter.version>2.17.2</zipkin-reporter.version>
+    <zipkin.version>2.27.1</zipkin.version>
+    <zipkin-reporter.version>3.1.0</zipkin-reporter.version>
     <spring-boot.version>2.7.18</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
@@ -83,7 +85,7 @@
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
     <!--    <brave.version>master-SNAPSHOT</brave.version>-->
     <brave.groupId>io.zipkin.brave</brave.groupId>
-    <brave.version>5.18.1</brave.version>
+    <brave.version>6.0.0</brave.version>
 
     <!-- from armeria-grpc -->
     <grpc.version>1.58.0</grpc.version>
@@ -95,6 +97,7 @@
     <google-auth-library-oauth2-http.version>1.20.0</google-auth-library-oauth2-http.version>
     <!-- avoid CVE in ^^ transient deps -->
     <commons-codec.version>1.16.0</commons-codec.version>
+    <proto-google-common-protos.version>2.29.0</proto-google-common-protos.version>
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
     <grpc-google-cloud-trace.version>2.32.0</grpc-google-cloud-trace.version>
 

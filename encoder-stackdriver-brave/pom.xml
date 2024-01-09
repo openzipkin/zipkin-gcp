@@ -22,63 +22,47 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>zipkin-storage-stackdriver</artifactId>
-  <name>Zipkin Storage: Google Stackdriver Trace</name>
+  <artifactId>brave-encoder-stackdriver</artifactId>
+  <name>Brave Encoder: Google Stackdriver Trace</name>
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
   </properties>
 
   <dependencies>
+    <!-- Translation deps -->
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>zipkin-translation-stackdriver</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${zipkin.groupId}</groupId>
-      <artifactId>zipkin</artifactId>
-      <version>${zipkin.version}</version>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-common-protos</artifactId>
+      <version>${proto-google-common-protos.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>${armeria.groupId}</groupId>
-      <artifactId>armeria-grpc-protocol</artifactId>
-      <version>${armeria.version}</version>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-cloud-trace-v2</artifactId>
+      <version>${grpc-google-cloud-trace.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
       <version>${protobuf.version}</version>
+      <!-- We use provided scope to avoid pinning a protobuf version -->
+      <scope>provided</scope>
     </dependency>
 
+    <!-- Encoder/Data type deps -->
     <dependency>
-      <groupId>${zipkin.groupId}</groupId>
-      <artifactId>zipkin-tests</artifactId>
-      <version>${zipkin.version}</version>
-      <scope>test</scope>
+      <groupId>io.zipkin.reporter2</groupId>
+      <artifactId>zipkin-reporter-brave</artifactId>
+      <version>${zipkin-reporter.version}</version>
     </dependency>
-
     <dependency>
-      <groupId>${armeria.groupId}</groupId>
-      <artifactId>armeria-grpc</artifactId>
-      <version>${armeria.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>${armeria.groupId}</groupId>
-      <artifactId>armeria-junit5</artifactId>
-      <version>${armeria.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-cloud-trace-v2</artifactId>
-      <version>${grpc-google-cloud-trace.version}</version>
-      <scope>test</scope>
+      <groupId>${brave.groupId}</groupId>
+      <artifactId>brave</artifactId>
+      <version>${brave.version}</version>
+      <!-- Don't pin Brave -->
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 </project>

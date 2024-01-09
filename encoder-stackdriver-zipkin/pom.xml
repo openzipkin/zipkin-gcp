@@ -22,8 +22,8 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>zipkin-storage-stackdriver</artifactId>
-  <name>Zipkin Storage: Google Stackdriver Trace</name>
+  <artifactId>zipkin-encoder-stackdriver</artifactId>
+  <name>Zipkin Encoder: Google Stackdriver Trace</name>
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
@@ -36,48 +36,15 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>${zipkin.groupId}</groupId>
-      <artifactId>zipkin</artifactId>
-      <version>${zipkin.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>${armeria.groupId}</groupId>
-      <artifactId>armeria-grpc-protocol</artifactId>
-      <version>${armeria.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>${protobuf.version}</version>
+      <groupId>io.zipkin.reporter2</groupId>
+      <artifactId>zipkin-reporter</artifactId>
+      <version>${zipkin-reporter.version}</version>
     </dependency>
 
     <dependency>
       <groupId>${zipkin.groupId}</groupId>
       <artifactId>zipkin-tests</artifactId>
       <version>${zipkin.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>${armeria.groupId}</groupId>
-      <artifactId>armeria-grpc</artifactId>
-      <version>${armeria.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>${armeria.groupId}</groupId>
-      <artifactId>armeria-junit5</artifactId>
-      <version>${armeria.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-cloud-trace-v2</artifactId>
-      <version>${grpc-google-cloud-trace.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -11,14 +11,13 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.reporter.stackdriver;
+package zipkin2.reporter.stackdriver.zipkin;
 
 import com.google.protobuf.CodedOutputStream;
 import java.io.IOException;
-import java.util.List;
 import zipkin2.Span;
-import zipkin2.codec.BytesEncoder;
-import zipkin2.codec.Encoding;
+import zipkin2.reporter.BytesEncoder;
+import zipkin2.reporter.Encoding;
 import zipkin2.translation.stackdriver.SpanTranslator;
 
 @SuppressWarnings("ImmutableEnumChecker") // because span is immutable
@@ -61,11 +60,6 @@ public enum StackdriverEncoder implements BytesEncoder<Span> {
     com.google.devtools.cloudtrace.v2.Span translate(Span span) {
       return SpanTranslator.translate(
           com.google.devtools.cloudtrace.v2.Span.newBuilder(), span).build();
-    }
-
-    @Override
-    public byte[] encodeList(List<Span> spans) {
-      throw new UnsupportedOperationException("used in rest api; unused in reporter and collector");
     }
   }
 }

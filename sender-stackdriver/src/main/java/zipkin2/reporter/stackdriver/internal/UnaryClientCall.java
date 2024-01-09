@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,8 +19,8 @@ import io.grpc.ClientCall;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import java.io.IOException;
-import zipkin2.Call;
-import zipkin2.Callback;
+import zipkin2.reporter.Call;
+import zipkin2.reporter.Callback;
 
 public abstract class UnaryClientCall<ReqT, RespT> extends Call.Base<RespT> {
   public static final int DEFAULT_SERVER_TIMEOUT_MS = 5000;

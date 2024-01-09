@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -26,7 +26,6 @@ import com.linecorp.armeria.common.HttpMethod;
 import com.linecorp.armeria.common.RequestHeaders;
 import com.linecorp.armeria.common.logging.LogLevel;
 import io.netty.handler.ssl.OpenSsl;
-import io.netty.util.internal.PlatformDependent;
 import java.io.IOException;
 import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,10 +94,9 @@ public class ZipkinStackdriverStorageModule {
       ClientFactory clientFactory,
       ZipkinStackdriverStorageProperties properties,
       Credentials credentials) {
-    if (!OpenSsl.isAvailable() && !jettyAlpnAvailable()) {
+    if (!OpenSsl.isAvailable()) {
       throw new IllegalStateException(
-          "OpenSsl or ALPN is required. This usually requires either JDK9+, jetty-alpn, or "
-              + "netty-tcnative-boringssl-static");
+          "OpenSsl is required. This usually requires netty-tcnative-boringssl-static");
     }
 
     ClientOptionsBuilder options = ClientOptions.builder();
@@ -130,21 +128,5 @@ public class ZipkinStackdriverStorageModule {
             .decorator(CredentialsDecoratingClient.newDecorator(credentials))
             .build())
         .build();
-  }
-
-  // ALPN check from https://github.com/netty/netty/blob/1065e0f26e0d47a67c479b0fad81efab5d9438d9/handler/src/main/java/io/netty/handler/ssl/JettyAlpnSslEngine.java
-  private static boolean jettyAlpnAvailable() {
-    if (PlatformDependent.javaVersion() <= 8) {
-      try {
-        // Always use bootstrap class loader.
-        Class.forName("sun.security.ssl.ALPNExtension", true, null);
-        return true;
-      } catch (Throwable ignore) {
-        // alpn-boot was not loaded.
-        return false;
-      }
-    }
-    // Java 9+ don't need ALPN so we don't even check for it.
-    return true;
   }
 }

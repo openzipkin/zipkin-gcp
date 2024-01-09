@@ -3,7 +3,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-module-gcp.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-module-gcp)
 
 # zipkin-gcp
-Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 8 or later.
+Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 11 or later.
 
 # Usage
 These components integrate traced applications and servers through Google Cloud services
@@ -11,33 +11,44 @@ via interfaces defined in [Zipkin](https://github.com/openzipkin/zipkin)
 and [zipkin-reporter-java](https://github.com/openzipkin/zipkin-reporter-java).
 
 ## Senders
-The component in an traced application that sends timing data (spans)
+The component in a traced application that sends timing data (spans)
 out of process is called a Sender. Senders are called on interval by an
 [async reporter](https://github.com/openzipkin/zipkin-reporter-java#asyncreporter).
 
 NOTE: Applications can be written in any language, while we currently
 only have senders in Java, senders in other languages are welcome.
 
-Sender | Description
---- | ---
-[Stackdriver Trace](./sender/stackdriver) | Free cloud service provider
+| Sender                                    | Description                 |
+|-------------------------------------------|-----------------------------|
+| [Stackdriver Trace](./sender-stackdriver) | Free cloud service provider |
+
+### Encoders
+
+Encoding is library-specific, as some libraries use `zipkin2.Span` and others
+`brave.handler.MutableSpan`. Both options are available to encode to the
+StackDriver Trave V2 format.
+
+| Encoder                                                 | Description                                    |
+|---------------------------------------------------------|------------------------------------------------|
+| [`StackdriverEncoder.V2`](./encoder-stackdriver-zipkin) | zipkin-reporter `AsyncReporter<Span>`          |
+| [`StackdriverV2Encoder`](./encoder-stackdriver-brave)   | zipkin-reporter-brave `AsyncZipkinSpanHandler` |
 
 ## Collectors
 The component in a zipkin server that receives trace data is called a
 collector. This decodes spans reported by applications and persists them
 to a configured storage component.
 
-Collector | Description
---- | ---
+| Collector | Description |
+|-----------|-------------|
 
 ## Storage
 The component in a zipkin server that persists and queries collected
 data is called `StorageComponent`. This primarily supports the Zipkin
 Api and all collector components.
 
-Storage | Description
---- | ---
-[Stackdriver Trace](./storage/stackdriver) | Free cloud service provider
+| Storage                                    | Description                 |
+|--------------------------------------------|-----------------------------|
+| [Stackdriver Trace](./storage/stackdriver) | Free cloud service provider |
 
 ## Server integration
 In order to integrate with zipkin-server, you need to use properties
