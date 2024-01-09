@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -11,8 +11,11 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.reporter.stackdriver;
+package zipkin2.reporter.stackdriver.brave;
 
+import brave.Tags;
+import brave.handler.MutableSpan;
+import brave.handler.MutableSpanBytesEncoder;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -28,9 +31,6 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-import zipkin2.Endpoint;
-import zipkin2.Span;
-import zipkin2.codec.SpanBytesEncoder;
 
 @Measurement(iterations = 5, time = 1)
 @Warmup(iterations = 10, time = 1)
@@ -39,49 +39,57 @@ import zipkin2.codec.SpanBytesEncoder;
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @State(Scope.Thread)
 @Threads(1)
-public class StackdriverEncoderBenchmarks {
-  static final Span CLIENT_SPAN =
-      Span.newBuilder()
-          .traceId("7180c278b62e8f6a216a2aea45d08fc9")
-          .parentId("6b221d5bc9e6496c")
-          .id("5b4185666d50f68b")
-          .name("get")
-          .kind(Span.Kind.CLIENT)
-          .localEndpoint(Endpoint.newBuilder().serviceName("frontend").build())
-          .remoteEndpoint(
-              Endpoint.newBuilder().serviceName("backend").ip("192.168.99.101").port(9000).build())
-          .timestamp(1_000_000L) // 1 second after epoch
-          .duration(123_456L)
-          .addAnnotation(1_123_000L, "foo")
-          .putTag("http.path", "/api")
-          .putTag("clnt/finagle.version", "6.45.0")
-          .build();
+public class StackdriverV2EncoderBenchmarks {
+  static final StackdriverV2Encoder encoder = new StackdriverV2Encoder(Tags.ERROR);
+  static final MutableSpanBytesEncoder braveEncoder =
+      MutableSpanBytesEncoder.zipkinJsonV2(Tags.ERROR);
+  static final MutableSpan CLIENT_SPAN = clientSpan();
+
+  static MutableSpan clientSpan() {
+    MutableSpan braveSpan = new MutableSpan();
+    braveSpan.traceId("7180c278b62e8f6a216a2aea45d08fc9");
+    braveSpan.parentId("6b221d5bc9e6496c");
+    braveSpan.id("5b4185666d50f68b");
+    braveSpan.name("get");
+    braveSpan.kind(brave.Span.Kind.CLIENT);
+    braveSpan.localServiceName("frontend");
+    braveSpan.localIp("127.0.0.1");
+    braveSpan.remoteServiceName("backend");
+    braveSpan.remoteIpAndPort("192.168.99.101", 9000);
+    braveSpan.startTimestamp(1472470996199000L);
+    braveSpan.finishTimestamp(1472470996199000L + 207000L);
+    braveSpan.annotate(1472470996238000L, "foo");
+    braveSpan.annotate(1472470996403000L, "bar");
+    braveSpan.tag("clnt/finagle.version", "6.45.0");
+    braveSpan.tag("http.path", "/api");
+    return braveSpan;
+  }
 
   @Benchmark
   public int sizeInBytesClientSpan_json_zipkin_json() {
-    return SpanBytesEncoder.JSON_V2.sizeInBytes(CLIENT_SPAN);
+    return braveEncoder.sizeInBytes(CLIENT_SPAN);
   }
 
   @Benchmark
   public int sizeInBytesClientSpan_json_stackdriver_proto3() {
-    return StackdriverEncoder.V2.sizeInBytes(CLIENT_SPAN);
+    return encoder.sizeInBytes(CLIENT_SPAN);
   }
 
   @Benchmark
   public byte[] encodeClientSpan_json_zipkin_json() {
-    return SpanBytesEncoder.JSON_V2.encode(CLIENT_SPAN);
+    return braveEncoder.encode(CLIENT_SPAN);
   }
 
   @Benchmark
   public byte[] encodeClientSpan_json_stackdriver_proto3() {
-    return StackdriverEncoder.V2.encode(CLIENT_SPAN);
+    return encoder.encode(CLIENT_SPAN);
   }
 
   // Convenience main entry-point
   public static void main(String[] args) throws RunnerException {
     Options opt =
         new OptionsBuilder()
-            .include(".*" + StackdriverEncoderBenchmarks.class.getSimpleName() + ".*")
+            .include(".*" + StackdriverV2EncoderBenchmarks.class.getSimpleName() + ".*")
             .build();
 
     new Runner(opt).run();

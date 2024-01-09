@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2023 The OpenZipkin Authors
+ * Copyright 2016-2024 The OpenZipkin Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -28,9 +28,9 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.io.IOException;
 import java.util.List;
-import zipkin2.Call;
-import zipkin2.CheckResult;
-import zipkin2.codec.Encoding;
+import zipkin2.reporter.Call;
+import zipkin2.reporter.CheckResult;
+import zipkin2.reporter.Encoding;
 import zipkin2.reporter.Sender;
 import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 
@@ -39,7 +39,6 @@ import static io.grpc.CallOptions.DEFAULT;
 import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 
 public final class StackdriverSender extends Sender {
-
   public static Builder newBuilder() {
     ManagedChannel channel = ManagedChannelBuilder.forTarget("cloudtrace.googleapis.com").build();
     Builder result = newBuilder(channel);

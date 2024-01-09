@@ -16,7 +16,7 @@ and exposes configuration options through environment variables.
 
 ## Quick start
 
-JRE 8 is required to run Zipkin server.
+JRE 11+ is required to run Zipkin server.
 
 Fetch the latest released
 [executable jar for Zipkin server](https://search.maven.org/remote_content?g=io.zipkin&a=zipkin-server&v=LATEST&c=exec)
