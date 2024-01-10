@@ -74,7 +74,7 @@
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>3.0.0-SNAPSHOT</zipkin.version>
+    <zipkin.version>3.0.0</zipkin.version>
     <zipkin-reporter.version>3.1.1</zipkin-reporter.version>
     <spring-boot.version>3.2.1</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
@@ -175,21 +175,6 @@
       <url>https://gitter.im/openzipkin/zipkin</url>
     </developer>
   </developers>
-
-  <!-- TODO: delete -->
-  <repositories>
-    <repository>
-      <id>sonatype.snapshots</id>
-      <name>Sonatype Snapshot Repository</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
 
   <dependencyManagement>
     <dependencies>
