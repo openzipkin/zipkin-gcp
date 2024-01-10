@@ -16,7 +16,7 @@ and exposes configuration options through environment variables.
 
 ## Quick start
 
-JRE 11+ is required to run Zipkin server.
+JRE 17+ is required to run Zipkin server.
 
 Fetch the latest released
 [executable jar for Zipkin server](https://search.maven.org/remote_content?g=io.zipkin&a=zipkin-server&v=LATEST&c=exec)
@@ -34,7 +34,7 @@ $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
     -Dloader.path='gcp.jar,gcp.jar!/lib' \
     -Dspring.profiles.active=gcp \
     -cp zipkin.jar \
-    org.springframework.boot.loader.PropertiesLauncher
+    org.springframework.boot.loader.launch.PropertiesLauncher
 ```
 
 After executing these steps, applications can send spans
@@ -52,12 +52,12 @@ for users that prefer a file based approach.
 
 #### Environment Variables
 
-|Environment Variable           | Value            |
-|-------------------------------|------------------|
-|GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials). Not managed by spring boot. |
-|STACKDRIVER_PROJECT_ID         | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource. |
-|STACKDRIVER_API_HOST           | host:port combination of the gRPC endpoint. Default: cloudtrace.googleapis.com:443 |
-|STACKDRIVER_HTTP_LOGGING       | When set, controls the volume of HTTP logging of the Stackdriver Trace Api. Options are BASIC and HEADERS |
+| Environment Variable           | Value                                                                                                                                                             |
+|--------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| GOOGLE_APPLICATION_CREDENTIALS | Optional. [Google Application Default Credentials](https://developers.google.com/identity/protocols/application-default-credentials). Not managed by spring boot. |
+| STACKDRIVER_PROJECT_ID         | GCP projectId. Optional on GCE. Required on all other platforms. If not provided on GCE, it will default to the projectId associated with the GCE resource.       |
+| STACKDRIVER_API_HOST           | host:port combination of the gRPC endpoint. Default: cloudtrace.googleapis.com:443                                                                                |
+| STACKDRIVER_HTTP_LOGGING       | When set, controls the volume of HTTP logging of the Stackdriver Trace Api. Options are BASIC and HEADERS                                                         |
 
 ### Running
 
@@ -67,7 +67,7 @@ $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo STACKDRIVER_HTTP_L
     -Dloader.path='gcp.jar,gcp.jar!/lib' \
     -Dspring.profiles.active=gcp \
     -cp zipkin.jar \
-    org.springframework.boot.loader.PropertiesLauncher
+    org.springframework.boot.loader.launch.PropertiesLauncher
 ```
 
 ### Testing
