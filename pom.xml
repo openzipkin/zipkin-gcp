@@ -66,20 +66,21 @@
     <maven.compiler.release>8</maven.compiler.release>
 
     <!-- Tests use the floor Java version (used in release) -->
-    <maven.compiler.testSource>11</maven.compiler.testSource>
-    <maven.compiler.testTarget>11</maven.compiler.testTarget>
-    <maven.compiler.testRelease>11</maven.compiler.testRelease>
+    <maven.compiler.testSource>17</maven.compiler.testSource>
+    <maven.compiler.testTarget>17</maven.compiler.testTarget>
+    <maven.compiler.testRelease>17</maven.compiler.testRelease>
 
     <!-- groupId overrides allow testing feature branches with jitpack -->
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>2.27.1</zipkin.version>
-    <zipkin-reporter.version>3.1.0</zipkin-reporter.version>
-    <spring-boot.version>2.7.18</spring-boot.version>
+    <zipkin.version>3.0.0-SNAPSHOT</zipkin.version>
+    <zipkin-reporter.version>3.1.1</zipkin-reporter.version>
+    <spring-boot.version>3.2.1</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
     <armeria.version>1.26.4</armeria.version>
+    <log4j.version>2.21.1</log4j.version>
 
     <!-- This allows you to test feature branches with jitpack -->
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
@@ -175,6 +176,21 @@
     </developer>
   </developers>
 
+  <!-- TODO: delete -->
+  <repositories>
+    <repository>
+      <id>sonatype.snapshots</id>
+      <name>Sonatype Snapshot Repository</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -205,9 +221,21 @@
     </dependency>
     <!-- Main code uses jul and tests log with log4j -->
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>1.2.13</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${log4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-jul</artifactId>
+      <version>${log4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+      <version>${log4j.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -377,7 +405,7 @@
                 <requireJavaVersion>
                   <!-- Change this to control LTS JDK versions allowed to build
                        the project. Keep in sync with .github/workflows -->
-                  <version>[11,12),[17,18),[21,22)</version>
+                  <version>[17,18),[21,22)</version>
                 </requireJavaVersion>
               </rules>
             </configuration>
@@ -490,10 +518,10 @@
 
 
     <profile>
-      <id>error-prone-11+</id>
+      <id>error-prone-17+</id>
       <activation>
         <!-- Only LTS versions -->
-        <jdk>[11,12),[17,18),[21,22)</jdk>
+        <jdk>[17,18),[21,22)</jdk>
       </activation>
       <build>
         <plugins>

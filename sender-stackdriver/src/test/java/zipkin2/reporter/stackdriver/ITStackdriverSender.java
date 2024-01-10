@@ -129,8 +129,8 @@ public class ITStackdriverSender {
         .atMost(10, TimeUnit.SECONDS)
         .pollInterval(1, TimeUnit.SECONDS)
         .ignoreExceptionsMatching(e ->
-            e instanceof StatusRuntimeException &&
-                ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
+            e instanceof StatusRuntimeException sre &&
+                sre.getStatus().getCode() == Status.Code.NOT_FOUND
         )
         .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
             .setProjectId(projectId)
@@ -165,8 +165,8 @@ public class ITStackdriverSender {
         .atMost(10, TimeUnit.SECONDS)
         .pollInterval(1, TimeUnit.SECONDS)
         .ignoreExceptionsMatching(e ->
-            e instanceof StatusRuntimeException &&
-                ((StatusRuntimeException) e).getStatus().getCode() == Status.Code.NOT_FOUND
+            e instanceof StatusRuntimeException sre &&
+                sre.getStatus().getCode() == Status.Code.NOT_FOUND
         )
         .until(() -> traceServiceGrpcV1.getTrace(GetTraceRequest.newBuilder()
             .setProjectId(projectId)
