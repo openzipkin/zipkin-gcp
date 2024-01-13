@@ -25,6 +25,7 @@ jobs:
       - name: Check Markdown links
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
+          config-file: './build-bin/mlc_config.json'
           use-quiet-mode: 'yes'
           use-verbose-mode: 'yes'
           check-modified-files-only: 'yes'
