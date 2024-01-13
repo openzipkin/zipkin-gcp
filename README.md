@@ -48,7 +48,7 @@ Api and all collector components.
 
 | Storage                                    | Description                 |
 |--------------------------------------------|-----------------------------|
-| [Stackdriver Trace](./storage/stackdriver) | Free cloud service provider |
+| [Stackdriver Trace](./storage-stackdriver) | Free cloud service provider |
 
 ## Server integration
 In order to integrate with zipkin-server, you need to use properties
@@ -79,7 +79,7 @@ $ STORAGE_TYPE=stackdriver STACKDRIVER_PROJECT_ID=zipkin-demo \
 If you cannot use our [Docker image](./docker/README.md), you can still integrate
 yourself by downloading a couple jars.
 
-[Here's an example](autoconfigure/storage-stackdriver#quick-start) of
+[Here's an example](module/README.md#quick-start) of
 integrating Stackdriver storage.
 
 ## Troubleshooting
