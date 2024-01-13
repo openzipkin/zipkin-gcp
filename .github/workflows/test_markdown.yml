@@ -2,22 +2,27 @@
 ---
 name: test_markdown
 
-# We test documentation-only commits.
-on:
-  # We run tests on non-tagged pushes to master that aren't a commit made by the release plugin
-  push:
-    tags: ''
-    branches: master
-    paths: '**/*.md'
-  # We also run tests on pull requests targeted at the master branch.
-  pull_request:
-    branches: master
-    paths: '**/*.md'
+on:  # yamllint disable-line rule:truthy
+  push:  # non-tagged pushes to master
+    branches:
+      - master
+    tags-ignore:
+      - '*'
+    paths:
+      - '**/*.md'
+      - ./build-bin/mlc_config.json
+  pull_request:  # pull requests targeted at the master branch.
+    branches:
+      - master
+    paths:
+      - '**/*.md'
+      - ./build-bin/mlc_config.json
 
 jobs:
   test-markdown:
     name: Test Markdown
-    runs-on: ubuntu-22.04 # newest available distribution, aka jellyfish
+    runs-on: ubuntu-22.04  # newest available distribution, aka jellyfish
+    # skip commits made by the release plugin
     if: "!contains(github.event.head_commit.message, 'maven-release-plugin')"
     steps:
       - name: Checkout Repository
@@ -26,6 +31,3 @@ jobs:
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
           config-file: './build-bin/mlc_config.json'
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'yes'
-          check-modified-files-only: 'yes'
