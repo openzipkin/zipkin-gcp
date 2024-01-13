@@ -1,0 +1,30 @@
+# yamllint --format github .github/workflows/test_markdown.yml
+---
+name: test_markdown
+
+# We test documentation-only commits.
+on:
+  # We run tests on non-tagged pushes to master that aren't a commit made by the release plugin
+  push:
+    tags: ''
+    branches: master
+    paths: '**/*.md'
+  # We also run tests on pull requests targeted at the master branch.
+  pull_request:
+    branches: master
+    paths: '**/*.md'
+
+jobs:
+  test-markdown:
+    name: Test Markdown
+    runs-on: ubuntu-22.04 # newest available distribution, aka jellyfish
+    if: "!contains(github.event.head_commit.message, 'maven-release-plugin')"
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Check Markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'yes'
+          check-modified-files-only: 'yes'

@@ -5,8 +5,15 @@ This is a Maven+Docker project, which uses standard conventions for test and dep
 The Docker image for zipkin-gcp is a layer over zipkin, including only the [../module] and
 configuration settings.
 
-[docker-compose-zipkin-gcp.xml] ensures GCP authentication works. It is not run on pull request, as
-the required secure variable is only available on master push.
+[docker-compose-zipkin-gcp.xml](docker-compose-zipkin-gcp.yml) ensures GCP authentication works.
+It is not run on pull request, as the required secure variable is only available on master push.
+
+[mlc_config.json](mlc_config.json) is run by GitHub Action, but you can also run it locally,
+assuming you installed markdown-link-check via NPM.
+
+```bash
+$ find . -name \*.md |xargs markdown-link-check -c ./build-bin/mlc_config.json
+```
 
 [//]: # (Below here should be standard for all projects)
 

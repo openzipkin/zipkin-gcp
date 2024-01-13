@@ -47,7 +47,7 @@ The Zipkin server can be further configured as described in the
 
 Configuration can be applied either through environment variables or an external Zipkin
 configuration file.  The module includes default configuration that can be used as a 
-[reference](https://github.com/openzipkin/zipkin-gcp/tree/master/autoconfigure/storage-stackdriver/src/main/resources/zipkin-server-stackdriver.yml)
+[reference](./src/main/resources/zipkin-server-gcp.yml)
 for users that prefer a file based approach.
 
 #### Environment Variables
