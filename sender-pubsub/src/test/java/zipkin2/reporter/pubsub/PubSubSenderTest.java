@@ -54,13 +54,12 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import zipkin2.Span;
 import zipkin2.codec.SpanBytesDecoder;
-import zipkin2.reporter.Call;
-import zipkin2.reporter.CheckResult;
 import zipkin2.reporter.Encoding;
 import zipkin2.reporter.SpanBytesEncoder;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static zipkin2.TestObjects.CLIENT_SPAN;
@@ -116,9 +115,8 @@ class PubSubSenderTest {
         .build();
   }
 
-  @Test void sendsSpans() throws Exception {
-    ArgumentCaptor<PublishRequest> requestCaptor =
-        ArgumentCaptor.forClass(PublishRequest.class);
+  @Test void send() throws Exception {
+    ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
 
     doAnswer(invocationOnMock -> {
       StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
@@ -128,15 +126,31 @@ class PubSubSenderTest {
       return null;
     }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
 
-    send(CLIENT_SPAN, CLIENT_SPAN).execute();
+    sendSpans(CLIENT_SPAN, CLIENT_SPAN);
 
     assertThat(extractSpans(requestCaptor.getValue()))
         .containsExactly(CLIENT_SPAN, CLIENT_SPAN);
   }
 
-  @Test void sendsSpans_PROTO3() throws Exception {
-    ArgumentCaptor<PublishRequest> requestCaptor =
-        ArgumentCaptor.forClass(PublishRequest.class);
+  @Test void send_empty() throws Exception {
+    ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
+
+    doAnswer(invocationOnMock -> {
+      StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
+      responseObserver.onNext(
+          PublishResponse.newBuilder().addMessageIds(UUID.randomUUID().toString()).build());
+      responseObserver.onCompleted();
+      return null;
+    }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
+
+    sendSpans();
+
+    assertThat(extractSpans(requestCaptor.getValue()))
+        .isEmpty();
+  }
+
+  @Test void send_PROTO3() throws Exception {
+    ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
 
     doAnswer(invocationOnMock -> {
       StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
@@ -148,15 +162,14 @@ class PubSubSenderTest {
 
     sender = sender.toBuilder().encoding(Encoding.PROTO3).build();
 
-    send(CLIENT_SPAN, CLIENT_SPAN).execute();
+    sendSpans(CLIENT_SPAN, CLIENT_SPAN);
 
     assertThat(extractSpans(requestCaptor.getValue()))
         .containsExactly(CLIENT_SPAN, CLIENT_SPAN);
   }
 
-  @Test void sendsSpans_json_unicode() throws Exception {
-    ArgumentCaptor<PublishRequest> requestCaptor =
-        ArgumentCaptor.forClass(PublishRequest.class);
+  @Test void send_json_unicode() throws Exception {
+    ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
 
     doAnswer(invocationOnMock -> {
       StreamObserver<PublishResponse> responseObserver = invocationOnMock.getArgument(1);
@@ -167,38 +180,22 @@ class PubSubSenderTest {
     }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
 
     Span unicode = CLIENT_SPAN.toBuilder().putTag("error", "\uD83D\uDCA9").build();
-    send(unicode).execute();
+    sendSpans(unicode);
 
     assertThat(extractSpans(requestCaptor.getValue())).containsExactly(unicode);
   }
 
-  @Test void checkPasses() throws Exception {
-    ArgumentCaptor<GetTopicRequest> captor =
-        ArgumentCaptor.forClass(GetTopicRequest.class);
-
-    doAnswer(invocationOnMock -> {
-      StreamObserver<Topic> responseObserver = invocationOnMock.getArgument(1);
-      responseObserver.onNext(Topic.newBuilder().setName("topic-name").build());
-      responseObserver.onCompleted();
-      return null;
-    }).when(publisherImplBase).getTopic(captor.capture(), any(StreamObserver.class));
-
-    CheckResult result = sender.check();
-    assertThat(result.ok()).isTrue();
-  }
-
-  @Test void checkFailsWithStreamNotActive() throws Exception {
-    ArgumentCaptor<GetTopicRequest> captor =
-        ArgumentCaptor.forClass(GetTopicRequest.class);
+  @Test void sendFailsWithStreamNotActive() {
+    ArgumentCaptor<PublishRequest> requestCaptor = ArgumentCaptor.forClass(PublishRequest.class);
 
     doAnswer(invocationOnMock -> {
       StreamObserver<Topic> responseObserver = invocationOnMock.getArgument(1);
       responseObserver.onError(new io.grpc.StatusRuntimeException(Status.NOT_FOUND));
       return null;
-    }).when(publisherImplBase).getTopic(captor.capture(), any(StreamObserver.class));
+    }).when(publisherImplBase).publish(requestCaptor.capture(), any(StreamObserver.class));
 
-    CheckResult result = sender.check();
-    assertThat(result.error()).isInstanceOf(ApiException.class);
+    assertThatThrownBy(this::sendSpans)
+        .isInstanceOf(ApiException.class);
   }
 
   private List<Span> extractSpans(PublishRequest publishRequest) {
@@ -217,9 +214,9 @@ class PubSubSenderTest {
     return SpanBytesDecoder.PROTO3.decodeList(messageBytes).stream();
   }
 
-  Call<Void> send(zipkin2.Span... spans) {
+  void sendSpans(zipkin2.Span... spans) throws Exception {
     SpanBytesEncoder bytesEncoder =
         sender.encoding() == Encoding.JSON ? SpanBytesEncoder.JSON_V2 : SpanBytesEncoder.PROTO3;
-    return sender.sendSpans(Stream.of(spans).map(bytesEncoder::encode).collect(toList()));
+    sender.send(Stream.of(spans).map(bytesEncoder::encode).collect(toList()));
   }
 }

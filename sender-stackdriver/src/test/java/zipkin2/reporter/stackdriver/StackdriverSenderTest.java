@@ -28,6 +28,7 @@ import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -37,11 +38,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import zipkin2.Span;
-import zipkin2.reporter.CheckResult;
 import zipkin2.reporter.stackdriver.zipkin.StackdriverEncoder;
 import zipkin2.translation.stackdriver.SpanTranslator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
@@ -82,7 +83,7 @@ class StackdriverSenderTest {
           observer.onCompleted();
         });
 
-    sender.sendSpans(encodedSpans).execute();
+    sender.send(encodedSpans);
 
     // verify our estimate is correct
     int actualSize = takeRequest().getSerializedSize();
@@ -124,7 +125,7 @@ class StackdriverSenderTest {
     List<byte[]> encodedSpans =
         spans.stream().map(StackdriverEncoder.V2::encode).collect(Collectors.toList());
 
-    sender.sendSpans(encodedSpans).execute();
+    sender.send(encodedSpans);
 
     BatchWriteSpansRequest request = takeRequest();
 
@@ -139,41 +140,33 @@ class StackdriverSenderTest {
     assertThat(sender.messageSizeInBytes(encodedSpans)).isEqualTo(actualSize);
   }
 
-  @Test void verifyCheckReturnsFailureWhenServiceFailsWithKnownGrpcFailure() {
+  @Test void sendFailureWhenServiceFailsWithKnownGrpcFailure() {
     onClientCall(observer -> {
       observer.onError(new StatusRuntimeException(Status.RESOURCE_EXHAUSTED));
     });
-    CheckResult result = sender.check();
-    assertThat(result.ok()).isFalse();
-    assertThat(result.error())
+
+    assertThatThrownBy(() -> sender.send(Collections.emptyList()))
         .isInstanceOf(StatusRuntimeException.class)
         .hasMessageContaining("RESOURCE_EXHAUSTED");
   }
 
-  @Test void verifyCheckReturnsFailureWhenServiceFailsForUnknownReason() {
+  @Test void sendFailureWhenServiceFailsForUnknownReason() {
     onClientCall(observer -> {
       observer.onError(new RuntimeException("oh no"));
     });
-    CheckResult result = sender.check();
-    assertThat(result.ok()).isFalse();
-    assertThat(result.error())
+
+    assertThatThrownBy(() -> sender.send(Collections.emptyList()))
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("UNKNOWN");
   }
 
-  @Test void verifyCheckReturnsOkWhenExpectedValidationFailure() {
-    onClientCall(observer -> {
-      observer.onError(new StatusRuntimeException(Status.INVALID_ARGUMENT));
-    });
-    assertThat(sender.check()).isSameAs(CheckResult.OK);
-  }
-
-  @Test void verifyCheckReturnsOkWhenServiceSucceeds() {
+  @Test void send_empty() throws IOException {
     onClientCall(observer -> {
       observer.onNext(Empty.getDefaultInstance());
       observer.onCompleted();
     });
-    assertThat(sender.check()).isSameAs(CheckResult.OK);
+
+    sender.send(Collections.emptyList());
   }
 
   void onClientCall(Consumer<StreamObserver<Empty>> onClientCall) {

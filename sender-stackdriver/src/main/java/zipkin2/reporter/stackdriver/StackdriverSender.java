@@ -22,23 +22,22 @@ import com.google.protobuf.Empty;
 import com.google.protobuf.UnsafeByteOperations;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
+import io.grpc.ClientCall;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
+import io.grpc.Metadata;
 import java.io.IOException;
 import java.util.List;
-import zipkin2.reporter.Call;
-import zipkin2.reporter.CheckResult;
+import zipkin2.reporter.BytesMessageSender;
+import zipkin2.reporter.ClosedSenderException;
 import zipkin2.reporter.Encoding;
-import zipkin2.reporter.Sender;
-import zipkin2.reporter.stackdriver.internal.UnaryClientCall;
 
 import static com.google.protobuf.CodedOutputStream.computeUInt32SizeNoTag;
 import static io.grpc.CallOptions.DEFAULT;
-import static zipkin2.reporter.stackdriver.internal.UnaryClientCall.DEFAULT_SERVER_TIMEOUT_MS;
 
-public final class StackdriverSender extends Sender {
+public final class StackdriverSender extends BytesMessageSender.Base {
+  static final int DEFAULT_SERVER_TIMEOUT_MS = 5000;
+
   public static Builder newBuilder() {
     ManagedChannel channel = ManagedChannelBuilder.forTarget("cloudtrace.googleapis.com").build();
     Builder result = newBuilder(channel);
@@ -100,9 +99,8 @@ public final class StackdriverSender extends Sender {
   final int spanNameFieldSize;
   final long serverResponseTimeoutMs;
 
-  final BatchWriteSpansCall healthcheckCall;
-
   StackdriverSender(Builder builder) {
+    super(Encoding.PROTO3);
     channel = builder.channel;
     callOptions = builder.callOptions;
     projectName = ByteString.copyFromUtf8("projects/" + builder.projectId);
@@ -117,26 +115,13 @@ public final class StackdriverSender extends Sender {
 
     spanNameFieldSize = CodedOutputStream.computeTagSize(1)
         + CodedOutputStream.computeUInt32SizeNoTag(spanNameSize) + spanNameSize;
-
-    BatchWriteSpansRequest healthcheckRequest = BatchWriteSpansRequest.newBuilder()
-        .setNameBytes(projectName)
-        .addSpans(Span.newBuilder().build())
-        .build();
-    healthcheckCall = new BatchWriteSpansCall(healthcheckRequest);
   }
 
-  @Override
-  public Encoding encoding() {
-    return Encoding.PROTO3;
-  }
-
-  @Override
-  public int messageMaxBytes() {
+  @Override public int messageMaxBytes() {
     return 1024 * 1024; // 1 MiB for now
   }
 
-  @Override
-  public int messageSizeInBytes(List<byte[]> traceIdPrefixedSpans) {
+  @Override public int messageSizeInBytes(List<byte[]> traceIdPrefixedSpans) {
     int length = traceIdPrefixedSpans.size();
     if (length == 0) return 0;
     if (length == 1) return messageSizeInBytes(traceIdPrefixedSpans.get(0).length);
@@ -149,19 +134,15 @@ public final class StackdriverSender extends Sender {
     return size;
   }
 
-  @Override
-  public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
+  @Override public int messageSizeInBytes(int traceIdPrefixedSpanSize) {
     return projectNameFieldSize + spanFieldSize(traceIdPrefixedSpanSize);
   }
 
   /** close is typically called from a different thread */
   volatile boolean closeCalled;
 
-  @Override
-  public Call<Void> sendSpans(List<byte[]> traceIdPrefixedSpans) {
-    if (closeCalled) throw new IllegalStateException("closed");
-    int length = traceIdPrefixedSpans.size();
-    if (length == 0) return Call.create(null);
+  @Override public void send(List<byte[]> traceIdPrefixedSpans) throws IOException {
+    if (closeCalled) throw new ClosedSenderException();
 
     BatchWriteSpansRequest.Builder request = BatchWriteSpansRequest.newBuilder()
         .setNameBytes(projectName);
@@ -169,42 +150,28 @@ public final class StackdriverSender extends Sender {
       request.addSpans(parseTraceIdPrefixedSpan(traceIdPrefixedSpan, spanNameSize, traceIdPrefix));
     }
 
-    return new BatchWriteSpansCall(request.build()).map(EmptyToVoid.INSTANCE);
-  }
+    ClientCall<BatchWriteSpansRequest, Empty> call =
+        channel.newCall(TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions);
 
-  /**
-   * Sends a malformed call to Stackdriver Trace to validate service health.
-   *
-   * @return successful status if Stackdriver Trace API responds with expected validation
-   * error (or happens to respond as success -- unexpected but okay); otherwise returns error status
-   * wrapping the underlying exception.
-   */
-  @Override
-  public CheckResult check() {
+    AwaitableUnaryClientCallListener<Empty> listener =
+        new AwaitableUnaryClientCallListener<>(serverResponseTimeoutMs);
     try {
-      healthcheckCall.clone().execute();
-    } catch (StatusRuntimeException sre) {
-      if (sre.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
-        return CheckResult.OK;
-      }
-      return CheckResult.failed(sre);
-    } catch (Exception e) {
-      return CheckResult.failed(e);
+      call.start(listener, new Metadata());
+      call.request(1);
+      call.sendMessage(request.build());
+      call.halfClose();
+    } catch (RuntimeException | Error t) {
+      call.cancel(null, t);
+      throw t;
     }
-
-    // Currently the rpc throws a validation exception on malformed input, which we handle above.
-    // If we get here despite the known malformed input, the implementation changed and we need to
-    // update this check. It's unlikely enough that we can wait and see.
-    return CheckResult.OK;
+    listener.await();
   }
 
-  @Override
-  public final String toString() {
+  @Override public String toString() {
     return "StackdriverSender{" + projectName.toStringUtf8() + "}";
   }
 
-  @Override
-  public void close() {
+  @Override public void close() {
     if (!shutdownChannelOnClose) return;
     if (closeCalled) return;
     closeCalled = true;
@@ -243,32 +210,5 @@ public final class StackdriverSender extends Sender {
     int sizeOfSpanMessage = traceIdPrefixedSpanSize - 32 + spanNameFieldSize;
     return CodedOutputStream.computeTagSize(2)
         + computeUInt32SizeNoTag(sizeOfSpanMessage) + sizeOfSpanMessage;
-  }
-
-  final class BatchWriteSpansCall extends UnaryClientCall<BatchWriteSpansRequest, Empty> {
-
-    BatchWriteSpansCall(BatchWriteSpansRequest request) {
-      super(channel, TraceServiceGrpc.getBatchWriteSpansMethod(), callOptions, request,
-          serverResponseTimeoutMs);
-    }
-
-    @Override
-    public String toString() {
-      return "BatchWriteSpansCall{" + request() + "}";
-    }
-
-    @Override
-    public BatchWriteSpansCall clone() {
-      return new BatchWriteSpansCall(request());
-    }
-  }
-
-  enum EmptyToVoid implements Call.Mapper<Empty, Void> {
-    INSTANCE {
-      @Override
-      public Void map(Empty empty) {
-        return null;
-      }
-    }
   }
 }
