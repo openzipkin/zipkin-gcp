@@ -52,8 +52,7 @@ public class ITStackdriverSender {
   AsyncReporter<Span> reporterNoPermission;
   TraceServiceGrpc.TraceServiceBlockingStub traceServiceGrpcV1;
 
-  @BeforeEach
-  public void setUp() throws IOException {
+  @BeforeEach void setUp() throws IOException {
     // Application Default credential is configured using the GOOGLE_APPLICATION_CREDENTIALS env var
     // See: https://cloud.google.com/docs/authentication/production#providing_credentials_to_your_application
 
@@ -90,8 +89,7 @@ public class ITStackdriverSender {
             .build(StackdriverEncoder.V2);
   }
 
-  @AfterEach
-  public void tearDown() {
+  @AfterEach void tearDown() {
     if (reporter != null) {
       reporter.close();
     }

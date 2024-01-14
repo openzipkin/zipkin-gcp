@@ -13,30 +13,22 @@
  */
 package zipkin2.reporter.pubsub;
 
-import com.google.api.core.ApiFuture;
-import com.google.api.core.ApiFutureCallback;
-import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.ExecutorProvider;
 import com.google.api.gax.core.InstantiatingExecutorProvider;
-import com.google.api.gax.rpc.ApiException;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.TopicAdminClient;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import com.google.pubsub.v1.Topic;
-import com.google.pubsub.v1.TopicName;
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import zipkin2.reporter.BytesMessageEncoder;
-import zipkin2.reporter.Call;
-import zipkin2.reporter.Callback;
-import zipkin2.reporter.CheckResult;
+import zipkin2.reporter.BytesMessageSender;
+import zipkin2.reporter.ClosedSenderException;
 import zipkin2.reporter.Encoding;
-import zipkin2.reporter.Sender;
 
-public class PubSubSender extends Sender {
+public class PubSubSender extends BytesMessageSender.Base {
 
   public static PubSubSender create(String topic) {
     return newBuilder().topic(topic).build();
@@ -109,7 +101,6 @@ public class PubSubSender extends Sender {
       if (topic == null) throw new NullPointerException("topic == null");
 
       if (executorProvider == null) executorProvider = defaultExecutorProvider();
-      ;
 
       if (publisher == null) {
         try {
@@ -146,7 +137,6 @@ public class PubSubSender extends Sender {
 
   final String topic;
   final int messageMaxBytes;
-  final Encoding encoding;
   final Publisher publisher;
   final ExecutorProvider executorProvider;
   final TopicAdminClient topicAdminClient;
@@ -154,61 +144,43 @@ public class PubSubSender extends Sender {
   volatile boolean closeCalled;
 
   PubSubSender(Builder builder) {
-    this.topic = builder.topic;
-    this.messageMaxBytes = builder.messageMaxBytes;
-    this.encoding = builder.encoding;
-    this.publisher = builder.publisher;
-    this.executorProvider = builder.executorProvider;
-    this.topicAdminClient = builder.topicAdminClient;
+    super(builder.encoding);
+    topic = builder.topic;
+    messageMaxBytes = builder.messageMaxBytes;
+    publisher = builder.publisher;
+    executorProvider = builder.executorProvider;
+    topicAdminClient = builder.topicAdminClient;
   }
 
-  /**
-   * If no permissions given sent back ok, f permissions and topic exist ok, if topic does not exist error
-   *
-   * @return
-   */
-  @Override
-  public CheckResult check() {
-    try {
-      Topic topic = topicAdminClient.getTopic(TopicName.parse(this.topic));
-      return CheckResult.OK;
-    } catch (ApiException e) {
-      return CheckResult.failed(e);
-    }
-  }
-
-  @Override public Encoding encoding() {
-    return encoding;
-  }
-
-  @Override
-  public int messageMaxBytes() {
+  @Override public int messageMaxBytes() {
     return messageMaxBytes;
   }
 
-  @Override
-  public int messageSizeInBytes(List<byte[]> bytes) {
-    return encoding().listSizeInBytes(bytes);
-  }
-
-  @Override
-  public Call<Void> sendSpans(List<byte[]> byteList) {
-    if (closeCalled) throw new IllegalStateException("closed");
+  @Override public void send(List<byte[]> byteList) throws IOException {
+    if (closeCalled) throw new ClosedSenderException();
 
     byte[] messageBytes = BytesMessageEncoder.forEncoding(encoding()).encode(byteList);
-    PubsubMessage pubsubMessage =
+    PubsubMessage message =
         PubsubMessage.newBuilder().setData(ByteString.copyFrom(messageBytes)).build();
 
-    return new PubSubCall(pubsubMessage);
+    try {
+      publisher.publish(message).get();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new InterruptedIOException(e.getMessage());
+    } catch (ExecutionException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof RuntimeException) throw (RuntimeException) cause;
+      if (cause instanceof Error) throw (Error) cause;
+      throw new RuntimeException(cause);
+    }
   }
 
   /**
-   * Shutdown on Publisher is not async thus moving the synchronized block to another function in order not to block until the shutdown is over
-   *
-   * @throws IOException
+   * Shutdown on Publisher is not async thus moving the synchronized block to another function in
+   * order not to block until the shutdown is over.
    */
-  @Override
-  public void close() throws IOException {
+  @Override public void close() {
     if (!setClosed()) {
       return;
     }
@@ -226,69 +198,5 @@ public class PubSubSender extends Sender {
 
   @Override public final String toString() {
     return "PubSubSender{topic=" + topic + "}";
-  }
-
-  class PubSubCall extends Call.Base<Void> {
-    private final PubsubMessage message;
-    volatile ApiFuture<String> future;
-
-    public PubSubCall(PubsubMessage message) {
-      this.message = message;
-    }
-
-    @Override
-    protected Void doExecute() throws IOException {
-      try {
-        publisher.publish(message).get();
-      } catch (InterruptedException | ExecutionException e) {
-        throw new RuntimeException(e);
-      }
-      return null;
-    }
-
-    @Override
-    protected void doEnqueue(Callback<Void> callback) {
-      future = publisher.publish(message);
-      ApiFutures.addCallback(future, new ApiFutureCallbackAdapter(callback),
-          executorProvider.getExecutor());
-      if (future.isCancelled()) throw new IllegalStateException("cancelled sending spans");
-    }
-
-    @Override
-    protected void doCancel() {
-      Future<String> maybeFuture = future;
-      if (maybeFuture != null) maybeFuture.cancel(true);
-    }
-
-    @Override
-    protected boolean doIsCanceled() {
-      Future<String> maybeFuture = future;
-      return maybeFuture != null && maybeFuture.isCancelled();
-    }
-
-    @Override
-    public Call<Void> clone() {
-      PubsubMessage clone = PubsubMessage.newBuilder(message).build();
-      return new PubSubCall(clone);
-    }
-  }
-
-  static final class ApiFutureCallbackAdapter implements ApiFutureCallback<String> {
-
-    final Callback<Void> callback;
-
-    public ApiFutureCallbackAdapter(Callback<Void> callback) {
-      this.callback = callback;
-    }
-
-    @Override
-    public void onFailure(Throwable t) {
-      callback.onError(t);
-    }
-
-    @Override
-    public void onSuccess(String result) {
-      callback.onSuccess(null);
-    }
   }
 }

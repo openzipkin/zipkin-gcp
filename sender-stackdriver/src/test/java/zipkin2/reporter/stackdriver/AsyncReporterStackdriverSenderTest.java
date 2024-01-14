@@ -71,13 +71,21 @@ class AsyncReporterStackdriverSenderTest {
         .build(StackdriverEncoder.V2);
   }
 
-  @Test void sendSpans_empty() {
+  @Test void send_empty() {
     reporter.flush();
 
-    verify(traceService, never()).batchWriteSpans(any(), any());
+    ArgumentCaptor<BatchWriteSpansRequest> requestCaptor =
+        ArgumentCaptor.forClass(BatchWriteSpansRequest.class);
+
+    verify(traceService).batchWriteSpans(requestCaptor.capture(), any());
+
+    BatchWriteSpansRequest request = requestCaptor.getValue();
+    assertThat(request.getName()).isEqualTo("projects/" + projectId);
+
+    assertThat(request.getSpansList()).isEmpty();
   }
 
-  @Test void sendSpans() {
+  @Test void send() {
     onClientCall(
         observer -> {
           observer.onNext(Empty.getDefaultInstance());
