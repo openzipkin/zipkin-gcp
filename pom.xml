@@ -74,9 +74,9 @@
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>3.0.3</zipkin.version>
+    <zipkin.version>3.0.5</zipkin.version>
     <zipkin-reporter.version>3.2.1</zipkin-reporter.version>
-    <spring-boot.version>3.2.1</spring-boot.version>
+    <spring-boot.version>3.2.2</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
     <armeria.version>1.26.4</armeria.version>
@@ -88,28 +88,26 @@
     <brave.groupId>io.zipkin.brave</brave.groupId>
     <brave.version>6.0.0</brave.version>
 
-    <!-- from armeria-grpc -->
-    <grpc.version>1.58.0</grpc.version>
+    <!-- from armeria-grpc or grpc-google-cloud-trace-v1 whichever is higher -->
+    <grpc.version>1.60.0</grpc.version>
     <!-- from grpc-protobuf -->
     <protobuf.version>3.24.0</protobuf.version>
     <guava.version>32.0.1-android</guava.version>
 
     <!-- stackdriver deps -->
-    <google-auth-library-oauth2-http.version>1.20.0</google-auth-library-oauth2-http.version>
-    <!-- avoid CVE in ^^ transient deps -->
-    <commons-codec.version>1.16.0</commons-codec.version>
-    <proto-google-common-protos.version>2.29.0</proto-google-common-protos.version>
+    <google-auth-library-oauth2-http.version>1.22.0</google-auth-library-oauth2-http.version>
+    <proto-google-common-protos.version>2.31.0</proto-google-common-protos.version>
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace.version>2.32.0</grpc-google-cloud-trace.version>
+    <grpc-google-cloud-trace.version>2.34.0</grpc-google-cloud-trace.version>
 
     <!-- pubsub deps -->
-    <google-cloud-pubsub.version>1.125.13</google-cloud-pubsub.version>
-    <grpc-google-cloud-pubsub-v1.version>1.107.13</grpc-google-cloud-pubsub-v1.version>
+    <google-cloud-pubsub.version>1.126.0</google-cloud-pubsub.version>
+    <grpc-google-cloud-pubsub-v1.version>1.108.0</grpc-google-cloud-pubsub-v1.version>
 
     <assertj.version>3.25.1</assertj.version>
     <awaitility.version>4.2.0</awaitility.version>
     <junit-jupiter.version>5.10.1</junit-jupiter.version>
-    <mockito.version>5.8.0</mockito.version>
+    <mockito.version>5.9.0</mockito.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
