@@ -25,7 +25,6 @@ import com.linecorp.armeria.common.HttpHeaders;
 import com.linecorp.armeria.common.HttpMethod;
 import com.linecorp.armeria.common.RequestHeaders;
 import com.linecorp.armeria.common.logging.LogLevel;
-import io.netty.handler.ssl.OpenSsl;
 import java.io.IOException;
 import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,11 +93,6 @@ public class ZipkinStackdriverStorageModule {
       ClientFactory clientFactory,
       ZipkinStackdriverStorageProperties properties,
       Credentials credentials) {
-    if (!OpenSsl.isAvailable()) {
-      throw new IllegalStateException(
-          "OpenSsl is required. This usually requires netty-tcnative-boringssl-static");
-    }
-
     ClientOptionsBuilder options = ClientOptions.builder();
 
     HttpLogging httpLogging = properties.getHttpLogging();

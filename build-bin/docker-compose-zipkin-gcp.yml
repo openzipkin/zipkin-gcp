@@ -3,14 +3,14 @@ volumes:
   gcp-service-account:
 services:
   extract-service-account:
-    image: ghcr.io/openzipkin/alpine:3.19.0
+    image: ghcr.io/openzipkin/alpine:3.19.1
     volumes:
       - gcp-service-account:/credentials:rw
     command: -c 'echo $GOOGLE_APPLICATION_CREDENTIALS_BASE64 | base64 -d > /credentials/service-account-key.json'
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS_BASE64
   show-service-account:
-    image: ghcr.io/openzipkin/alpine:3.19.0
+    image: ghcr.io/openzipkin/alpine:3.19.1
     volumes:
       - gcp-service-account:/credentials:ro
     # Show that the file exists as a sanity check in logs.

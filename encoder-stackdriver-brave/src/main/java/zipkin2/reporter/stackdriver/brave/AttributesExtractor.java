@@ -16,14 +16,12 @@ package zipkin2.reporter.stackdriver.brave;
 import brave.Span;
 import brave.Tag;
 import brave.handler.MutableSpan;
-import com.google.common.net.HostAndPort;
 import com.google.common.net.InetAddresses;
 import com.google.devtools.cloudtrace.v2.AttributeValue;
 import com.google.devtools.cloudtrace.v2.Span.Attributes;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static zipkin2.reporter.stackdriver.brave.SpanUtil.toTruncatableString;
