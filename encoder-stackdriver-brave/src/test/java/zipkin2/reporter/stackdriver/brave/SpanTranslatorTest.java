@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static zipkin2.reporter.stackdriver.brave.AttributesExtractor.toAttributeValue;
-import static zipkin2.reporter.stackdriver.brave.SpanTranslator.createTimestamp;
 import static zipkin2.reporter.stackdriver.brave.SpanUtil.toTruncatableString;
 import static zipkin2.reporter.stackdriver.brave.TestObjects.clientSpan;
 
