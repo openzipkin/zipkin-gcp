@@ -4,14 +4,14 @@
 #
 
 # zipkin version should match zipkin.version in /pom.xml
-ARG zipkin_version=3.3.0
+ARG zipkin_version=3.4.0
 
 # java_version is used during the installation process to build or download the module jar.
 #
 # Use latest version here: https://github.com/orgs/openzipkin/packages/container/package/java
 # This is defined in many places because Docker has no "env" script functionality unless you use
 # docker-compose: When updating, update everywhere.
-ARG java_version=21.0.2_p13
+ARG java_version=21.0.3_p9
 
 # We copy files from the context into a scratch container first to avoid a problem where docker and
 # docker-compose don't share layer hashes https://github.com/docker/compose/issues/883 normally.
