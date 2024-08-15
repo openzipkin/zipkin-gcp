@@ -72,14 +72,16 @@ final class AttributesExtractor {
     // will be rewritten into multiple single-host Stackdriver spans. A client send
     // trace might not show the final destination.
     if (braveSpan.localServiceName() != null && braveSpan.kind() == Span.Kind.SERVER) {
-      // Create an IP without querying DNS
-      InetAddress ip = InetAddresses.forString(braveSpan.localIp());
-      if (ip instanceof Inet4Address) {
-        attributes.putAttributeMap(
-            getLabelName("endpoint.ipv4"), toAttributeValue(ip.getHostAddress()));
-      } else if (ip instanceof Inet6Address) {
-        attributes.putAttributeMap(
-            getLabelName("endpoint.ipv6"), toAttributeValue(ip.getHostAddress()));
+      if (braveSpan.localIp() != null) {
+        // Create an IP without querying DNS
+        InetAddress ip = InetAddresses.forString(braveSpan.localIp());
+        if (ip instanceof Inet4Address) {
+          attributes.putAttributeMap(
+              getLabelName("endpoint.ipv4"), toAttributeValue(ip.getHostAddress()));
+        } else if (ip instanceof Inet6Address) {
+          attributes.putAttributeMap(
+              getLabelName("endpoint.ipv6"), toAttributeValue(ip.getHostAddress()));
+        }
       }
     }
 

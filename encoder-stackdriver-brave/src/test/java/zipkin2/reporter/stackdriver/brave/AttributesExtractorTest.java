@@ -124,6 +124,32 @@ class AttributesExtractorTest {
     assertThat(clientLabels).doesNotContainKeys("endpoint.ipv4", "endpoint.ipv6");
   }
 
+  @Test void testEndpointIsNotSetForNullLocalIp() {
+    AttributesExtractor extractor = new AttributesExtractor(Tags.ERROR, Collections.emptyMap());
+
+    MutableSpan serverSpan =
+            new MutableSpan(TraceContext.newBuilder().traceId(4).spanId(5).build(), null);
+    serverSpan.name("test-span");
+    serverSpan.kind(Span.Kind.SERVER);
+    serverSpan.localServiceName("service1");
+    serverSpan.localIp(null);
+    serverSpan.localPort(80);
+
+    MutableSpan clientSpan =
+            new MutableSpan(TraceContext.newBuilder().traceId(4).parentId(5).spanId(6).build(), null);
+    clientSpan.name("test-span");
+    clientSpan.kind(Span.Kind.CLIENT);
+    clientSpan.localServiceName("service1");
+    clientSpan.localIp("::1");
+    clientSpan.localPort(80);
+
+    Map<String, AttributeValue> serverLabels = extractor.extract(serverSpan).getAttributeMapMap();
+    assertThat(serverLabels).doesNotContainKey("endpoint.ipv4");
+    assertThat(serverLabels).doesNotContainKey("endpoint.ipv6");
+    Map<String, AttributeValue> clientLabels = extractor.extract(clientSpan).getAttributeMapMap();
+    assertThat(clientLabels).doesNotContainKeys("endpoint.ipv4", "endpoint.ipv6");
+  }
+
   @Test void testErrorTag() {
     AttributesExtractor extractor = new AttributesExtractor(Tags.ERROR, Collections.emptyMap());
 
