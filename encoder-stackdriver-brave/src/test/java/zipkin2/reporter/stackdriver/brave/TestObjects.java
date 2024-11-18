@@ -26,4 +26,25 @@ public class TestObjects {
     braveSpan.tag("http.path", "/api");
     return braveSpan;
   }
+
+  static MutableSpan spring6ServerSpan() {
+    MutableSpan braveSpan = new MutableSpan();
+    braveSpan.traceId("673adb3c54aa03af9e941a86a679a9d5");
+    braveSpan.id("9e941a86a679a9d5");
+    braveSpan.name("http get /test");
+    braveSpan.kind(brave.Span.Kind.SERVER);
+    braveSpan.localServiceName("backend");
+    braveSpan.localIp("127.0.0.1");
+    braveSpan.startTimestamp(1472470996199000L);
+    braveSpan.finishTimestamp(1472470996199000L + 207000L);
+    braveSpan.annotate(1472470996238000L, "foo");
+    braveSpan.annotate(1472470996403000L, "bar");
+    braveSpan.tag("exception", "none");
+    braveSpan.tag("http.url", "/test");
+    braveSpan.tag("method", "GET");
+    braveSpan.tag("outcome", "SUCCESS");
+    braveSpan.tag("status", "200");
+    braveSpan.tag("uri", "/test");
+    return braveSpan;
+  }
 }

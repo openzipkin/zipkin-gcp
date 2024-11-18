@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static zipkin2.reporter.stackdriver.brave.AttributesExtractor.toAttributeValue;
 import static zipkin2.reporter.stackdriver.brave.SpanUtil.toTruncatableString;
 import static zipkin2.reporter.stackdriver.brave.TestObjects.clientSpan;
+import static zipkin2.reporter.stackdriver.brave.TestObjects.spring6ServerSpan;
 
 class SpanTranslatorTest {
   SpanTranslator spanTranslator = new SpanTranslator(Tags.ERROR);
@@ -72,5 +73,49 @@ class SpanTranslatorTest {
     Span translated = spanTranslator.translate(Span.newBuilder(), braveSpan).build();
 
     assertThat(translated.getDisplayName().getValue()).isEqualTo("unknown");
+  }
+
+  @Test void translate_spring6ServerSpan() {
+    MutableSpan braveSpan = spring6ServerSpan();
+    Span translated = spanTranslator.translate(Span.newBuilder(), braveSpan).build();
+
+    assertThat(translated)
+            .isEqualTo(
+                    Span.newBuilder()
+                            .setSpanId(braveSpan.id())
+                            .setDisplayName(toTruncatableString("http get /test"))
+                            .setStartTime(Timestamp.newBuilder().setSeconds(1472470996).setNanos(199_000_000).build())
+                            .setEndTime(Timestamp.newBuilder().setSeconds(1472470996).setNanos(406_000_000).build())
+                            .setAttributes(Span.Attributes.newBuilder()
+                                    .putAttributeMap("/agent", toAttributeValue("zipkin-java"))
+                                    .putAttributeMap("exception", toAttributeValue("none"))
+                                    .putAttributeMap("/http/url", toAttributeValue("/test"))
+                                    .putAttributeMap("/http/method", toAttributeValue("GET"))
+                                    .putAttributeMap("outcome", toAttributeValue("SUCCESS"))
+                                    .putAttributeMap("/http/status_code", toAttributeValue("200"))
+                                    .putAttributeMap("uri", toAttributeValue("/test"))
+                                    .putAttributeMap("method", toAttributeValue("GET"))
+                                    .putAttributeMap("status", toAttributeValue("200"))
+                                    .putAttributeMap("/kind", toAttributeValue("server"))
+                                    .putAttributeMap("/component", toAttributeValue("backend"))
+                                    .putAttributeMap("endpoint.ipv4", toAttributeValue("127.0.0.1"))
+                                    .build())
+                            .setTimeEvents(Span.TimeEvents.newBuilder()
+                                    .addTimeEvent(Span.TimeEvent.newBuilder()
+                                            .setTime(Timestamp.newBuilder().setSeconds(1472470996).setNanos(238_000_000).build())
+                                            .setAnnotation(
+                                                    Span.TimeEvent.Annotation.newBuilder()
+                                                            .setDescription(toTruncatableString("foo"))
+                                                            .build())
+                                            .build())
+                                    .addTimeEvent(Span.TimeEvent.newBuilder()
+                                            .setTime(Timestamp.newBuilder().setSeconds(1472470996).setNanos(403_000_000).build())
+                                            .setAnnotation(
+                                                    Span.TimeEvent.Annotation.newBuilder()
+                                                            .setDescription(toTruncatableString("bar"))
+                                                            .build())
+                                            .build())
+                                    .build())
+                            .build());
   }
 }
