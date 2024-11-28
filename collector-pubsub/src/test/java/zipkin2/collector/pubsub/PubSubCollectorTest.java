@@ -14,6 +14,7 @@ import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannel;
 import com.google.api.gax.rpc.TransportChannelProvider;
+import com.google.pubsub.v1.SubscriptionName;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
@@ -76,7 +77,7 @@ class PubSubCollectorTest {
         FlowControlSettings.newBuilder().setMaxOutstandingElementCount(1000L).build());
 
     collector = new PubSubCollector.Builder()
-        .subscription("projects/test-project/topics/test-subscription")
+        .subscription(SubscriptionName.format("test-project", "test-subscription"))
         .storage(store)
         .encoding(Encoding.JSON)
         .executorProvider(executorProvider)
