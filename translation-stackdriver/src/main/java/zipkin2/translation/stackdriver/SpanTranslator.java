@@ -8,6 +8,7 @@ import com.google.devtools.cloudtrace.v2.Span.TimeEvent;
 import com.google.devtools.cloudtrace.v2.Span.TimeEvents;
 import com.google.protobuf.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,7 @@ import zipkin2.Annotation;
 import zipkin2.Span;
 
 import static java.util.logging.Level.FINE;
+import static zipkin2.translation.stackdriver.AttributesExtractor.toAttributeValue;
 import static zipkin2.translation.stackdriver.SpanUtil.toTruncatableString;
 
 /** SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span. */
@@ -33,6 +35,15 @@ public final class SpanTranslator {
     renamedLabels.put("http.response.size", "/response/size");
     renamedLabels.put("http.url", "/http/url");
     ATTRIBUTES_EXTRACTOR = new AttributesExtractor(renamedLabels);
+  }
+
+  private static final Map<String, String> SPRING6_RENAMED_HTTP_LABELS;
+
+  static {
+    Map<String, String> map = new LinkedHashMap<>();
+    map.put("status", "/http/status_code");
+    map.put("method", "/http/method");
+    SPRING6_RENAMED_HTTP_LABELS = Collections.unmodifiableMap(map);
   }
 
   /**
@@ -103,6 +114,16 @@ public final class SpanTranslator {
       }
     }
     spanBuilder.setAttributes(ATTRIBUTES_EXTRACTOR.extract(zipkinSpan));
+
+    // Spring 6 HTTP spans need mapping to Stackdriver conventional attribute names
+    if (zipkinSpan.name() != null && zipkinSpan.name().contains("http")) {
+      zipkinSpan.tags().forEach((key, value) -> {
+        if (SPRING6_RENAMED_HTTP_LABELS.containsKey(key)) {
+          spanBuilder.getAttributesBuilder()
+                  .putAttributeMap(SPRING6_RENAMED_HTTP_LABELS.get(key), toAttributeValue(value));
+        }
+      });
+    }
 
     if (!zipkinSpan.annotations().isEmpty()) {
       TimeEvents.Builder events = TimeEvents.newBuilder();
