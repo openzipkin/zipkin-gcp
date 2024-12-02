@@ -116,4 +116,59 @@ public class SpanTranslatorTest {
     assertThat(stackdriverSpans.get(1).getDisplayName().getValue()).isEqualTo("unknown");
     assertThat(stackdriverSpans.get(2).getDisplayName().getValue()).isEqualTo("somename");
   }
+
+  @Test void translate_spring6ServerSpan() {
+    Span zipkinSpan =
+            Span.newBuilder()
+                    .traceId("7180c278b62e8f6a216a2aea45d08fc9")
+                    .id("5b4185666d50f68b")
+                    .name("http get /test")
+                    .kind(Span.Kind.SERVER)
+                    .localEndpoint(Endpoint.newBuilder().serviceName("backend").build())
+                    .timestamp(1_000_000L) // 1 second after epoch
+                    .duration(123_456L)
+                    .addAnnotation(1_123_000L, "foo")
+                    .putTag("exception", "none")
+                    .putTag("http.url", "/test")
+                    .putTag("method", "GET")
+                    .putTag("outcome", "SUCCESS")
+                    .putTag("status", "200")
+                    .putTag("uri", "/test")
+                    .build();
+
+    com.google.devtools.cloudtrace.v2.Span
+            translated = SpanTranslator.translate(
+            com.google.devtools.cloudtrace.v2.Span.newBuilder(), zipkinSpan).build();
+
+    assertThat(translated)
+            .isEqualTo(
+                    com.google.devtools.cloudtrace.v2.Span.newBuilder()
+                            .setSpanId(zipkinSpan.id())
+                            .setDisplayName(toTruncatableString("http get /test"))
+                            .setStartTime(Timestamp.newBuilder().setSeconds(1).build())
+                            .setEndTime(Timestamp.newBuilder().setSeconds(1).setNanos(123_456_000).build())
+                            .setAttributes(com.google.devtools.cloudtrace.v2.Span.Attributes.newBuilder()
+                                    .putAttributeMap("/agent", toAttributeValue("zipkin-java"))
+                                    .putAttributeMap("exception", toAttributeValue("none"))
+                                    .putAttributeMap("/http/url", toAttributeValue("/test"))
+                                    .putAttributeMap("/http/method", toAttributeValue("GET"))
+                                    .putAttributeMap("outcome", toAttributeValue("SUCCESS"))
+                                    .putAttributeMap("/http/status_code", toAttributeValue("200"))
+                                    .putAttributeMap("uri", toAttributeValue("/test"))
+                                    .putAttributeMap("method", toAttributeValue("GET"))
+                                    .putAttributeMap("status", toAttributeValue("200"))
+                                    .putAttributeMap("/kind", toAttributeValue("server"))
+                                    .putAttributeMap("/component", toAttributeValue("backend"))
+                                    .build())
+                            .setTimeEvents(com.google.devtools.cloudtrace.v2.Span.TimeEvents.newBuilder()
+                                    .addTimeEvent(com.google.devtools.cloudtrace.v2.Span.TimeEvent.newBuilder()
+                                            .setTime(createTimestamp(1_123_000L))
+                                            .setAnnotation(
+                                                    com.google.devtools.cloudtrace.v2.Span.TimeEvent.Annotation.newBuilder()
+                                                            .setDescription(toTruncatableString("foo"))
+                                                            .build())
+                                            .build())
+                                    .build())
+                            .build());
+  }
 }

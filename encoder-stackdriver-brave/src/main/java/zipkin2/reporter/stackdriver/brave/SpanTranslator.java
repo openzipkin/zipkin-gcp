@@ -10,11 +10,14 @@ import com.google.devtools.cloudtrace.v2.Span;
 import com.google.devtools.cloudtrace.v2.Span.TimeEvent;
 import com.google.devtools.cloudtrace.v2.Span.TimeEvents;
 import com.google.protobuf.Timestamp;
+
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import static java.util.logging.Level.FINE;
+import static zipkin2.reporter.stackdriver.brave.AttributesExtractor.toAttributeValue;
 import static zipkin2.reporter.stackdriver.brave.SpanUtil.toTruncatableString;
 
 /** SpanTranslator converts a Zipkin Span to a Stackdriver Trace Span. */
@@ -31,6 +34,15 @@ final class SpanTranslator {
     RENAMED_LABELS.put("http.request.size", "/request/size");
     RENAMED_LABELS.put("http.response.size", "/response/size");
     RENAMED_LABELS.put("http.url", "/http/url");
+  }
+
+  private static final Map<String, String> SPRING6_RENAMED_HTTP_LABELS;
+
+  static {
+    Map<String, String> map = new LinkedHashMap<>();
+    map.put("status", "/http/status_code");
+    map.put("method", "/http/method");
+    SPRING6_RENAMED_HTTP_LABELS = Collections.unmodifiableMap(map);
   }
 
   private final AttributesExtractor attributesExtractor;
@@ -78,6 +90,16 @@ final class SpanTranslator {
       }
     }
     spanBuilder.setAttributes(attributesExtractor.extract(braveSpan));
+
+    // Spring 6 HTTP spans need mapping to Stackdriver conventional attribute names
+    if (braveSpan.name() != null && braveSpan.name().contains("http")) {
+      braveSpan.tags().forEach((key, value) -> {
+        if (SPRING6_RENAMED_HTTP_LABELS.containsKey(key)) {
+          spanBuilder.getAttributesBuilder()
+                  .putAttributeMap(SPRING6_RENAMED_HTTP_LABELS.get(key), toAttributeValue(value));
+        }
+      });
+    }
 
     if (braveSpan.annotationCount() > 0) {
       TimeEvents.Builder events = TimeEvents.newBuilder();
