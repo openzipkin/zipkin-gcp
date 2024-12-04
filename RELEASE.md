@@ -6,7 +6,7 @@ This repo uses semantic versions. Please keep this in mind when choosing version
 
    Before you start a release, make sure all dependencies are up-to-date, or are documented why not.
    Pay special attention to the [security workflow](.github/workflows/security.yml), which should
-   run clean.
+   run clean. You can manually run the Action to check the release branch is up-to-date.
 
 1. **Alert others you are releasing**
 

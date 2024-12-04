@@ -3,6 +3,7 @@ name: security
 
 # We don't scan documentation-only commits.
 on:  # yamllint disable-line rule:truthy
+  workflow_dispatch: # trigger ad-hoc runs of this action
   push:  # non-tagged pushes to master
     branches:
       - master
