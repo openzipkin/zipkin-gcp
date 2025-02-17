@@ -71,7 +71,7 @@
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
     <armeria.version>1.31.3</armeria.version>
-    <log4j.version>2.23.1</log4j.version>
+    <log4j.version>2.24.3</log4j.version>
 
     <!-- This allows you to test feature branches with jitpack -->
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
@@ -97,7 +97,7 @@
 
     <assertj.version>3.27.3</assertj.version>
     <awaitility.version>4.2.2</awaitility.version>
-    <junit-jupiter.version>5.11.0</junit-jupiter.version>
+    <junit-jupiter.version>5.11.4</junit-jupiter.version>
     <mockito.version>5.15.2</mockito.version>
 
     <!-- override to set exclusions per-project -->
