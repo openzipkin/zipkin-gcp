@@ -65,44 +65,44 @@
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
     <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
-    <zipkin.version>3.4.2</zipkin.version>
-    <zipkin-reporter.version>3.4.0</zipkin-reporter.version>
-    <spring-boot.version>3.3.3</spring-boot.version>
+    <zipkin.version>3.5.0</zipkin.version>
+    <zipkin-reporter.version>3.5.0</zipkin-reporter.version>
+    <spring-boot.version>3.4.2</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
-    <armeria.version>1.31.1</armeria.version>
+    <armeria.version>1.31.3</armeria.version>
     <log4j.version>2.23.1</log4j.version>
 
     <!-- This allows you to test feature branches with jitpack -->
     <!--    <brave.groupId>com.github.openzipkin.brave</brave.groupId>-->
     <!--    <brave.version>master-SNAPSHOT</brave.version>-->
     <brave.groupId>io.zipkin.brave</brave.groupId>
-    <brave.version>6.0.3</brave.version>
+    <brave.version>6.1.0</brave.version>
 
     <!-- from armeria-grpc or grpc-google-cloud-trace-v1 whichever is higher -->
-    <grpc.version>1.68.1</grpc.version>
+    <grpc.version>1.70.0</grpc.version>
     <!-- from grpc-protobuf -->
     <protobuf.version>3.25.5</protobuf.version>
-    <guava.version>32.1.3</guava.version>
+    <guava.version>33.4.0-jre</guava.version>
 
     <!-- stackdriver deps -->
-    <google-auth-library-oauth2-http.version>1.30.0</google-auth-library-oauth2-http.version>
-    <proto-google-common-protos.version>2.49.0</proto-google-common-protos.version>
+    <google-auth-library-oauth2-http.version>1.32.1</google-auth-library-oauth2-http.version>
+    <proto-google-common-protos.version>2.52.0</proto-google-common-protos.version>
     <!-- only used for stackdriver protos, we could possibly obviate this if a problem -->
-    <grpc-google-cloud-trace.version>2.54.0</grpc-google-cloud-trace.version>
+    <grpc-google-cloud-trace.version>2.58.0</grpc-google-cloud-trace.version>
 
     <!-- pubsub deps -->
-    <google-cloud-pubsub.version>1.134.2</google-cloud-pubsub.version>
-    <grpc-google-cloud-pubsub-v1.version>1.116.2</grpc-google-cloud-pubsub-v1.version>
+    <google-cloud-pubsub.version>1.137.0</google-cloud-pubsub.version>
+    <grpc-google-cloud-pubsub-v1.version>1.119.0</grpc-google-cloud-pubsub-v1.version>
 
-    <assertj.version>3.25.3</assertj.version>
+    <assertj.version>3.27.3</assertj.version>
     <awaitility.version>4.2.2</awaitility.version>
     <junit-jupiter.version>5.11.0</junit-jupiter.version>
-    <mockito.version>5.13.0</mockito.version>
+    <mockito.version>5.15.2</mockito.version>
 
     <!-- override to set exclusions per-project -->
     <errorprone.args />
-    <errorprone.version>2.30.0</errorprone.version>
+    <errorprone.version>2.36.0</errorprone.version>
     <auto-value.version>1.11.0</auto-value.version>
 
     <license.skip>${skipTests}</license.skip>
@@ -112,23 +112,23 @@
 
     <go-offline-maven-plugin.version>1.2.8</go-offline-maven-plugin.version>
     <!-- TODO: cleanup any redundant ignores now also in the 4.0 release (once final) -->
-    <license-maven-plugin.version>4.5</license-maven-plugin.version>
-    <maven-bundle-plugin.version>5.1.9</maven-bundle-plugin.version>
+    <license-maven-plugin.version>4.6</license-maven-plugin.version>
+    <maven-bundle-plugin.version>6.0.0</maven-bundle-plugin.version>
     <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
     <!-- Use same version as https://github.com/openzipkin/docker-java -->
-    <maven-dependency-plugin.version>3.6.1</maven-dependency-plugin.version>
+    <maven-dependency-plugin.version>3.8.1</maven-dependency-plugin.version>
     <maven-deploy-plugin.version>3.1.2</maven-deploy-plugin.version>
-    <maven-enforcer-plugin.version>3.4.1</maven-enforcer-plugin.version>
+    <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
     <!-- Use same version as https://github.com/openzipkin/docker-java -->
-    <maven-help-plugin.version>3.4.0</maven-help-plugin.version>
+    <maven-help-plugin.version>3.5.1</maven-help-plugin.version>
     <maven-install-plugin.version>3.1.2</maven-install-plugin.version>
-    <maven-javadoc-plugin.version>3.6.3</maven-javadoc-plugin.version>
+    <maven-javadoc-plugin.version>3.11.2</maven-javadoc-plugin.version>
     <maven-jar-plugin.version>3.4.1</maven-jar-plugin.version>
-    <maven-release-plugin.version>3.0.1</maven-release-plugin.version>
+    <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
     <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
     <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
-    <maven-surefire-plugin.version>3.5.0</maven-surefire-plugin.version>
-    <nexus-staging-maven-plugin.version>1.6.13</nexus-staging-maven-plugin.version>
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+    <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
   </properties>
 
   <name>Zipkin Google Cloud Platform (Parent)</name>
