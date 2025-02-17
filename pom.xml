@@ -64,13 +64,15 @@
     <!-- groupId overrides allow testing feature branches with jitpack -->
     <!-- matching armeria/grpc/zipkin -->
     <zipkin.groupId>io.zipkin.zipkin2</zipkin.groupId>
-    <!-- when updating, update docker/Dockerfile and storage/src/test/java/zipkin2/storage/kafka/IT* -->
+    <!-- when updating, update docker/Dockerfile -->
     <zipkin.version>3.5.0</zipkin.version>
     <zipkin-reporter.version>3.5.0</zipkin-reporter.version>
     <spring-boot.version>3.4.2</spring-boot.version>
     <!-- armeria.groupId allows you to test feature branches with jitpack -->
     <armeria.groupId>com.linecorp.armeria</armeria.groupId>
     <armeria.version>1.31.3</armeria.version>
+    <!-- Use same version as Zipkin to remain compatible with armeria to avoid CVEs -->
+    <netty.version>4.1.118.Final</netty.version>
     <log4j.version>2.24.3</log4j.version>
 
     <!-- This allows you to test feature branches with jitpack -->
