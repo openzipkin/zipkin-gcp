@@ -20,12 +20,25 @@
 
   <properties>
     <main.basedir>${project.basedir}/..</main.basedir>
-    <jmh.version>1.27</jmh.version>
+    <jmh.version>1.37</jmh.version>
 
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.release>17</maven.compiler.release>
   </properties>
+
+  <!-- Avoid CVEs in armeria deps -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${netty.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
