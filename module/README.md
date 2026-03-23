@@ -19,9 +19,9 @@ and exposes configuration options through environment variables.
 JRE 17+ is required to run Zipkin server.
 
 Fetch the latest released
-[executable jar for Zipkin server](https://search.maven.org/remote_content?g=io.zipkin&a=zipkin-server&v=LATEST&c=exec)
+[executable jar for Zipkin server](https://central.sonatype.com/search?q=zipkin-server&namespace=io.zipkin)
 and
-[module jar for stackdriver storage](https://search.maven.org/remote_content?g=io.zipkin.gcp&a=zipkin-module-gcp&v=LATEST&c=module).
+[module jar for stackdriver storage](https://central.sonatype.com/search?q=zipkin-module-gcp&namespace=io.zipkin.gcp).
 Run Zipkin server with the StackDriver Storage enabled.
 
 For example:

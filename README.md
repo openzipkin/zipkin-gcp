@@ -1,6 +1,6 @@
 [![Gitter chat](http://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/openzipkin/zipkin)
 [![Build Status](https://github.com/openzipkin/zipkin-gcp/workflows/test/badge.svg)](https://github.com/openzipkin/zipkin-gcp/actions?query=workflow%3Atest)
-[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-module-gcp.svg)](https://search.maven.org/search?q=g:io.zipkin.gcp%20AND%20a:zipkin-module-gcp)
+[![Maven Central](https://img.shields.io/maven-central/v/io.zipkin.gcp/zipkin-module-gcp.svg)](https://central.sonatype.com/search?q=zipkin-module-gcp&namespace=io.zipkin.gcp)
 
 # zipkin-gcp
 Shared libraries that provide Zipkin integration with the Google Cloud Platform. Requires JRE 17 or later.
@@ -151,10 +151,10 @@ All artifacts publish to the group ID "io.zipkin.gcp". We use a common
 release version for all components.
 
 ### Library Releases
-Releases are at [Sonatype](https://oss.sonatype.org/content/repositories/releases) and  [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.zipkin.gcp%22)
+Releases are at [Maven Central](https://central.sonatype.com/search?q=zipkin-gcp&namespace=io.zipkin.gcp)
 
 ### Library Snapshots
-Snapshots are uploaded to [Sonatype](https://oss.sonatype.org/content/repositories/snapshots) after
+Snapshots are uploaded to [Sonatype](https://central.sonatype.com/repository/maven-snapshots/) after
 commits to master.
 
 ### Docker Images
