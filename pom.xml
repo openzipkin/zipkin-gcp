@@ -101,7 +101,6 @@
     <!-- override to set exclusions per-project -->
     <errorprone.args />
     <errorprone.version>2.48.0</errorprone.version>
-    <auto-value.version>1.11.0</auto-value.version>
 
     <license.skip>${skipTests}</license.skip>
 
