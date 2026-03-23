@@ -90,14 +90,7 @@ else
       manifest_tags="${manifest_tags} ${manifest_tag}"
     done
 
-    docker manifest create ${tag} ${manifest_tags}
-
-    for manifest_tag in ${manifest_tags}; do
-      docker_arch=$(echo ${manifest_tag} | sed 's/.*-//g')
-      docker manifest annotate ${tag} ${manifest_tag} --os linux --arch ${docker_arch}
-    done
-
-    echo "Pushing manifest ${manifest_tag}..."
-    docker manifest push -p ${tag}
+    echo "Pushing manifest ${tag}..."
+    docker buildx imagetools create --tag ${tag} ${manifest_tags}
   done
 fi
