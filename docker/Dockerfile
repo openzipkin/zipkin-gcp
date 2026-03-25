@@ -4,7 +4,7 @@
 #
 
 # zipkin version should match zipkin.version in /pom.xml
-ARG zipkin_version=3.5.0
+ARG zipkin_version=3.6.0
 
 # java_version is used during the installation process to build or download the module jar.
 #
@@ -41,7 +41,7 @@ ENV MAVEN_PROJECT_BASEDIR=/code
 RUN /code/build-bin/maven/maven_build_or_unjar io.zipkin.gcp zipkin-module-gcp ${VERSION} module
 
 # zipkin version should match zipkin.version in /code/pom.xml
-FROM ghcr.io/openzipkin/zipkin:$zipkin_version AS zipkin-gcp
+FROM ghcr.io/openzipkin/zipkin:${zipkin_version} AS zipkin-gcp
 LABEL org.opencontainers.image.description="Zipkin with Google Cloud on OpenJDK and Alpine Linux"
 LABEL org.opencontainers.image.source=https://github.com/openzipkin/zipkin-gcp
 
