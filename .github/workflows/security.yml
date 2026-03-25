@@ -3,7 +3,6 @@ name: security
 
 # We don't scan documentation-only commits.
 on:  # yamllint disable-line rule:truthy
-  workflow_dispatch: # trigger ad-hoc runs of this action
   push:  # non-tagged pushes to master
     branches:
       - master
@@ -24,7 +23,7 @@ on:  # yamllint disable-line rule:truthy
 jobs:
   security:
     name: security
-    runs-on: ubuntu-22.04  # newest available distribution, aka jellyfish
+    runs-on: ubuntu-24.04  # newest available distribution, aka numbat
     # skip commits made by the release plugin
     if: "!contains(github.event.head_commit.message, 'maven-release-plugin')"
     steps:
@@ -37,8 +36,11 @@ jobs:
           key: ${{ runner.os }}-trivy
           restore-keys: ${{ runner.os }}-trivy
       - name: Run Trivy vulnerability and secret scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.35.0
         id: trivy
+        env:  # See https://github.com/aquasecurity/trivy/discussions/7668
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db
         with:
           scan-type: 'fs'
           scan-ref: '.'  # scan the entire repository
